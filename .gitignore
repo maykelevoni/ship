@@ -1,0 +1,13 @@
+# Ship workflow artifacts
+.ship/logs/
+.ship/blockers/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
