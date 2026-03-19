@@ -441,15 +441,14 @@ SYSPROMPT
   # Build UI-specific design instructions if this is a UI task
   local ui_instructions=""
   if [ "$is_ui" = true ]; then
-    local feature
-    feature=$(get_state "feature")
-    ui_instructions=$(cat << UIPROMPT
+    ui_instructions=$(cat << 'UIPROMPT'
 
-UI/UX TASK — Before implementing, get design recommendations:
-1. Run the design intelligence tool with your component description:
-   python3 .claude/skills/ui-ux-pro-max/scripts/search.py "${feature}" --design-system
-2. Apply the recommended style, colors, typography, and UX patterns to your implementation
-3. Follow the Quick Reference rules in .claude/skills/ui-ux-pro-max/SKILL.md for accessibility and interaction
+UI/UX TASK — Before writing any code, follow the design reference skill:
+1. Read .claude/skills/design-ref/SKILL.md
+2. Use Playwright to fetch a real component from https://21st.dev/community/components that matches this task
+3. Extract its color palette, typography, and layout patterns
+4. Apply those patterns + real Unsplash images (from the skill's photo ID table) to your implementation
+5. Follow the anti-generic layout rules in the skill — no placeholder boxes, no Lorem ipsum, no 3-column card defaults
 UIPROMPT
 )
   fi
@@ -477,10 +476,15 @@ USERPROMPT
   [ "$is_ui" = true ] && echo -e "  ${CYAN}UI task — design intelligence enabled${NC}"
   echo -e "${DIM}───────────────────────────────────────────────${NC}"
 
+  local allowed_tools="Read,Write,Edit,Bash,Glob,Grep"
+  if [ "$is_ui" = true ]; then
+    allowed_tools="${allowed_tools},mcp__plugin_playwright_playwright__browser_navigate,mcp__plugin_playwright_playwright__browser_snapshot,mcp__plugin_playwright_playwright__browser_take_screenshot,mcp__plugin_playwright_playwright__browser_click,mcp__plugin_playwright_playwright__browser_wait_for"
+  fi
+
   local exit_code=0
   claude -p "$user_prompt" \
     --append-system-prompt "$system_prompt" \
-    --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
+    --allowedTools "$allowed_tools" \
     --model "$SHIP_MODEL" \
     --max-budget-usd "$SHIP_MAX_BUDGET" \
     --permission-mode "bypassPermissions" \
