@@ -46,7 +46,13 @@ Understand what feature the user wants and create `.ship/spec.md`.
 - Walk through the user flow step by step
 - Success and error cases? Edge cases?
 
-**Category 3: Technical Constraints**
+**Category 3: Project Foundation**
+- Is this a new project or a feature on an existing codebase?
+- If new project: assess scope before planning
+  - **Simple** (landing page, small tool, single-purpose component) → build from scratch
+  - **Full SaaS / platform** (auth + payments + dashboard + database) → use boilerplate: `https://github.com/mickasmt/next-saas-stripe-starter`
+    - Already includes: Next.js 14, Prisma, Neon, Stripe subscriptions, Auth.js OAuth, shadcn/ui, admin panel
+    - Saves weeks of boilerplate — only build what's unique to the product
 - New database tables or changes to existing ones?
 - Integrations with existing services?
 - New external APIs?
