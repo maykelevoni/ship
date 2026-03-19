@@ -56,6 +56,9 @@ Understand what feature the user wants and create `.ship/spec.md`.
 - New database tables or changes to existing ones?
 - Integrations with existing services?
 - New external APIs?
+  - Before paying for or building custom — check free API lists first:
+    - https://github.com/Free-APIs/Free-APIs.github.io
+    - https://github.com/cporter202/API-mega-list
 
 **Category 4: UI/UX**
 - Where does this live in the app?
