@@ -152,6 +152,10 @@ Break the plan into small sequential tasks for sub-agent execution.
 ```markdown
 # Task NNN: [Title]
 
+## Type
+ui  ← only include this line for tasks involving UI/UX (components, pages, forms, layouts, styling)
+    ← omit entirely for backend, API, DB, or config tasks
+
 ## Description
 [What to implement and why]
 

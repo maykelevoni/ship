@@ -338,6 +338,10 @@ For EACH task, create .ship/tasks/task-NNN.md:
 \`\`\`
 # Task NNN: [Title]
 
+## Type
+ui  ← include ONLY for tasks involving UI/UX (components, pages, forms, layouts, styling)
+    ← omit this section entirely for backend, API, DB, config, or wiring tasks
+
 ## Description
 [What to implement and why]
 
@@ -413,6 +417,10 @@ run_single_task() {
 
   set_state "current_task" "$task_num"
 
+  # Detect if this is a UI task
+  local is_ui=false
+  grep -qi "^## Type" "$task_file" && grep -qi "ui" "$task_file" && is_ui=true
+
   local system_prompt
   system_prompt=$(cat << 'SYSPROMPT'
 You are a Ship sub-agent. Execute ONE task in isolation.
@@ -430,6 +438,22 @@ RULES:
 SYSPROMPT
 )
 
+  # Build UI-specific design instructions if this is a UI task
+  local ui_instructions=""
+  if [ "$is_ui" = true ]; then
+    local feature
+    feature=$(get_state "feature")
+    ui_instructions=$(cat << UIPROMPT
+
+UI/UX TASK — Before implementing, get design recommendations:
+1. Run the design intelligence tool with your component description:
+   python3 .claude/skills/ui-ux-pro-max/scripts/search.py "${feature}" --design-system
+2. Apply the recommended style, colors, typography, and UX patterns to your implementation
+3. Follow the Quick Reference rules in .claude/skills/ui-ux-pro-max/SKILL.md for accessibility and interaction
+UIPROMPT
+)
+  fi
+
   local user_prompt
   user_prompt=$(cat << USERPROMPT
 You are executing Task $task_num of $total.
@@ -440,7 +464,9 @@ Read in order:
 3. .ship/plan.md
 4. .ship/context.md
 
-Then read any existing files referenced in the task. Implement, commit. If blocked, create a blocker file.
+Then read any existing files referenced in the task.${ui_instructions}
+
+Implement, commit. If blocked, create a blocker file.
 USERPROMPT
 )
 
@@ -448,6 +474,7 @@ USERPROMPT
 
   echo -e "  Model: ${SHIP_MODEL} | Budget: \$${SHIP_MAX_BUDGET}"
   echo -e "  Log:   $log_file"
+  [ "$is_ui" = true ] && echo -e "  ${CYAN}UI task — design intelligence enabled${NC}"
   echo -e "${DIM}───────────────────────────────────────────────${NC}"
 
   local exit_code=0
