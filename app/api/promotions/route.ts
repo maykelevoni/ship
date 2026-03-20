@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { runGeoAudit } from "@/worker/engine/geo-audit";
 
 const VALID_TYPES = ["product", "service", "affiliate", "lead_magnet", "content"] as const;
 const VALID_STATUSES = ["active", "paused", "archived", "all"] as const;
 
-// Stub — real implementation comes in task 006
-async function triggerGeoAudit(id: string): Promise<void> {
-  // no-op until geo audit is implemented
+async function triggerGeoAudit(id: string, url: string): Promise<void> {
+  await runGeoAudit(id, url);
 }
 
 export const GET = auth(async (req) => {
@@ -80,7 +80,7 @@ export const POST = auth(async (req) => {
 
     // Fire-and-forget geo audit for product/service types
     if (type === "product" || type === "service") {
-      triggerGeoAudit(promotion.id).catch(() => {
+      triggerGeoAudit(promotion.id, promotion.url).catch(() => {
         // intentionally swallowed — background task
       });
     }
