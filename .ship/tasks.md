@@ -30,7 +30,7 @@ Total: 25 tasks
 ### Frontend — Dashboard
 - [x] 018: Dashboard Layout + Sidebar
 - [x] 019: Today View — Dashboard Home
-- [ ] 020: Content Preview Modal
+- [x] 020: Content Preview Modal
 - [ ] 021: Promotions List + Card
 - [ ] 022: Promotion Form — Create + Edit
 - [ ] 023: Calendar Page
