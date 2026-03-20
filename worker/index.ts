@@ -6,6 +6,7 @@
 
 import cron from 'node-cron'
 import { getSetting } from '@/lib/settings'
+import { postPlatform } from './posting/scheduler'
 
 async function runEngine(): Promise<void> {
   // Engine orchestration will be implemented in task 017.
@@ -14,27 +15,27 @@ async function runEngine(): Promise<void> {
 }
 
 async function postTwitter(): Promise<void> {
-  console.log('[worker] Posting to Twitter/X...')
+  await postPlatform('twitter')
 }
 
 async function postLinkedIn(): Promise<void> {
-  console.log('[worker] Posting to LinkedIn...')
+  await postPlatform('linkedin')
 }
 
 async function postVideo(): Promise<void> {
-  console.log('[worker] Posting video (TikTok + YouTube + Reels)...')
+  await postPlatform('video')
 }
 
 async function postReddit(): Promise<void> {
-  console.log('[worker] Posting to Reddit...')
+  await postPlatform('reddit')
 }
 
 async function postInstagram(): Promise<void> {
-  console.log('[worker] Posting to Instagram...')
+  await postPlatform('instagram')
 }
 
 async function sendEmail(): Promise<void> {
-  console.log('[worker] Sending email newsletter...')
+  await postPlatform('email')
 }
 
 async function start(): Promise<void> {

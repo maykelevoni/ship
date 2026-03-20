@@ -19,12 +19,12 @@ Total: 25 tasks
 ### Worker — Engine
 - [x] 009: Worker Entry + Promotion Rotation Logic
 - [x] 010: Content Generation — Claude Prompts for All Platforms
-- [ ] 011: Image Templates — React Components for Puppeteer
-- [ ] 012: Image Renderer — Puppeteer Screenshot to PNG
-- [ ] 013: Video Template — Remotion Composition
-- [ ] 014: Video Renderer — Remotion to MP4
-- [ ] 015: post-bridge Posting Client + Resend Email Client
-- [ ] 016: Posting Scheduler — Cron Jobs for Each Platform
+- [x] 011: Image Templates — React Components for Puppeteer
+- [x] 012: Image Renderer — Puppeteer Screenshot to PNG
+- [x] 013: Video Template — Remotion Composition
+- [x] 014: Video Renderer — Remotion to MP4
+- [x] 015: post-bridge Posting Client + Resend Email Client
+- [x] 016: Posting Scheduler — Cron Jobs for Each Platform
 - [ ] 017: Daily Engine Orchestration
 
 ### Frontend — Dashboard
