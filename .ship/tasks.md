@@ -32,7 +32,7 @@ Total: 25 tasks
 - [x] 019: Today View — Dashboard Home
 - [x] 020: Content Preview Modal
 - [x] 021: Promotions List + Card
-- [ ] 022: Promotion Form — Create + Edit
+- [x] 022: Promotion Form — Create + Edit
 - [ ] 023: Calendar Page
 - [ ] 024: Queue Page + Log Page
 
