@@ -41,6 +41,7 @@ async function getTodayPieces(): Promise<ContentPieceData[]> {
       content: p.content,
       status: p.status,
       approved: p.approved,
+      mediaPath: p.mediaPath ?? null,
       postedAt: p.postedAt?.toISOString() ?? null,
     }));
   } catch {

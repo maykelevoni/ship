@@ -8,6 +8,7 @@ import {
   PlatformStatusCardEmpty,
   type ContentPieceData,
 } from "./platform-status-card";
+import { ContentPreview } from "./content-preview";
 
 const PLATFORMS = ["twitter", "linkedin", "video", "reddit", "instagram", "email"] as const;
 
@@ -145,9 +146,9 @@ export function TodayView({
     "idle",
   );
   const [streamEvents, setStreamEvents] = useState<string[]>([]);
-  const [previewPiece, setPreviewPiece] = useState<ContentPieceData | null>(
-    null,
-  );
+  const [previewPiece, setPreviewPiece] = useState<
+    (ContentPieceData & { promotionName: string }) | null
+  >(null);
 
   // SSE stream handler
   const handleEvent = useCallback((event: StreamEvent) => {
@@ -498,7 +499,12 @@ export function TodayView({
                 key={platform}
                 piece={piece}
                 gateModeEnabled={gateModeEnabled}
-                onPreview={setPreviewPiece}
+                onPreview={(p) =>
+                  setPreviewPiece({
+                    ...p,
+                    promotionName: promotion?.name ?? "",
+                  })
+                }
                 onApprove={handleApprove}
                 onReject={handleReject}
               />
@@ -509,80 +515,18 @@ export function TodayView({
         </div>
       </div>
 
-      {/* Simple content preview overlay */}
-      {previewPiece && (
-        <div
-          onClick={() => setPreviewPiece(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            zIndex: 50,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#111111",
-              border: "1px solid #2a2a2a",
-              borderRadius: "12px",
-              padding: "24px",
-              maxWidth: "560px",
-              width: "100%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: "16px",
-              }}
-            >
-              <h3
-                style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#e4e4e7" }}
-              >
-                {previewPiece.platform.charAt(0).toUpperCase() +
-                  previewPiece.platform.slice(1)}{" "}
-                Preview
-              </h3>
-              <button
-                onClick={() => setPreviewPiece(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#71717a",
-                  cursor: "pointer",
-                  fontSize: "18px",
-                  lineHeight: 1,
-                  padding: "0 4px",
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <pre
-              style={{
-                margin: 0,
-                fontSize: "13px",
-                color: "#a1a1aa",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                lineHeight: "1.6",
-                fontFamily: "inherit",
-              }}
-            >
-              {previewPiece.content || "No content yet."}
-            </pre>
-          </div>
-        </div>
-      )}
+      {/* Content Preview Modal */}
+      <ContentPreview
+        piece={previewPiece}
+        open={previewPiece !== null}
+        onClose={() => setPreviewPiece(null)}
+        onApprove={
+          previewPiece ? () => handleApprove(previewPiece.id) : undefined
+        }
+        onReject={
+          previewPiece ? () => handleReject(previewPiece.id) : undefined
+        }
+      />
 
       <style>{`
         @keyframes spin {

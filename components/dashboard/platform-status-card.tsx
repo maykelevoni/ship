@@ -18,6 +18,7 @@ export interface ContentPieceData {
   content: string;
   status: string;
   approved: boolean;
+  mediaPath?: string | null;
   postedAt?: string | null;
   scheduledTime?: string;
 }
