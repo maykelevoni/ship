@@ -18,7 +18,7 @@ Total: 25 tasks
 
 ### Worker — Engine
 - [x] 009: Worker Entry + Promotion Rotation Logic
-- [ ] 010: Content Generation — Claude Prompts for All Platforms
+- [x] 010: Content Generation — Claude Prompts for All Platforms
 - [ ] 011: Image Templates — React Components for Puppeteer
 - [ ] 012: Image Renderer — Puppeteer Screenshot to PNG
 - [ ] 013: Video Template — Remotion Composition
