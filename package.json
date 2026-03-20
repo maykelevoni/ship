@@ -49,6 +49,7 @@
     "@react-email/button": "0.0.15",
     "@react-email/components": "0.0.21",
     "@react-email/html": "0.0.8",
+    "@remotion/bundler": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
     "@t3-oss/env-nextjs": "^0.11.0",
     "@typescript-eslint/parser": "^7.17.0",
