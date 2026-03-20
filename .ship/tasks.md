@@ -11,13 +11,13 @@ Total: 25 tasks
 
 ### Backend API
 - [x] 004: Settings API + Page
-- [ ] 005: Promotions API
-- [ ] 006: GEO SEO Audit
-- [ ] 007: Calendar + Queue APIs
-- [ ] 008: Engine Run API + Logs API + SSE Stream
+- [x] 005: Promotions API
+- [x] 006: GEO SEO Audit
+- [x] 007: Calendar + Queue APIs
+- [x] 008: Engine Run API + Logs API + SSE Stream
 
 ### Worker — Engine
-- [ ] 009: Worker Entry + Promotion Rotation Logic
+- [x] 009: Worker Entry + Promotion Rotation Logic
 - [ ] 010: Content Generation — Claude Prompts for All Platforms
 - [ ] 011: Image Templates — React Components for Puppeteer
 - [ ] 012: Image Renderer — Puppeteer Screenshot to PNG
