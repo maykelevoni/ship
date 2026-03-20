@@ -33,8 +33,8 @@ Total: 25 tasks
 - [x] 020: Content Preview Modal
 - [x] 021: Promotions List + Card
 - [x] 022: Promotion Form — Create + Edit
-- [ ] 023: Calendar Page
-- [ ] 024: Queue Page + Log Page
+- [x] 023: Calendar Page
+- [x] 024: Queue Page + Log Page
 
 ### Deployment
-- [ ] 025: Docker + VPS Deployment Setup
+- [x] 025: Docker + VPS Deployment Setup

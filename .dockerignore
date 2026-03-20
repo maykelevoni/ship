@@ -1,0 +1,16 @@
+node_modules
+.next
+.ship
+.git
+.gitignore
+media
+*.log
+*.md
+.env
+.env.local
+.env.*.local
+.husky
+.vscode
+coverage
+dist
+emails
