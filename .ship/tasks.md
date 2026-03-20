@@ -28,7 +28,7 @@ Total: 25 tasks
 - [x] 017: Daily Engine Orchestration
 
 ### Frontend — Dashboard
-- [ ] 018: Dashboard Layout + Sidebar
+- [x] 018: Dashboard Layout + Sidebar
 - [ ] 019: Today View — Dashboard Home
 - [ ] 020: Content Preview Modal
 - [ ] 021: Promotions List + Card
