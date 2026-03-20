@@ -25,7 +25,7 @@ Total: 25 tasks
 - [x] 014: Video Renderer — Remotion to MP4
 - [x] 015: post-bridge Posting Client + Resend Email Client
 - [x] 016: Posting Scheduler — Cron Jobs for Each Platform
-- [ ] 017: Daily Engine Orchestration
+- [x] 017: Daily Engine Orchestration
 
 ### Frontend — Dashboard
 - [ ] 018: Dashboard Layout + Sidebar
