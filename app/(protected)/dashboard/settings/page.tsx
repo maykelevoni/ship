@@ -2,14 +2,13 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
-import { DeleteAccountSection } from "@/components/dashboard/delete-account";
+import { db } from "@/lib/db";
 import { DashboardHeader } from "@/components/dashboard/header";
-import { UserNameForm } from "@/components/forms/user-name-form";
-import { UserRoleForm } from "@/components/forms/user-role-form";
+import { SettingsForm } from "@/components/dashboard/settings-form";
 
 export const metadata = constructMetadata({
-  title: "Settings – SaaS Starter",
-  description: "Configure your account and website settings.",
+  title: "Settings – Promotion Engine",
+  description: "Configure API keys, schedule, and platform settings.",
 });
 
 export default async function SettingsPage() {
@@ -17,16 +16,17 @@ export default async function SettingsPage() {
 
   if (!user?.id) redirect("/login");
 
+  const rows = await db.setting.findMany();
+  const settings = Object.fromEntries(rows.map((s) => [s.key, s.value]));
+
   return (
     <>
       <DashboardHeader
         heading="Settings"
-        text="Manage account and website settings."
+        text="Configure API keys, schedule, gate mode, and enabled platforms."
       />
-      <div className="divide-y divide-muted pb-10">
-        <UserNameForm user={{ id: user.id, name: user.name || "" }} />
-        <UserRoleForm user={{ id: user.id, role: user.role }} />
-        <DeleteAccountSection />
+      <div className="mt-6">
+        <SettingsForm initialSettings={settings} />
       </div>
     </>
   );
