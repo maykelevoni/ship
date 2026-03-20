@@ -73,3 +73,57 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map(name: "verification_tokens")
 }
+
+model Promotion {
+  id             String         @id @default(cuid())
+  type           String         // product | service | affiliate | lead_magnet | content
+  name           String
+  description    String
+  url            String
+  affiliateLink  String?
+  price          String?
+  benefits       String?        // JSON stringified array
+  targetAudience String?
+  status         String         @default("active") // active | paused | archived
+  weight         Int            @default(5)
+  geoScore       Int?
+  geoIssues      String?        // JSON stringified array
+  geoAuditedAt   DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  contentPieces  ContentPiece[]
+}
+
+model ContentPiece {
+  id           String    @id @default(cuid())
+  promotionId  String
+  promotion    Promotion @relation(fields: [promotionId], references: [id])
+  date         DateTime
+  platform     String    // master | twitter | linkedin | reddit | instagram | email | image_card | image_quote | video
+  content      String
+  mediaPath    String?
+  status       String    @default("queued") // queued | generating | generated | approved | posting | posted | failed | rejected
+  approved     Boolean   @default(false)
+  postBridgeId String?
+  postedAt     DateTime?
+  error        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model EngineRun {
+  id            String   @id @default(cuid())
+  date          DateTime
+  promotionId   String?
+  promotionName String?
+  status        String   // running | completed | failed
+  log           String
+  contentCount  Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
