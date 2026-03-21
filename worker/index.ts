@@ -8,6 +8,7 @@ import cron from 'node-cron'
 import { getSetting } from '@/lib/settings'
 import { postPlatform } from './posting/scheduler'
 import { seedDefaults } from '@/lib/seeds'
+import { db } from '@/lib/db'
 
 async function runEngine(): Promise<void> {
   // Engine orchestration will be implemented in task 017.
@@ -15,28 +16,25 @@ async function runEngine(): Promise<void> {
   console.log('[worker] Engine run triggered.')
 }
 
-async function postTwitter(): Promise<void> {
-  await postPlatform('twitter')
-}
-
-async function postLinkedIn(): Promise<void> {
-  await postPlatform('linkedin')
-}
-
-async function postVideo(): Promise<void> {
-  await postPlatform('video')
-}
-
-async function postReddit(): Promise<void> {
-  await postPlatform('reddit')
-}
-
-async function postInstagram(): Promise<void> {
-  await postPlatform('instagram')
-}
-
-async function sendEmail(): Promise<void> {
-  await postPlatform('email')
+async function loadSchedule(timezone: string): Promise<void> {
+  const entries = await db.scheduleEntry.findMany({
+    where: { active: true },
+    include: { template: true },
+  })
+  for (const entry of entries) {
+    const [hStr, mStr] = entry.time.split(':')
+    const h = parseInt(hStr, 10)
+    const m = parseInt(mStr, 10)
+    const days = JSON.parse(entry.daysOfWeek) as number[]
+    const dowExpr = days.length === 7 ? '*' : days.join(',')
+    const expr = `${m} ${h} * * ${dowExpr}`
+    cron.schedule(expr, () => {
+      postPlatform(entry.platform).catch((err) =>
+        console.error(`[worker] Post failed for ${entry.platform}:`, err),
+      )
+    }, { timezone })
+    console.log(`[worker] Scheduled ${entry.platform} at ${entry.time} (days: ${dowExpr})`)
+  }
 }
 
 async function start(): Promise<void> {
@@ -58,42 +56,13 @@ async function start(): Promise<void> {
     )
   }, cronOptions)
 
-  // Staggered posting schedule
-  cron.schedule('0 9 * * *', () => {
-    postTwitter().catch((err) =>
-      console.error('[worker] Twitter post failed:', err),
-    )
-  }, cronOptions)
+  // Load posting schedule dynamically from DB
+  await loadSchedule(timezone)
 
-  cron.schedule('0 10 * * *', () => {
-    postLinkedIn().catch((err) =>
-      console.error('[worker] LinkedIn post failed:', err),
-    )
-  }, cronOptions)
-
-  cron.schedule('0 11 * * *', () => {
-    postVideo().catch((err) =>
-      console.error('[worker] Video post failed:', err),
-    )
-  }, cronOptions)
-
-  cron.schedule('0 12 * * *', () => {
-    postReddit().catch((err) =>
-      console.error('[worker] Reddit post failed:', err),
-    )
-  }, cronOptions)
-
-  cron.schedule('0 14 * * *', () => {
-    postInstagram().catch((err) =>
-      console.error('[worker] Instagram post failed:', err),
-    )
-  }, cronOptions)
-
-  cron.schedule('0 17 * * *', () => {
-    sendEmail().catch((err) =>
-      console.error('[worker] Email send failed:', err),
-    )
-  }, cronOptions)
+  const entryCount = await db.scheduleEntry.count()
+  if (entryCount === 0) {
+    console.warn('[worker] No schedule entries found — run seeding or add entries via Settings')
+  }
 
   console.log(
     `[worker] Worker started. Engine runs at ${hour}:00 ${timezone}`,
