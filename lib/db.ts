@@ -6,5 +6,6 @@ declare global {
 }
 
 export const db = global.prisma || new PrismaClient()
+export const prisma = db  // alias for boilerplate files
 
 if (process.env.NODE_ENV !== 'production') global.prisma = db

@@ -13,6 +13,7 @@ import {
   X,
   Check,
   Archive,
+  type LucideIcon,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ const TYPE_CARDS: {
   value: PromotionType;
   label: string;
   sub: string;
-  Icon: React.FC<{ size?: number; style?: React.CSSProperties }>;
+  Icon: LucideIcon;
   color: string;
   bg: string;
 }[] = [

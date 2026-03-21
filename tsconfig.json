@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2017",
+    "downlevelIteration": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -34,5 +35,15 @@
     ".contentlayer/generated",
     "contentlayer.config.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "app/(docs)",
+    "app/(marketing)",
+    "components/content",
+    "components/docs",
+    "components/pricing",
+    "components/sections",
+    "components/forms/newsletter-form.tsx",
+    "contentlayer.config.ts"
+  ]
 }

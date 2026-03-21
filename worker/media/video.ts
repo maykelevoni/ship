@@ -17,7 +17,7 @@ export async function renderVideo(params: {
   const { script, promotion, outputPath, accentColor = '#6366f1' } = params
 
   // 1. Bundle the Remotion template entry point
-  const entryPoint = path.join(__dirname, '../templates/video/index.ts')
+  const entryPoint = path.join(__dirname, '../templates/video/index.tsx')
   const bundled = await bundle({ entryPoint })
 
   // 2. Build input props matching ShortFormVideoProps
