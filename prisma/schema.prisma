@@ -107,8 +107,41 @@ model ContentPiece {
   postBridgeId String?
   postedAt     DateTime?
   error        String?
+  provider     String    @default("claude")  // "claude" | "gemini"
+  templateId   String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+model Template {
+  id              String          @id @default(cuid())
+  name            String
+  platform        String          // twitter | linkedin | instagram | facebook | reddit | email | tiktok | youtube
+  charLimit       Int?
+  imageEnabled    Boolean         @default(false)
+  imageWidth      Int?
+  imageHeight     Int?
+  videoEnabled    Boolean         @default(false)
+  videoWidth      Int?
+  videoHeight     Int?
+  includeLink     Boolean         @default(false)
+  aiInstructions  String?
+  active          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  scheduleEntries ScheduleEntry[]
+}
+
+model ScheduleEntry {
+  id         String   @id @default(cuid())
+  time       String   // "HH:MM" 24h
+  platform   String
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id])
+  daysOfWeek String   @default("[0,1,2,3,4,5,6]")  // JSON int[] 0=Sun … 6=Sat
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model EngineRun {
