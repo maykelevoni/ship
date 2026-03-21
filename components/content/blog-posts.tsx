@@ -1,21 +1,25 @@
-import { Post } from "@/.contentlayer/generated";
-
 import { BlogCard } from "./blog-card";
 
 export function BlogPosts({
   posts,
 }: {
-  posts: (Post & {
-    blurDataURL: string;
-  })[];
+  posts: (Record<string, unknown> & { blurDataURL: string })[];
 }) {
+  if (!posts.length) {
+    return (
+      <main className="space-y-8">
+        <p className="text-muted-foreground">No posts yet.</p>
+      </main>
+    );
+  }
+
   return (
     <main className="space-y-8">
       <BlogCard data={posts[0]} horizontale priority />
 
       <div className="grid gap-8 md:grid-cols-2 md:gap-x-6 md:gap-y-10 xl:grid-cols-3">
         {posts.slice(1).map((post, idx) => (
-          <BlogCard data={post} key={post._id} priority={idx <= 2} />
+          <BlogCard data={post} key={String(post._id)} priority={idx <= 2} />
         ))}
       </div>
     </main>
