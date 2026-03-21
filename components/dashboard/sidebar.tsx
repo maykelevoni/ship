@@ -11,6 +11,8 @@ import {
   ScrollText,
   Settings,
   Zap,
+  LayoutTemplate,
+  Clock,
 } from "lucide-react";
 
 interface NavItem {
@@ -46,6 +48,16 @@ const mainNavItems: NavItem[] = [
     href: "/logs",
     label: "Logs",
     icon: <ScrollText size={18} />,
+  },
+  {
+    href: "/templates",
+    label: "Templates",
+    icon: <LayoutTemplate size={18} />,
+  },
+  {
+    href: "/schedule",
+    label: "Schedule",
+    icon: <Clock size={18} />,
   },
 ];
 
