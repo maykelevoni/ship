@@ -1,5 +1,13 @@
-import { generateText } from '../../lib/claude'
-import type { Promotion } from '@prisma/client'
+import { generateText } from '../../lib/ai'
+import type { AIProvider } from '../../lib/ai'
+import type { Promotion, Template } from '@prisma/client'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface GeneratedPiece {
+  content: string
+  provider: AIProvider
+}
 
 // ─── Master Piece ────────────────────────────────────────────────────────────
 
@@ -29,8 +37,23 @@ URL: ${promotion.url}
 `.trim()
 }
 
-export async function generateMaster(promotion: Promotion): Promise<string> {
-  return generateText(buildMasterPrompt(promotion), MASTER_SYSTEM)
+export async function generateMaster(
+  promotion: Promotion,
+  template?: Template,
+): Promise<GeneratedPiece> {
+  let system = MASTER_SYSTEM
+
+  if (template) {
+    if (template.aiInstructions) {
+      system = template.aiInstructions
+    }
+    if (template.charLimit) {
+      system += `\n\nKeep under ${template.charLimit} characters.`
+    }
+  }
+
+  const { text, provider } = await generateText(buildMasterPrompt(promotion), system)
+  return { content: text, provider }
 }
 
 // ─── Platform Formats ────────────────────────────────────────────────────────
@@ -60,42 +83,74 @@ const VIDEO_SYSTEM =
   'CTA (25-30s, include URL). ' +
   'Return as JSON: { "hook": "...", "points": ["...", "...", "..."], "reveal": "...", "cta": "..." }'
 
+const BASE_SYSTEMS: Record<string, string> = {
+  twitter: TWITTER_SYSTEM,
+  linkedin: LINKEDIN_SYSTEM,
+  reddit: REDDIT_SYSTEM,
+  instagram: INSTAGRAM_SYSTEM,
+  video: VIDEO_SYSTEM,
+}
+
 function buildFormatPrompt(master: string, promotion: Promotion): string {
   return `Here is the master email newsletter piece to repurpose:\n\n${master}\n\nPromotion URL: ${promotion.url}`
 }
 
-function formatEmail(master: string, promotion: Promotion): string {
+function formatEmail(master: string, promotion: Promotion): GeneratedPiece {
   const subject = `${promotion.name} — ${promotion.description.slice(0, 60).trimEnd()}…`
-  return `SUBJECT: ${subject}\n\nBODY: ${master}`
+  return {
+    content: `SUBJECT: ${subject}\n\nBODY: ${master}`,
+    provider: 'claude',
+  }
+}
+
+function buildPlatformSystem(platform: string, template?: Template): string {
+  const base = BASE_SYSTEMS[platform] ?? ''
+
+  if (!template) return base
+
+  // Template aiInstructions REPLACES the base system prompt
+  let system = template.aiInstructions ?? base
+
+  if (template.charLimit) {
+    system += `\n\nKeep under ${template.charLimit} characters.`
+  }
+
+  return system
 }
 
 export async function generateAllFormats(
   promotion: Promotion,
   master: string,
-): Promise<Record<string, string>> {
+  templates?: Record<string, Template>,
+): Promise<Record<string, GeneratedPiece>> {
   const prompt = buildFormatPrompt(master, promotion)
 
-  const results = await Promise.allSettled([
-    generateText(prompt, TWITTER_SYSTEM),   // 0
-    generateText(prompt, LINKEDIN_SYSTEM),  // 1
-    generateText(prompt, REDDIT_SYSTEM),    // 2
-    generateText(prompt, INSTAGRAM_SYSTEM), // 3
-    Promise.resolve(formatEmail(master, promotion)), // 4
-    generateText(prompt, VIDEO_SYSTEM),     // 5
-  ])
+  const platforms = ['twitter', 'linkedin', 'reddit', 'instagram', 'video'] as const
 
-  function settle(result: PromiseSettledResult<string>, platform: string): string {
-    if (result.status === 'fulfilled') return result.value
+  const results = await Promise.allSettled(
+    platforms.map((platform) => {
+      const system = buildPlatformSystem(platform, templates?.[platform])
+      return generateText(prompt, system)
+    }),
+  )
+
+  function settle(
+    result: PromiseSettledResult<{ text: string; provider: AIProvider }>,
+    platform: string,
+  ): GeneratedPiece {
+    if (result.status === 'fulfilled') {
+      return { content: result.value.text, provider: result.value.provider }
+    }
     console.error(`[generate] ${platform} generation failed:`, result.reason)
-    return `[Generation failed for ${platform}]`
+    return { content: `[Generation failed for ${platform}]`, provider: 'claude' }
   }
 
   return {
-    twitter:   settle(results[0], 'twitter'),
-    linkedin:  settle(results[1], 'linkedin'),
-    reddit:    settle(results[2], 'reddit'),
+    twitter: settle(results[0], 'twitter'),
+    linkedin: settle(results[1], 'linkedin'),
+    reddit: settle(results[2], 'reddit'),
     instagram: settle(results[3], 'instagram'),
-    email:     settle(results[4], 'email'),
-    video:     settle(results[5], 'video'),
+    email: formatEmail(master, promotion),
+    video: settle(results[4], 'video'),
   }
 }

@@ -77,7 +77,8 @@ export async function runEngine(): Promise<void> {
     // 5. Generate master piece
     // -----------------------------------------------------------------------
     logger.info('Generating master piece…')
-    const master = await generateMaster(promotion)
+    const masterResult = await generateMaster(promotion)
+    const master = masterResult.content
 
     const masterPiece = await db.contentPiece.create({
       data: {
@@ -85,10 +86,11 @@ export async function runEngine(): Promise<void> {
         date: today,
         platform: 'master',
         content: master,
+        provider: masterResult.provider,
         status: 'generated',
       },
     })
-    logger.info('Master piece saved')
+    logger.info(`Master piece saved (provider: ${masterResult.provider})`)
 
     // -----------------------------------------------------------------------
     // 6. Generate all platform formats in parallel
@@ -96,27 +98,29 @@ export async function runEngine(): Promise<void> {
     logger.info('Generating platform formats…')
     const formats = await generateAllFormats(promotion, master)
 
-    const platformEntries = Object.entries(formats) as [string, string][]
+    const platformEntries = Object.entries(formats)
     const savedPieces: Record<string, { id: string; content: string }> = {}
 
-    for (const [platform, content] of platformEntries) {
+    for (const [platform, piece] of platformEntries) {
       try {
-        const piece = await db.contentPiece.create({
+        const { content, provider } = piece
+        const dbPiece = await db.contentPiece.create({
           data: {
             promotionId: promotion.id,
             date: today,
             platform,
             content,
+            provider,
             status: 'generated',
           },
         })
-        savedPieces[platform] = { id: piece.id, content }
+        savedPieces[platform] = { id: dbPiece.id, content }
 
         bus.emit('engine.event', {
           type: 'content.generated',
-          payload: { runId, platform, pieceId: piece.id },
+          payload: { runId, platform, pieceId: dbPiece.id },
         })
-        logger.info(`Platform "${platform}" content saved (id: ${piece.id})`)
+        logger.info(`Platform "${platform}" content saved (id: ${dbPiece.id}, provider: ${provider})`)
       } catch (err) {
         logger.error(`Failed to save content piece for platform "${platform}"`, err)
       }
