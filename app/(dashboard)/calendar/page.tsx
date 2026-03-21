@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { CalendarGrid, type CalendarData } from "@/components/dashboard/calendar-grid";
+import { DayPanel } from "@/components/dashboard/day-panel";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -25,6 +26,7 @@ export default function CalendarPage() {
   const [data, setData] = useState<CalendarData>({});
   const [promotions, setPromotions] = useState<{ id: string; name: string; type: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Fetch calendar data whenever month/year changes
   useEffect(() => {
@@ -231,8 +233,14 @@ export default function CalendarPage() {
           year={year}
           month={month}
           promotions={promotions}
+          onDayClick={(date) => setSelectedDate(date)}
         />
       </div>
+
+      <DayPanel
+        date={selectedDate}
+        onClose={() => setSelectedDate(null)}
+      />
     </div>
   );
 }

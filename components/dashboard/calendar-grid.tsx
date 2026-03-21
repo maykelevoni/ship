@@ -26,6 +26,7 @@ interface CalendarGridProps {
   year: number;
   month: number; // 0-indexed
   promotions: { id: string; name: string; type: string }[];
+  onDayClick?: (date: string) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -90,10 +91,11 @@ interface DayCellProps {
   dayData: CalendarDay | undefined;
   isToday: boolean;
   isPast: boolean;
+  isSelected: boolean;
   onClick: () => void;
 }
 
-function DayCell({ date, dayData, isToday, isPast, onClick }: DayCellProps) {
+function DayCell({ date, dayData, isToday, isPast, isSelected, onClick }: DayCellProps) {
   const badge = dayData ? getTypeBadge(dayData.promotionType) : null;
   const dayNum = date.getDate();
 
@@ -109,11 +111,11 @@ function DayCell({ date, dayData, isToday, isPast, onClick }: DayCellProps) {
     <div
       onClick={onClick}
       style={{
-        border: isToday
+        border: isToday || isSelected
           ? "1.5px solid #6366f1"
           : "1px solid #1a1a1a",
         borderRadius: "8px",
-        background: isToday
+        background: isToday || isSelected
           ? "rgba(99,102,241,0.07)"
           : dayData
           ? "#0f0f0f"
@@ -127,17 +129,17 @@ function DayCell({ date, dayData, isToday, isPast, onClick }: DayCellProps) {
         gap: "4px",
         transition: "border-color 0.12s ease, background 0.12s ease",
         position: "relative",
-        ...(dayData ? {} : { borderStyle: "dashed" }),
+        ...(dayData || isSelected ? {} : { borderStyle: isToday ? "solid" : "dashed" }),
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = "#6366f1";
         (e.currentTarget as HTMLDivElement).style.borderStyle = "solid";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = isToday
+        (e.currentTarget as HTMLDivElement).style.borderColor = isToday || isSelected
           ? "#6366f1"
           : "#1a1a1a";
-        (e.currentTarget as HTMLDivElement).style.borderStyle = dayData || isToday
+        (e.currentTarget as HTMLDivElement).style.borderStyle = dayData || isToday || isSelected
           ? "solid"
           : "dashed";
       }}
@@ -592,7 +594,7 @@ function DetailPanel({ date, dayData, promotions, onClose }: DetailPanelProps) {
 
 // ─── Calendar Grid ────────────────────────────────────────────────────────────
 
-export function CalendarGrid({ data: initialData, year, month, promotions }: CalendarGridProps) {
+export function CalendarGrid({ data: initialData, year, month, promotions, onDayClick }: CalendarGridProps) {
   const [data, setData] = useState<CalendarData>(initialData);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -675,7 +677,14 @@ export function CalendarGrid({ data: initialData, year, month, promotions }: Cal
               dayData={data[toDateKey(date)]}
               isToday={date.getTime() === today.getTime()}
               isPast={date < today}
-              onClick={() => setSelectedDate(date)}
+              isSelected={
+                selectedDate !== null &&
+                selectedDate.getTime() === date.getTime()
+              }
+              onClick={() => {
+                setSelectedDate(date);
+                if (onDayClick) onDayClick(toDateKey(date));
+              }}
             />
           ),
         )}
