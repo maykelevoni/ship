@@ -1,40 +1,19 @@
-# Feature Tasks: Promotion Engine
-Generated: 2026-03-20
-Total: 25 tasks
+# Feature Tasks: Templates, Schedule, Settings & AI Fallback
+Generated: 2026-03-21
+Total: 14 tasks
 
 ## Checklist
-
-### Foundation
-- [ ] 001: Boilerplate Setup — Clone, Strip, Configure
-- [x] 002: Prisma Schema — New Models + Migration
-- [x] 003: Core Lib — DB Client, Claude Wrapper, post-bridge Client
-
-### Backend API
-- [x] 004: Settings API + Page
-- [x] 005: Promotions API
-- [x] 006: GEO SEO Audit
-- [x] 007: Calendar + Queue APIs
-- [x] 008: Engine Run API + Logs API + SSE Stream
-
-### Worker — Engine
-- [x] 009: Worker Entry + Promotion Rotation Logic
-- [x] 010: Content Generation — Claude Prompts for All Platforms
-- [x] 011: Image Templates — React Components for Puppeteer
-- [x] 012: Image Renderer — Puppeteer Screenshot to PNG
-- [x] 013: Video Template — Remotion Composition
-- [x] 014: Video Renderer — Remotion to MP4
-- [x] 015: post-bridge Posting Client + Resend Email Client
-- [x] 016: Posting Scheduler — Cron Jobs for Each Platform
-- [x] 017: Daily Engine Orchestration
-
-### Frontend — Dashboard
-- [x] 018: Dashboard Layout + Sidebar
-- [x] 019: Today View — Dashboard Home
-- [x] 020: Content Preview Modal
-- [x] 021: Promotions List + Card
-- [x] 022: Promotion Form — Create + Edit
-- [x] 023: Calendar Page
-- [x] 024: Queue Page + Log Page
-
-### Deployment
-- [x] 025: Docker + VPS Deployment Setup
+- [x] 001: Prisma Schema — Template, ScheduleEntry, ContentPiece.provider
+- [x] 002: Seed Default Templates and Schedule Entries
+- [x] 003: AI Provider Wrapper (lib/ai.ts)
+- [x] 004: Update generate.ts to use lib/ai.ts and template constraints
+- [x] 005: Dynamic Worker Schedule from DB
+- [x] 006: Templates API Routes
+- [x] 007: Schedule API Routes
+- [x] 008: Extend Settings API
+- [x] 009: Settings Page UI
+- [x] 010: Templates Page UI
+- [x] 011: Schedule Page UI
+- [x] 012: Sidebar Navigation Update
+- [x] 013: Calendar Day Panel
+- [x] 014: Provider Badge in Queue and Logs

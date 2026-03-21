@@ -1,5 +1,5 @@
 "use client";
-
+// Task 012: Templates (/templates) and Schedule (/schedule) nav items verified present.
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
