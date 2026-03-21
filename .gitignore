@@ -46,5 +46,8 @@ next-env.d.ts
 .ship/
 
 # generated media
-/media/test-results/
+/media/
+
+# playwright
+test-results/
 playwright-report/
