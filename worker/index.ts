@@ -7,6 +7,7 @@
 import cron from 'node-cron'
 import { getSetting } from '@/lib/settings'
 import { postPlatform } from './posting/scheduler'
+import { seedDefaults } from '@/lib/seeds'
 
 async function runEngine(): Promise<void> {
   // Engine orchestration will be implemented in task 017.
@@ -39,6 +40,9 @@ async function sendEmail(): Promise<void> {
 }
 
 async function start(): Promise<void> {
+  // Seed default templates and schedule entries if tables are empty
+  await seedDefaults()
+
   // Read settings with sensible defaults
   const hourStr = await getSetting('daily_run_hour')
   const hour = hourStr !== null ? parseInt(hourStr, 10) : 6
