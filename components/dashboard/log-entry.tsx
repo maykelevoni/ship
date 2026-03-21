@@ -150,6 +150,26 @@ export function LogEntry({ entry }: LogEntryProps) {
           {statusStyle.label}
         </span>
 
+        {/* AI Fallback badge — shown when log mentions gemini */}
+        {entry.log && /gemini/i.test(entry.log) && (
+          <span
+            style={{
+              display: "inline-block",
+              padding: "3px 7px",
+              borderRadius: "5px",
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.03em",
+              color: "#fbbf24",
+              background: "rgba(251,191,36,0.12)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            AI Fallback
+          </span>
+        )}
+
         {/* Content count chip */}
         <span
           style={{

@@ -28,6 +28,7 @@ export interface QueueItemData {
   approved: boolean;
   createdAt: string;
   updatedAt: string;
+  provider?: string;
 }
 
 interface QueueItemProps {
@@ -180,6 +181,22 @@ export function QueueItem({ item, onStatusChange }: QueueItemProps) {
           >
             {meta.label}
           </span>
+          {item.provider === "gemini" && (
+            <span
+              style={{
+                fontSize: "10px",
+                fontWeight: 600,
+                padding: "2px 6px",
+                borderRadius: "9999px",
+                color: "#fbbf24",
+                background: "rgba(251,191,36,0.1)",
+                whiteSpace: "nowrap",
+                lineHeight: 1.4,
+              }}
+            >
+              Gemini
+            </span>
+          )}
         </div>
 
         {/* Divider */}
