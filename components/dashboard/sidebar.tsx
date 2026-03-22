@@ -13,6 +13,10 @@ import {
   Zap,
   LayoutTemplate,
   Clock,
+  TrendingUp,
+  FileText,
+  Mail,
+  Lightbulb,
 } from "lucide-react";
 
 interface NavItem {
@@ -58,6 +62,26 @@ const mainNavItems: NavItem[] = [
     href: "/schedule",
     label: "Schedule",
     icon: <Clock size={18} />,
+  },
+  {
+    href: "/research",
+    label: "Research",
+    icon: <TrendingUp size={18} />,
+  },
+  {
+    href: "/blog",
+    label: "Blog",
+    icon: <FileText size={18} />,
+  },
+  {
+    href: "/email-drafts",
+    label: "Email Drafts",
+    icon: <Mail size={18} />,
+  },
+  {
+    href: "/opportunities",
+    label: "Opportunities",
+    icon: <Lightbulb size={18} />,
   },
 ];
 

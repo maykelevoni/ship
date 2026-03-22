@@ -17,6 +17,14 @@ interface SettingsData {
   timezone: string | null;
   gate_mode: string | null;
   daily_run_hour: string | null;
+  youtube_api_key: string | null;
+  newsapi_key: string | null;
+  ghost_url: string | null;
+  ghost_admin_api_key: string | null;
+  research_subreddits: string | null;
+  research_youtube_region: string | null;
+  research_news_categories: string | null;
+  blog_author_name: string | null;
 }
 
 const ALL_PLATFORMS = [
@@ -358,6 +366,18 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailFeedback, setEmailFeedback] = useState<"saved" | "error" | null>(null);
 
+  // Research & Blog section
+  const [youtubeKey, setYoutubeKey] = useState("")
+  const [newsapiKey, setNewsapiKey] = useState("")
+  const [ghostUrl, setGhostUrl] = useState("")
+  const [ghostAdminKey, setGhostAdminKey] = useState("")
+  const [researchSubreddits, setResearchSubreddits] = useState("entrepreneur,marketing,smallbusiness,SaaS")
+  const [youtubeRegion, setYoutubeRegion] = useState("US")
+  const [newsCategories, setNewsCategories] = useState("business,technology")
+  const [blogAuthorName, setBlogAuthorName] = useState("")
+  const [researchLoading, setResearchLoading] = useState(false)
+  const [researchFeedback, setResearchFeedback] = useState<"saved" | "error" | null>(null)
+
   // General section
   const [timezone, setTimezone] = useState("America/New_York");
   const [gateMode, setGateMode] = useState(false);
@@ -382,6 +402,14 @@ export default function SettingsPage() {
         setResendKey(data.resend_api_key ?? "");
         setResendFrom(data.resend_from_email ?? "");
         setResendListId(data.resend_list_id ?? "");
+        setYoutubeKey(data.youtube_api_key ?? "");
+        setNewsapiKey(data.newsapi_key ?? "");
+        setGhostUrl(data.ghost_url ?? "");
+        setGhostAdminKey(data.ghost_admin_api_key ?? "");
+        setResearchSubreddits(data.research_subreddits ?? "entrepreneur,marketing,smallbusiness,SaaS");
+        setYoutubeRegion(data.research_youtube_region ?? "US");
+        setNewsCategories(data.research_news_categories ?? "business,technology");
+        setBlogAuthorName(data.blog_author_name ?? "");
         setTimezone(data.timezone ?? "America/New_York");
         setGateMode(parseBool(data.gate_mode));
         setDailyRunHour(data.daily_run_hour ?? "6");
@@ -465,6 +493,23 @@ export default function SettingsPage() {
       },
       setEmailLoading,
       setEmailFeedback
+    );
+  }
+
+  function saveResearch() {
+    saveSection(
+      {
+        youtube_api_key: youtubeKey,
+        newsapi_key: newsapiKey,
+        ghost_url: ghostUrl,
+        ghost_admin_api_key: ghostAdminKey,
+        research_subreddits: researchSubreddits,
+        research_youtube_region: youtubeRegion,
+        research_news_categories: newsCategories,
+        blog_author_name: blogAuthorName,
+      },
+      setResearchLoading,
+      setResearchFeedback
     );
   }
 
@@ -676,6 +721,73 @@ export default function SettingsPage() {
             onClick={saveEmail}
             loading={emailLoading}
             feedback={emailFeedback}
+          />
+        </div>
+      </SectionCard>
+
+      {/* ── Research & Blog ──────────────────────────────────────────────────── */}
+      <SectionCard
+        title="Research & Blog"
+        description="Configure research sources and Ghost CMS for blog publishing."
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <FieldRow label="YouTube API Key">
+            <PasswordInput
+              value={youtubeKey}
+              onChange={setYoutubeKey}
+            />
+          </FieldRow>
+          <FieldRow label="NewsAPI Key">
+            <PasswordInput
+              value={newsapiKey}
+              onChange={setNewsapiKey}
+            />
+          </FieldRow>
+          <FieldRow label="Ghost URL">
+            <TextInput
+              value={ghostUrl}
+              onChange={setGhostUrl}
+              placeholder="http://localhost:2368"
+            />
+          </FieldRow>
+          <FieldRow label="Ghost Admin API Key">
+            <PasswordInput
+              value={ghostAdminKey}
+              onChange={setGhostAdminKey}
+              placeholder="id:secret"
+            />
+          </FieldRow>
+          <FieldRow label="Subreddits">
+            <TextInput
+              value={researchSubreddits}
+              onChange={setResearchSubreddits}
+              placeholder="entrepreneur,marketing,smallbusiness,SaaS"
+            />
+          </FieldRow>
+          <FieldRow label="YouTube Region">
+            <TextInput
+              value={youtubeRegion}
+              onChange={setYoutubeRegion}
+              placeholder="US"
+            />
+          </FieldRow>
+          <FieldRow label="News Categories">
+            <TextInput
+              value={newsCategories}
+              onChange={setNewsCategories}
+              placeholder="business,technology"
+            />
+          </FieldRow>
+          <FieldRow label="Blog Author Name">
+            <TextInput
+              value={blogAuthorName}
+              onChange={setBlogAuthorName}
+            />
+          </FieldRow>
+          <SaveButton
+            onClick={saveResearch}
+            loading={researchLoading}
+            feedback={researchFeedback}
           />
         </div>
       </SectionCard>
