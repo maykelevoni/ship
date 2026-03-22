@@ -118,6 +118,17 @@ function buildPlatformSystem(platform: string, template?: Template): string {
   return system
 }
 
+export async function generateFromBlog(
+  blogContent: string,
+  platform: string,
+  template?: Template,
+): Promise<GeneratedPiece> {
+  const prompt = `Here is the blog post to repurpose:\n\n${blogContent}`
+  const system = buildPlatformSystem(platform, template)
+  const { text, provider } = await generateText(prompt, system)
+  return { content: text, provider }
+}
+
 export async function generateAllFormats(
   promotion: Promotion,
   master: string,
