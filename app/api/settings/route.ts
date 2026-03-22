@@ -15,6 +15,15 @@ const SETTINGS_DEFAULTS: Record<string, string | null> = {
   timezone: "America/New_York",
   gate_mode: "false",
   daily_run_hour: "6",
+  youtube_api_key: null,
+  reddit_user_agent: "PostForge/1.0",
+  newsapi_key: null,
+  ghost_url: null,
+  ghost_admin_api_key: null,
+  research_subreddits: "entrepreneur,marketing,smallbusiness,SaaS",
+  research_youtube_region: "US",
+  research_news_categories: "business,technology",
+  blog_author_name: null,
 };
 
 export const GET = auth(async (req) => {
