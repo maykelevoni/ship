@@ -9,12 +9,12 @@ import { getSetting } from '@/lib/settings'
 import { postPlatform } from './posting/scheduler'
 import { seedDefaults } from '@/lib/seeds'
 import { db } from '@/lib/db'
-
-async function runEngine(): Promise<void> {
-  // Engine orchestration will be implemented in task 017.
-  // Placeholder invoked by the daily cron.
-  console.log('[worker] Engine run triggered.')
-}
+import { runResearch } from './research/index'
+import { runBlogGeneration } from './blog/index'
+import { runSocialRepurposing } from './social/index'
+import { generateEmailDraft } from './email/draft'
+import { analyzeOpportunities } from './opportunities/analyze'
+import { runEngine } from './engine/run'
 
 async function loadSchedule(timezone: string): Promise<void> {
   const entries = await db.scheduleEntry.findMany({
@@ -49,11 +49,34 @@ async function start(): Promise<void> {
 
   const cronOptions = { timezone }
 
-  // Daily engine run — generates all content
+  // 6:00 — Research pull
   cron.schedule(`0 ${hour} * * *`, () => {
-    runEngine().catch((err) =>
-      console.error('[worker] Engine run failed:', err),
-    )
+    runResearch().catch(err => console.error('[worker] Research failed:', err))
+  }, cronOptions)
+
+  // 6:30 — Blog generation
+  cron.schedule(`30 ${hour} * * *`, () => {
+    runBlogGeneration().catch(err => console.error('[worker] Blog generation failed:', err))
+  }, cronOptions)
+
+  // 7:00 — Social repurposing
+  cron.schedule(`0 ${hour + 1} * * *`, () => {
+    runSocialRepurposing().catch(err => console.error('[worker] Social repurposing failed:', err))
+  }, cronOptions)
+
+  // 7:30 — Email draft
+  cron.schedule(`30 ${hour + 1} * * *`, () => {
+    generateEmailDraft().catch(err => console.error('[worker] Email draft failed:', err))
+  }, cronOptions)
+
+  // 8:00 — Opportunities analysis
+  cron.schedule(`0 ${hour + 2} * * *`, () => {
+    analyzeOpportunities().catch(err => console.error('[worker] Opportunities failed:', err))
+  }, cronOptions)
+
+  // Also keep the existing engine run for promotions-based content (legacy)
+  cron.schedule(`0 ${hour + 3} * * *`, () => {
+    runEngine().catch(err => console.error('[worker] Engine run failed:', err))
   }, cronOptions)
 
   // Load posting schedule dynamically from DB
@@ -65,7 +88,7 @@ async function start(): Promise<void> {
   }
 
   console.log(
-    `[worker] Worker started. Engine runs at ${hour}:00 ${timezone}`,
+    `[worker] Worker started. Pipeline: research ${hour}:00, blog ${hour}:30, social ${hour + 1}:00, email ${hour + 1}:30, opportunities ${hour + 2}:00, engine ${hour + 3}:00 (${timezone})`,
   )
 }
 
