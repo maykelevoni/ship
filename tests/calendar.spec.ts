@@ -34,7 +34,7 @@ test.describe("Calendar (/calendar)", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(
-      page.getByText("Promotion Engine", { exact: true }),
+      page.getByText("PostForge", { exact: true }),
     ).toBeVisible();
   });
 

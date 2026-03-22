@@ -194,7 +194,7 @@ export function EngineSidebar() {
             letterSpacing: "0.01em",
           }}
         >
-          Promotion Engine
+          PostForge
         </span>
       </div>
 

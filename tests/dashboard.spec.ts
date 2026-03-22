@@ -23,9 +23,9 @@ test.describe("Dashboard home (/)", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // The EngineSidebar renders "Promotion Engine" as a text span
+    // The EngineSidebar renders "PostForge" as a text span
     await expect(
-      page.getByText("Promotion Engine", { exact: true }),
+      page.getByText("PostForge", { exact: true }),
     ).toBeVisible();
   });
 

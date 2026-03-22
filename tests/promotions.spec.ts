@@ -78,7 +78,7 @@ test.describe("Promotions list (/promotions)", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("aside")).toBeVisible();
-    await expect(page.getByText("Promotion Engine", { exact: true })).toBeVisible();
+    await expect(page.getByText("PostForge", { exact: true })).toBeVisible();
   });
 
   test("shows empty-state message when no promotions exist", async ({

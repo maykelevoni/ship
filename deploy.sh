@@ -1,9 +1,9 @@
 #!/bin/bash
-# Deploy script for Promotion Engine on Hetzner VPS
+# Deploy script for PostForge on Hetzner VPS
 # Run: bash deploy.sh
 set -e
 
-echo "Deploying Promotion Engine..."
+echo "Deploying PostForge..."
 
 # Pull latest code
 git pull origin main
@@ -31,5 +31,5 @@ fi
 docker compose up --build -d
 
 echo ""
-echo "Promotion Engine is running at http://localhost:3000"
+echo "PostForge is running at http://localhost:3000"
 echo "Logs: docker compose logs -f"

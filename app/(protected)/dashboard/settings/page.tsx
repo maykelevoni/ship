@@ -7,7 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/header";
 import { SettingsForm } from "@/components/dashboard/settings-form";
 
 export const metadata = constructMetadata({
-  title: "Settings – Promotion Engine",
+  title: "Settings – PostForge",
   description: "Configure API keys, schedule, and platform settings.",
 });
 
