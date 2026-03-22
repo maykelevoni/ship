@@ -14,6 +14,11 @@ Launch is an open-source, self-hosted tool that generates platform-specific cont
 - **Flexible scheduling** — Set posting times and days of week per platform
 - **Gate mode** — Approve generated content before it goes live
 - **Media generation** — Auto-generates post images (Gemini) and short-form videos (Remotion, 1080×1920 MP4)
+- **Research pipeline** — Daily research from YouTube, Reddit, and NewsAPI; topics scored by engagement and relevance
+- **Blog generation** — Writes a long-form SEO blog post from top research and publishes it to Ghost automatically
+- **Social repurposing** — All social formats generated from the blog post (not the promotion) for content-driven days
+- **Email drafts** — Drafts a newsletter from each blog post; editable and sendable via Resend from the dashboard
+- **Opportunities analysis** — AI scans research for affiliate deals, ghost-writing offers, digital product ideas, and market gaps
 - **Calendar & queue** — Visual calendar, content queue, detailed engine logs
 - **Geo audit** — Scores your promotion description for geographic targeting relevance
 - **Real-time updates** — Dashboard updates via Server-Sent Events
@@ -114,6 +119,11 @@ Additional settings are stored in the database and configured via the Settings p
 | `timezone` | Posting timezone (e.g. `America/New_York`) |
 | `gate_mode` | `true` to require manual approval before posting |
 | `enabled_platforms` | JSON array of active platforms |
+| `youtube_api_key` | YouTube Data API v3 key (research pipeline) |
+| `newsapi_key` | NewsAPI.org key (research pipeline) |
+| `ghost_url` | Ghost instance URL (e.g. `http://localhost:2368`) |
+| `ghost_admin_api_key` | Ghost Admin API key for publishing |
+| `gemini_api_key` | Gemini API key for image generation |
 
 ---
 
@@ -162,6 +172,10 @@ The worker process runs on startup and triggers content generation + posting on 
 - **Logs** — Detailed logs from each engine run
 - **Calendar** — Click any day to see scheduled posts and their status
 - **Today** — Live dashboard with today's content and platform status
+- **Research** — View today's scored research topics; refresh on demand
+- **Blog** — View today's generated blog post and its Ghost publish status; regenerate if needed
+- **Email Drafts** — Edit and send email drafts generated from each blog post
+- **Opportunities** — Review AI-identified affiliate, product, and market opportunities; act or dismiss
 
 ---
 
@@ -178,7 +192,11 @@ launch/
 │   │   ├── promotions/     # Promotion management
 │   │   ├── templates/      # Template management
 │   │   ├── schedule/       # Schedule management
-│   │   └── settings/       # App settings
+│   │   ├── settings/       # App settings
+│   │   ├── research/       # Daily research topics
+│   │   ├── blog-posts/     # Blog post dashboard
+│   │   ├── email-drafts/   # Email draft editor + sender
+│   │   └── opportunities/  # Opportunity discovery
 │   ├── (auth)/             # Sign in / sign up
 │   ├── (marketing)/        # Landing pages
 │   └── api/                # REST API routes
@@ -190,6 +208,20 @@ launch/
 │   │   ├── generate.ts     # Multi-platform content gen
 │   │   ├── geo-audit.ts    # Geographic relevance scoring
 │   │   └── rotation.ts     # Promotion rotation logic
+│   ├── research/           # Research pipeline
+│   │   ├── youtube.ts      # YouTube Data API fetcher
+│   │   ├── reddit.ts       # Reddit JSON fetcher
+│   │   ├── newsapi.ts      # NewsAPI fetcher
+│   │   └── score.ts        # Engagement scoring + dedup
+│   ├── blog/               # Blog pipeline
+│   │   ├── generate.ts     # Long-form post generation
+│   │   └── ghost.ts        # Ghost Admin API publisher
+│   ├── repurpose/          # Blog → social formats
+│   │   └── from-blog.ts    # Repurpose blog into all platforms
+│   ├── email/              # Email draft generation
+│   │   └── draft.ts        # Draft from blog post via Claude
+│   ├── opportunities/      # Opportunity analysis
+│   │   └── analyze.ts      # Scan research for monetisation signals
 │   ├── posting/            # Distribution
 │   │   ├── scheduler.ts    # Per-platform posting
 │   │   ├── post-bridge.ts  # post-bridge API client
@@ -213,6 +245,8 @@ launch/
 
 ### How content generation works
 
+**Promotion pipeline** (runs daily from a scheduled promotion):
+
 ```
 Promotion
     │
@@ -230,6 +264,22 @@ Master piece (long-form email draft via Claude)
                   │
                   ▼
              post-bridge API → each platform
+```
+
+**Research → Blog pipeline** (runs on a separate daily schedule):
+
+```
+Research sources (YouTube + Reddit + NewsAPI)
+    │
+    ▼
+Score & deduplicate → ResearchTopic records
+    │
+    ▼
+Top topic → Long-form SEO blog post (Claude) → Ghost CMS
+    │
+    ├── Repurpose into all social formats → Queue
+    ├── Email draft (Claude) → Email Drafts dashboard
+    └── Opportunities analysis (Claude) → Opportunities dashboard
 ```
 
 ### AI fallback
@@ -256,6 +306,10 @@ Key models:
 | `EngineRun` | Log of each engine execution |
 | `Setting` | Key-value app configuration |
 | `User` | Auth user with role (ADMIN/USER) |
+| `ResearchTopic` | Daily research topic with engagement score and source |
+| `BlogPost` | AI-generated blog post with Ghost publish status |
+| `EmailDraft` | Newsletter draft generated from a blog post |
+| `Opportunity` | Monetisation signal (affiliate, product gap, etc.) from research |
 
 ---
 
@@ -300,6 +354,35 @@ All endpoints are under `/api/`.
 | `POST` | `/api/schedule` | Create entry |
 | `PATCH` | `/api/schedule/:id` | Update entry |
 | `DELETE` | `/api/schedule/:id` | Delete entry |
+
+### Research
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/research` | Today's research topics |
+| `POST` | `/api/research/refresh` | Re-run research pipeline |
+
+### Blog
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/blog` | Today's blog post |
+| `POST` | `/api/blog/regenerate` | Regenerate today's blog post |
+
+### Email Drafts
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/email-drafts` | List email drafts |
+| `PATCH` | `/api/email-drafts/:id` | Update subject/body |
+| `POST` | `/api/email-drafts/:id/send` | Send via Resend |
+
+### Opportunities
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/opportunities` | List opportunities |
+| `PATCH` | `/api/opportunities/:id` | Update status (act/dismiss) |
 
 ### Other
 
