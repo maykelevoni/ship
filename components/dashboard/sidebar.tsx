@@ -69,7 +69,7 @@ const mainNavItems: NavItem[] = [
     icon: <TrendingUp size={18} />,
   },
   {
-    href: "/blog",
+    href: "/blog-posts",
     label: "Blog",
     icon: <FileText size={18} />,
   },

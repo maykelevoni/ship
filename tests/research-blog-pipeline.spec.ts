@@ -33,10 +33,10 @@ test.describe("Sidebar — research-blog-pipeline nav items", () => {
     await expect(page).toHaveURL("/research");
   });
 
-  test("clicking Blog navigates to /blog", async ({ page }) => {
+  test("clicking Blog navigates to /blog-posts", async ({ page }) => {
     await page.getByRole("link", { name: "Blog" }).click();
     await page.waitForLoadState("networkidle");
-    await expect(page).toHaveURL("/blog");
+    await expect(page).toHaveURL("/blog-posts");
   });
 
   test("clicking Email Drafts navigates to /email-drafts", async ({ page }) => {
@@ -102,9 +102,9 @@ test.describe("Research page (/research)", () => {
 
 // ─── Suite 3: Blog Page (/blog) ────────────────────────────────────────────────
 
-test.describe("Blog page (/blog)", () => {
+test.describe("Blog page (/blog-posts)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/blog");
+    await page.goto("/blog-posts");
     await page.waitForLoadState("networkidle");
     // Wait for loading spinner to clear
     await page
