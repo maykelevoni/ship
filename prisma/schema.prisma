@@ -95,22 +95,81 @@ model Promotion {
 }
 
 model ContentPiece {
-  id           String    @id @default(cuid())
-  promotionId  String
-  promotion    Promotion @relation(fields: [promotionId], references: [id])
+  id           String     @id @default(cuid())
+  promotionId  String?
+  promotion    Promotion? @relation(fields: [promotionId], references: [id])
+  blogPostId   String?
+  blogPost     BlogPost?  @relation(fields: [blogPostId], references: [id])
   date         DateTime
-  platform     String    // master | twitter | linkedin | reddit | instagram | email | image_card | image_quote | video
+  platform     String     // master | twitter | linkedin | reddit | instagram | email | image_card | image_quote | video
   content      String
   mediaPath    String?
-  status       String    @default("queued") // queued | generating | generated | approved | posting | posted | failed | rejected
-  approved     Boolean   @default(false)
+  status       String     @default("queued") // queued | generating | generated | approved | posting | posted | failed | rejected
+  approved     Boolean    @default(false)
   postBridgeId String?
   postedAt     DateTime?
   error        String?
-  provider     String    @default("claude")  // "claude" | "gemini"
+  provider     String     @default("claude")  // "claude" | "gemini"
   templateId   String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ResearchTopic {
+  id        String   @id @default(cuid())
+  date      DateTime
+  source    String   // "youtube" | "reddit" | "newsapi"
+  title     String
+  url       String?
+  summary   String?
+  score     Int      @default(5)
+  rationale String?
+  selected  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  blogPosts BlogPost[]
+}
+
+model BlogPost {
+  id             String         @id @default(cuid())
+  date           DateTime
+  topicId        String?
+  topic          ResearchTopic? @relation(fields: [topicId], references: [id])
+  title          String
+  slug           String?
+  seoDescription String?
+  content        String         @db.Text
+  ghostId        String?
+  ghostUrl       String?
+  status         String         @default("draft")
+  contentPieces  ContentPiece[]
+  emailDraft     EmailDraft?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model EmailDraft {
+  id              String   @id @default(cuid())
+  blogPostId      String   @unique
+  blogPost        BlogPost @relation(fields: [blogPostId], references: [id])
+  subject         String
+  body            String   @db.Text
+  suggestedPromos String?
+  status          String   @default("pending")
+  sentAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PromotionOpportunity {
+  id          String   @id @default(cuid())
+  date        DateTime
+  type        String   // "affiliate" | "ghost_offer" | "digital_product" | "product_gap"
+  title       String
+  rationale   String
+  searchQuery String?
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Template {
