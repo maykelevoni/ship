@@ -2,11 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // ---------------------------------------------------------------------------
 // Dashboard home — Today view
-// The page lives at "/" inside the (dashboard) layout.
-// It renders a TodayView component via a React Suspense wrapper that fetches
-// from the DB, but the page shell (sidebar + layout) is always present even
-// when the DB is empty, and TodayView renders a stats section and a date
-// string regardless of whether content pieces exist.
+// The sidebar now shows exactly 4 nav items: Today, Promote, Content, Settings.
 // ---------------------------------------------------------------------------
 
 test.describe("Dashboard home (/)", () => {
@@ -14,7 +10,6 @@ test.describe("Dashboard home (/)", () => {
     const response = await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Must not be a server error
     expect(response?.status()).not.toBe(500);
     expect(response?.status()).not.toBe(404);
   });
@@ -23,89 +18,73 @@ test.describe("Dashboard home (/)", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // The EngineSidebar renders "PostForge" as a text span
-    await expect(
-      page.getByText("PostForge", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("PostForge", { exact: true })).toBeVisible();
   });
 
-  test("sidebar shows all primary navigation links", async ({ page }) => {
+  test("sidebar shows exactly the 4 workflow nav links", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Main nav items rendered by EngineSidebar
-    const navLinks = ["Today", "Promotions", "Calendar", "Queue", "Logs"];
-    for (const label of navLinks) {
-      await expect(page.getByRole("link", { name: label })).toBeVisible();
+    const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible();
+
+    for (const label of ["Today", "Promote", "Content", "Settings"]) {
+      await expect(sidebar.getByRole("link", { name: label })).toBeVisible();
     }
   });
 
-  test("sidebar shows Settings link at the bottom", async ({ page }) => {
+  test("sidebar does not show old nav items", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+    const sidebar = page.locator("aside");
+    for (const label of ["Promotions", "Calendar", "Queue", "Logs"]) {
+      await expect(sidebar.getByRole("link", { name: label })).not.toBeVisible();
+    }
   });
 
-  test("Today nav link is active / highlighted on the home page", async ({
-    page,
-  }) => {
+  test("Today nav link is active on the home page", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // The active link gets color #818cf8 via inline style — check that the
-    // "Today" anchor exists and is within the sidebar <aside>
     const sidebar = page.locator("aside");
-    await expect(sidebar).toBeVisible();
     await expect(sidebar.getByRole("link", { name: "Today" })).toBeVisible();
   });
 
-  test("navigating to Promotions from the sidebar changes the URL", async ({
+  test("navigating to Promote from sidebar lands on /promote", async ({
     page,
   }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("link", { name: "Promotions" }).click();
-    await page.waitForLoadState("networkidle");
-
-    await expect(page).toHaveURL("/promotions");
+    const promoteLink = page.locator("aside").getByRole("link", { name: "Promote" });
+    await promoteLink.waitFor({ state: "visible" });
+    await promoteLink.click();
+    await expect(page).toHaveURL("/promote");
   });
 
-  test("navigating to Calendar from the sidebar changes the URL", async ({
+  test("navigating to Content from sidebar lands on /content", async ({
     page,
   }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("link", { name: "Calendar" }).click();
-    await page.waitForLoadState("networkidle");
-
-    await expect(page).toHaveURL("/calendar");
+    const contentLink = page.locator("aside").getByRole("link", { name: "Content" });
+    await contentLink.waitFor({ state: "visible" });
+    await contentLink.click();
+    await expect(page).toHaveURL("/content");
   });
 
-  test("navigating to Queue from the sidebar changes the URL", async ({
+  test("navigating to Settings from sidebar lands on /settings", async ({
     page,
   }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("link", { name: "Queue" }).click();
-    await page.waitForLoadState("networkidle");
-
-    await expect(page).toHaveURL("/queue");
-  });
-
-  test("navigating to Logs from the sidebar changes the URL", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await page.waitForLoadState("networkidle");
-
-    await page.getByRole("link", { name: "Logs" }).click();
-    await page.waitForLoadState("networkidle");
-
-    await expect(page).toHaveURL("/logs");
+    const settingsLink = page.locator("aside").getByRole("link", { name: "Settings" });
+    await settingsLink.waitFor({ state: "visible" });
+    await settingsLink.click();
+    await expect(page).toHaveURL("/settings");
   });
 
   test("page has no critical console errors on load", async ({ page }) => {
@@ -117,8 +96,6 @@ test.describe("Dashboard home (/)", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Filter out known benign browser extension / network errors that are
-    // outside our control and unrelated to the app
     const appErrors = errors.filter(
       (e) =>
         !e.includes("ERR_BLOCKED_BY_CLIENT") &&

@@ -131,7 +131,7 @@ Additional settings are stored in the database and configured via the Settings p
 
 ### 1. Add a promotion
 
-A **promotion** is a product or service you want to generate content for. Go to **Promotions** → **New Promotion** and fill in:
+A **promotion** is a product or service you want to generate content for. Go to **Promote** → **Add Promotion** and fill in:
 
 - **Name** — e.g. "My SaaS tool"
 - **Type** — `saas`, `ebook`, `service`, `affiliate`, etc.
@@ -141,7 +141,7 @@ A **promotion** is a product or service you want to generate content for. Go to 
 
 ### 2. Configure templates (optional)
 
-Default templates are seeded automatically for all platforms. Go to **Templates** to customize:
+Default templates are seeded automatically for all platforms. Go to **Settings → Templates** to customize:
 
 - Character limits
 - Whether to include an image or video
@@ -160,7 +160,7 @@ Default schedule is seeded on startup:
 | Instagram | 2:00 PM |
 | Email | 5:00 PM |
 
-Go to **Schedule** to change times and days of week.
+Go to **Settings → Schedule** to change times and days of week.
 
 ### 4. Let it run
 
@@ -168,14 +168,12 @@ The worker process runs on startup and triggers content generation + posting on 
 
 ### 5. Monitor
 
-- **Queue** — See all generated content, approval status, and post status
-- **Logs** — Detailed logs from each engine run
-- **Calendar** — Click any day to see scheduled posts and their status
-- **Today** — Live dashboard with today's content and platform status
-- **Research** — View today's scored research topics; refresh on demand
-- **Blog** — View today's generated blog post and its Ghost publish status; regenerate if needed
-- **Email Drafts** — Edit and send email drafts generated from each blog post
-- **Opportunities** — Review AI-identified affiliate, product, and market opportunities; act or dismiss
+The app has 4 navigation destinations:
+
+- **Today** — Morning command center: approve pending content, send email draft, act on opportunities, see what's posting today
+- **Promote** — Manage promotions; view, filter, and create new ones
+- **Content** — Full research→blog→email→opportunities pipeline in one view; refresh and regenerate inline
+- **Settings** — All configuration in one place: General, API Keys, Templates, Schedule, Logs
 
 ---
 
@@ -184,19 +182,21 @@ The worker process runs on startup and triggers content generation + posting on 
 ```
 launch/
 ├── app/                    # Next.js App Router
-│   ├── (dashboard)/        # Main app pages
-│   │   ├── page.tsx        # Today view / dashboard
-│   │   ├── calendar/       # Calendar view
-│   │   ├── queue/          # Content queue
-│   │   ├── logs/           # Engine run logs
-│   │   ├── promotions/     # Promotion management
-│   │   ├── templates/      # Template management
-│   │   ├── schedule/       # Schedule management
-│   │   ├── settings/       # App settings
-│   │   ├── research/       # Daily research topics
-│   │   ├── blog-posts/     # Blog post dashboard
-│   │   ├── email-drafts/   # Email draft editor + sender
-│   │   └── opportunities/  # Opportunity discovery
+│   ├── (dashboard)/        # Main app pages (4 nav destinations)
+│   │   ├── page.tsx        # Today — command center
+│   │   ├── promote/        # Promote — promotion management
+│   │   ├── content/        # Content — research→blog→email→opps pipeline
+│   │   ├── settings/       # Settings — General, API Keys, Templates, Schedule, Logs
+│   │   ├── promotions/     # Legacy (redirects to /promote)
+│   │   ├── calendar/       # Legacy (redirects to /promote)
+│   │   ├── queue/          # Legacy (redirects to /promote)
+│   │   ├── research/       # Legacy (redirects to /content)
+│   │   ├── blog-posts/     # Legacy (redirects to /content)
+│   │   ├── email-drafts/   # Legacy (redirects to /content)
+│   │   ├── opportunities/  # Legacy (redirects to /content)
+│   │   ├── templates/      # Legacy (redirects to /settings)
+│   │   ├── schedule/       # Legacy (redirects to /settings)
+│   │   └── logs/           # Legacy (redirects to /settings)
 │   ├── (auth)/             # Sign in / sign up
 │   ├── (marketing)/        # Landing pages
 │   └── api/                # REST API routes

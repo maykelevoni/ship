@@ -1,19 +1,14 @@
-# Feature Tasks: Templates, Schedule, Settings & AI Fallback
-Generated: 2026-03-21
-Total: 14 tasks
+# Feature Tasks: Workflow UX Redesign + Brevo Migration
+Generated: 2026-03-23
+Total: 9 tasks
 
 ## Checklist
-- [x] 001: Prisma Schema — Template, ScheduleEntry, ContentPiece.provider
-- [x] 002: Seed Default Templates and Schedule Entries
-- [x] 003: AI Provider Wrapper (lib/ai.ts)
-- [x] 004: Update generate.ts to use lib/ai.ts and template constraints
-- [x] 005: Dynamic Worker Schedule from DB
-- [x] 006: Templates API Routes
-- [x] 007: Schedule API Routes
-- [x] 008: Extend Settings API
-- [x] 009: Settings Page UI
-- [x] 010: Templates Page UI
-- [x] 011: Schedule Page UI
-- [x] 012: Sidebar Navigation Update
-- [x] 013: Calendar Day Panel
-- [x] 014: Provider Badge in Queue and Logs
+- [x] 001: Redirects — next.config.js old routes to new routes
+- [x] 002: Sidebar — reduce to 4 workflow items
+- [x] 003: Promote pages — /promote, /promote/new, /promote/[id]
+- [x] 004: Content page — pipeline view (/content)
+- [x] 005: Today page — enrich with blog, email, opportunities, approvals
+- [x] 006: Settings page — tabs + brevo fields + quick links
+- [x] 007: Brevo — replace worker/posting/resend.ts with brevo.ts
+- [x] 008: Brevo — update email-drafts send API route
+- [x] 009: Cleanup — delete resend.ts, update README
