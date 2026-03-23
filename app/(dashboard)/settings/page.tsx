@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Eye, EyeOff, Save } from "lucide-react";
+import { Settings, Eye, EyeOff, Save, LayoutTemplate, Clock, ScrollText, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -11,9 +12,10 @@ interface SettingsData {
   ai_fallback_enabled: string | null;
   postbridge_api_key: string | null;
   enabled_platforms: string | null;
-  resend_api_key: string | null;
-  resend_from_email: string | null;
-  resend_list_id: string | null;
+  brevo_api_key: string | null;
+  brevo_sender_email: string | null;
+  brevo_sender_name: string | null;
+  brevo_to_email: string | null;
   timezone: string | null;
   gate_mode: string | null;
   daily_run_hour: string | null;
@@ -344,6 +346,9 @@ function SaveButton({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  // Tab state
+  const [tab, setTab] = useState<"general" | "api-keys">("general");
+
   // AI section
   const [anthropicKey, setAnthropicKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
@@ -359,24 +364,25 @@ export default function SettingsPage() {
   const [postingLoading, setPostingLoading] = useState(false);
   const [postingFeedback, setPostingFeedback] = useState<"saved" | "error" | null>(null);
 
-  // Email section
-  const [resendKey, setResendKey] = useState("");
-  const [resendFrom, setResendFrom] = useState("");
-  const [resendListId, setResendListId] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailFeedback, setEmailFeedback] = useState<"saved" | "error" | null>(null);
+  // Brevo section
+  const [brevoKey, setBrevoKey] = useState("");
+  const [brevoSenderEmail, setBrevoSenderEmail] = useState("");
+  const [brevoSenderName, setBrevoSenderName] = useState("");
+  const [brevoToEmail, setBrevoToEmail] = useState("");
+  const [brevoLoading, setBrevoLoading] = useState(false);
+  const [brevoFeedback, setBrevoFeedback] = useState<"saved" | "error" | null>(null);
 
   // Research & Blog section
-  const [youtubeKey, setYoutubeKey] = useState("")
-  const [newsapiKey, setNewsapiKey] = useState("")
-  const [ghostUrl, setGhostUrl] = useState("")
-  const [ghostAdminKey, setGhostAdminKey] = useState("")
-  const [researchSubreddits, setResearchSubreddits] = useState("entrepreneur,marketing,smallbusiness,SaaS")
-  const [youtubeRegion, setYoutubeRegion] = useState("US")
-  const [newsCategories, setNewsCategories] = useState("business,technology")
-  const [blogAuthorName, setBlogAuthorName] = useState("")
-  const [researchLoading, setResearchLoading] = useState(false)
-  const [researchFeedback, setResearchFeedback] = useState<"saved" | "error" | null>(null)
+  const [youtubeKey, setYoutubeKey] = useState("");
+  const [newsapiKey, setNewsapiKey] = useState("");
+  const [ghostUrl, setGhostUrl] = useState("");
+  const [ghostAdminKey, setGhostAdminKey] = useState("");
+  const [researchSubreddits, setResearchSubreddits] = useState("entrepreneur,marketing,smallbusiness,SaaS");
+  const [youtubeRegion, setYoutubeRegion] = useState("US");
+  const [newsCategories, setNewsCategories] = useState("business,technology");
+  const [blogAuthorName, setBlogAuthorName] = useState("");
+  const [researchLoading, setResearchLoading] = useState(false);
+  const [researchFeedback, setResearchFeedback] = useState<"saved" | "error" | null>(null);
 
   // General section
   const [timezone, setTimezone] = useState("America/New_York");
@@ -399,9 +405,10 @@ export default function SettingsPage() {
         setAiFallback(parseBool(data.ai_fallback_enabled));
         setPostbridgeKey(data.postbridge_api_key ?? "");
         setEnabledPlatforms(parsePlatforms(data.enabled_platforms));
-        setResendKey(data.resend_api_key ?? "");
-        setResendFrom(data.resend_from_email ?? "");
-        setResendListId(data.resend_list_id ?? "");
+        setBrevoKey(data.brevo_api_key ?? "");
+        setBrevoSenderEmail(data.brevo_sender_email ?? "");
+        setBrevoSenderName(data.brevo_sender_name ?? "");
+        setBrevoToEmail(data.brevo_to_email ?? "");
         setYoutubeKey(data.youtube_api_key ?? "");
         setNewsapiKey(data.newsapi_key ?? "");
         setGhostUrl(data.ghost_url ?? "");
@@ -484,15 +491,16 @@ export default function SettingsPage() {
     );
   }
 
-  function saveEmail() {
+  function saveBrevo() {
     saveSection(
       {
-        resend_api_key: resendKey,
-        resend_from_email: resendFrom,
-        resend_list_id: resendListId,
+        brevo_api_key: brevoKey,
+        brevo_sender_email: brevoSenderEmail,
+        brevo_sender_name: brevoSenderName,
+        brevo_to_email: brevoToEmail,
       },
-      setEmailLoading,
-      setEmailFeedback
+      setBrevoLoading,
+      setBrevoFeedback
     );
   }
 
@@ -560,310 +568,426 @@ export default function SettingsPage() {
         </h1>
       </div>
 
-      {/* ── AI Providers ────────────────────────────────────────────────────── */}
-      <SectionCard
-        title="AI Providers"
-        description="Configure API keys for text and image generation."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="Anthropic API Key">
-            <PasswordInput
-              value={anthropicKey}
-              onChange={setAnthropicKey}
-              placeholder="sk-ant-..."
-            />
-          </FieldRow>
-          <FieldRow label="Gemini API Key">
-            <PasswordInput
-              value={geminiKey}
-              onChange={setGeminiKey}
-              placeholder="AIza..."
-            />
-          </FieldRow>
-          <div style={{ paddingBottom: "20px", borderBottom: "1px solid #141414", marginBottom: "20px" }}>
-            <Toggle
-              checked={aiFallback}
-              onChange={setAiFallback}
-              label="Auto-switch to Gemini when Claude is unavailable"
-            />
-          </div>
-          <SaveButton onClick={saveAI} loading={aiLoading} feedback={aiFeedback} />
-        </div>
-      </SectionCard>
-
-      {/* ── Social Posting ───────────────────────────────────────────────────── */}
-      <SectionCard
-        title="Social Posting"
-        description="Configure post-bridge and the platforms you want to publish to."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="post-bridge API Key">
-            <PasswordInput
-              value={postbridgeKey}
-              onChange={setPostbridgeKey}
-              placeholder="pb-..."
-            />
-          </FieldRow>
-
-          {/* Enabled platforms */}
-          <div
-            style={{
-              paddingBottom: "20px",
-              borderBottom: "1px solid #141414",
-              marginBottom: "20px",
-            }}
-          >
-            <p
+      {/* Tab Bar */}
+      <div style={{ display: "flex", gap: "8px" }}>
+        {(["general", "api-keys"] as const).map((t) => {
+          const active = tab === t;
+          const label = t === "general" ? "General" : "API Keys";
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
               style={{
-                margin: "0 0 12px",
+                padding: "7px 18px",
+                borderRadius: "9999px",
+                border: active ? "none" : "1px solid #2a2a2a",
+                background: active ? "#6366f1" : "transparent",
+                color: active ? "#fff" : "#71717a",
                 fontSize: "13px",
-                fontWeight: 500,
-                color: "#a1a1aa",
-              }}
-            >
-              Enabled Platforms
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-                gap: "8px",
-              }}
-            >
-              {ALL_PLATFORMS.map((p) => {
-                const on = enabledPlatforms.includes(p.id);
-                return (
-                  <label
-                    key={p.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      border: `1px solid ${on ? "rgba(99,102,241,0.4)" : "#1a1a1a"}`,
-                      background: on ? "rgba(99,102,241,0.08)" : "#0a0a0a",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                      userSelect: "none",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => togglePlatform(p.id)}
-                      style={{ display: "none" }}
-                    />
-                    <span style={{ fontSize: "16px" }}>{p.emoji}</span>
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        color: on ? "#e4e4e7" : "#71717a",
-                        fontWeight: on ? 500 : 400,
-                      }}
-                    >
-                      {p.label}
-                    </span>
-                    {on && (
-                      <span
-                        style={{
-                          marginLeft: "auto",
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: "#6366f1",
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <SaveButton
-            onClick={savePosting}
-            loading={postingLoading}
-            feedback={postingFeedback}
-          />
-        </div>
-      </SectionCard>
-
-      {/* ── Email ─────────────────────────────────────────────────────────────── */}
-      <SectionCard
-        title="Email"
-        description="Configure Resend for newsletter delivery."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="Resend API Key">
-            <PasswordInput
-              value={resendKey}
-              onChange={setResendKey}
-              placeholder="re_..."
-            />
-          </FieldRow>
-          <FieldRow label="From Email">
-            <TextInput
-              value={resendFrom}
-              onChange={setResendFrom}
-              placeholder="hello@yourdomain.com"
-            />
-          </FieldRow>
-          <FieldRow label="Audience List ID">
-            <TextInput
-              value={resendListId}
-              onChange={setResendListId}
-              placeholder="list_..."
-            />
-          </FieldRow>
-          <SaveButton
-            onClick={saveEmail}
-            loading={emailLoading}
-            feedback={emailFeedback}
-          />
-        </div>
-      </SectionCard>
-
-      {/* ── Research & Blog ──────────────────────────────────────────────────── */}
-      <SectionCard
-        title="Research & Blog"
-        description="Configure research sources and Ghost CMS for blog publishing."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="YouTube API Key">
-            <PasswordInput
-              value={youtubeKey}
-              onChange={setYoutubeKey}
-            />
-          </FieldRow>
-          <FieldRow label="NewsAPI Key">
-            <PasswordInput
-              value={newsapiKey}
-              onChange={setNewsapiKey}
-            />
-          </FieldRow>
-          <FieldRow label="Ghost URL">
-            <TextInput
-              value={ghostUrl}
-              onChange={setGhostUrl}
-              placeholder="http://localhost:2368"
-            />
-          </FieldRow>
-          <FieldRow label="Ghost Admin API Key">
-            <PasswordInput
-              value={ghostAdminKey}
-              onChange={setGhostAdminKey}
-              placeholder="id:secret"
-            />
-          </FieldRow>
-          <FieldRow label="Subreddits">
-            <TextInput
-              value={researchSubreddits}
-              onChange={setResearchSubreddits}
-              placeholder="entrepreneur,marketing,smallbusiness,SaaS"
-            />
-          </FieldRow>
-          <FieldRow label="YouTube Region">
-            <TextInput
-              value={youtubeRegion}
-              onChange={setYoutubeRegion}
-              placeholder="US"
-            />
-          </FieldRow>
-          <FieldRow label="News Categories">
-            <TextInput
-              value={newsCategories}
-              onChange={setNewsCategories}
-              placeholder="business,technology"
-            />
-          </FieldRow>
-          <FieldRow label="Blog Author Name">
-            <TextInput
-              value={blogAuthorName}
-              onChange={setBlogAuthorName}
-            />
-          </FieldRow>
-          <SaveButton
-            onClick={saveResearch}
-            loading={researchLoading}
-            feedback={researchFeedback}
-          />
-        </div>
-      </SectionCard>
-
-      {/* ── General ──────────────────────────────────────────────────────────── */}
-      <SectionCard
-        title="General"
-        description="Timezone, gate mode, and engine schedule."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="Timezone">
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                background: "#0a0a0a",
-                border: "1px solid #2a2a2a",
-                borderRadius: "7px",
-                color: "#e4e4e7",
-                fontSize: "13px",
-                outline: "none",
+                fontWeight: active ? 600 : 400,
                 cursor: "pointer",
-                boxSizing: "border-box",
+                transition: "all 0.15s ease",
               }}
             >
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz}
-                </option>
-              ))}
-            </select>
-          </FieldRow>
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
-          <FieldRow label="Run Engine At Hour (24h)">
-            <input
-              type="number"
-              min={0}
-              max={23}
-              value={dailyRunHour}
-              onChange={(e) => setDailyRunHour(e.target.value)}
-              style={{
-                width: "100px",
-                padding: "8px 12px",
-                background: "#0a0a0a",
-                border: "1px solid #2a2a2a",
-                borderRadius: "7px",
-                color: "#e4e4e7",
-                fontSize: "13px",
-                outline: "none",
-              }}
-            />
-          </FieldRow>
-
-          <div
-            style={{
-              paddingBottom: "20px",
-              borderBottom: "1px solid #141414",
-              marginBottom: "20px",
-            }}
+      {/* ── General Tab ────────────────────────────────────────────────────── */}
+      {tab === "general" && (
+        <>
+          {/* General section */}
+          <SectionCard
+            title="General"
+            description="Timezone, gate mode, and engine schedule."
           >
-            <Toggle
-              checked={gateMode}
-              onChange={setGateMode}
-              label="Require approval before content posts (Gate Mode)"
-            />
-          </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="Timezone">
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    background: "#0a0a0a",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: "7px",
+                    color: "#e4e4e7",
+                    fontSize: "13px",
+                    outline: "none",
+                    cursor: "pointer",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz}
+                    </option>
+                  ))}
+                </select>
+              </FieldRow>
 
-          <SaveButton
-            onClick={saveGeneral}
-            loading={generalLoading}
-            feedback={generalFeedback}
-          />
+              <FieldRow label="Run Engine At Hour (24h)">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={dailyRunHour}
+                  onChange={(e) => setDailyRunHour(e.target.value)}
+                  style={{
+                    width: "100px",
+                    padding: "8px 12px",
+                    background: "#0a0a0a",
+                    border: "1px solid #2a2a2a",
+                    borderRadius: "7px",
+                    color: "#e4e4e7",
+                    fontSize: "13px",
+                    outline: "none",
+                  }}
+                />
+              </FieldRow>
+
+              <div
+                style={{
+                  paddingBottom: "20px",
+                  borderBottom: "1px solid #141414",
+                  marginBottom: "20px",
+                }}
+              >
+                <Toggle
+                  checked={gateMode}
+                  onChange={setGateMode}
+                  label="Require approval before content posts (Gate Mode)"
+                />
+              </div>
+
+              <SaveButton
+                onClick={saveGeneral}
+                loading={generalLoading}
+                feedback={generalFeedback}
+              />
+            </div>
+          </SectionCard>
+
+          {/* Platforms section */}
+          <SectionCard
+            title="Platforms"
+            description="Choose which platforms receive generated content."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div
+                style={{
+                  paddingBottom: "20px",
+                  borderBottom: "1px solid #141414",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                    gap: "8px",
+                  }}
+                >
+                  {ALL_PLATFORMS.map((p) => {
+                    const on = enabledPlatforms.includes(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: `1px solid ${on ? "rgba(99,102,241,0.4)" : "#1a1a1a"}`,
+                          background: on ? "rgba(99,102,241,0.08)" : "#0a0a0a",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                          userSelect: "none",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => togglePlatform(p.id)}
+                          style={{ display: "none" }}
+                        />
+                        <span style={{ fontSize: "16px" }}>{p.emoji}</span>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: on ? "#e4e4e7" : "#71717a",
+                            fontWeight: on ? 500 : 400,
+                          }}
+                        >
+                          {p.label}
+                        </span>
+                        {on && (
+                          <span
+                            style={{
+                              marginLeft: "auto",
+                              width: "8px",
+                              height: "8px",
+                              borderRadius: "50%",
+                              background: "#6366f1",
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <SaveButton
+                onClick={savePosting}
+                loading={postingLoading}
+                feedback={postingFeedback}
+              />
+            </div>
+          </SectionCard>
+
+          {/* Research & Blog section */}
+          <SectionCard
+            title="Research & Blog"
+            description="Configure research sources and Ghost CMS for blog publishing."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="YouTube API Key">
+                <PasswordInput
+                  value={youtubeKey}
+                  onChange={setYoutubeKey}
+                />
+              </FieldRow>
+              <FieldRow label="NewsAPI Key">
+                <PasswordInput
+                  value={newsapiKey}
+                  onChange={setNewsapiKey}
+                />
+              </FieldRow>
+              <FieldRow label="Ghost URL">
+                <TextInput
+                  value={ghostUrl}
+                  onChange={setGhostUrl}
+                  placeholder="http://localhost:2368"
+                />
+              </FieldRow>
+              <FieldRow label="Ghost Admin API Key">
+                <PasswordInput
+                  value={ghostAdminKey}
+                  onChange={setGhostAdminKey}
+                  placeholder="id:secret"
+                />
+              </FieldRow>
+              <FieldRow label="Subreddits">
+                <TextInput
+                  value={researchSubreddits}
+                  onChange={setResearchSubreddits}
+                  placeholder="entrepreneur,marketing,smallbusiness,SaaS"
+                />
+              </FieldRow>
+              <FieldRow label="YouTube Region">
+                <TextInput
+                  value={youtubeRegion}
+                  onChange={setYoutubeRegion}
+                  placeholder="US"
+                />
+              </FieldRow>
+              <FieldRow label="News Categories">
+                <TextInput
+                  value={newsCategories}
+                  onChange={setNewsCategories}
+                  placeholder="business,technology"
+                />
+              </FieldRow>
+              <FieldRow label="Blog Author Name">
+                <TextInput
+                  value={blogAuthorName}
+                  onChange={setBlogAuthorName}
+                />
+              </FieldRow>
+              <SaveButton
+                onClick={saveResearch}
+                loading={researchLoading}
+                feedback={researchFeedback}
+              />
+            </div>
+          </SectionCard>
+        </>
+      )}
+
+      {/* ── API Keys Tab ───────────────────────────────────────────────────── */}
+      {tab === "api-keys" && (
+        <>
+          {/* AI Providers */}
+          <SectionCard
+            title="AI Providers"
+            description="Configure API keys for text and image generation."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="Anthropic API Key">
+                <PasswordInput
+                  value={anthropicKey}
+                  onChange={setAnthropicKey}
+                  placeholder="sk-ant-..."
+                />
+              </FieldRow>
+              <FieldRow label="Gemini API Key">
+                <PasswordInput
+                  value={geminiKey}
+                  onChange={setGeminiKey}
+                  placeholder="AIza..."
+                />
+              </FieldRow>
+              <div style={{ paddingBottom: "20px", borderBottom: "1px solid #141414", marginBottom: "20px" }}>
+                <Toggle
+                  checked={aiFallback}
+                  onChange={setAiFallback}
+                  label="Auto-switch to Gemini when Claude is unavailable"
+                />
+              </div>
+              <SaveButton onClick={saveAI} loading={aiLoading} feedback={aiFeedback} />
+            </div>
+          </SectionCard>
+
+          {/* Social Posting */}
+          <SectionCard
+            title="Social Posting"
+            description="Configure post-bridge for social media publishing."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="post-bridge API Key">
+                <PasswordInput
+                  value={postbridgeKey}
+                  onChange={setPostbridgeKey}
+                  placeholder="pb-..."
+                />
+              </FieldRow>
+              <SaveButton
+                onClick={savePosting}
+                loading={postingLoading}
+                feedback={postingFeedback}
+              />
+            </div>
+          </SectionCard>
+
+          {/* Brevo Email */}
+          <SectionCard
+            title="Email (Brevo)"
+            description="Configure Brevo for newsletter delivery."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="Brevo API Key">
+                <PasswordInput
+                  value={brevoKey}
+                  onChange={setBrevoKey}
+                  placeholder="xkeysib-..."
+                />
+              </FieldRow>
+              <FieldRow label="Sender Email">
+                <TextInput
+                  value={brevoSenderEmail}
+                  onChange={setBrevoSenderEmail}
+                  placeholder="hello@yourdomain.com"
+                />
+              </FieldRow>
+              <FieldRow label="Sender Name">
+                <TextInput
+                  value={brevoSenderName}
+                  onChange={setBrevoSenderName}
+                  placeholder="Your Name"
+                />
+              </FieldRow>
+              <FieldRow label="Recipient Email">
+                <TextInput
+                  value={brevoToEmail}
+                  onChange={setBrevoToEmail}
+                  placeholder="newsletter@yourdomain.com"
+                />
+              </FieldRow>
+              <SaveButton
+                onClick={saveBrevo}
+                loading={brevoLoading}
+                feedback={brevoFeedback}
+              />
+            </div>
+          </SectionCard>
+        </>
+      )}
+
+      {/* ── Quick Access ───────────────────────────────────────────────────── */}
+      <div>
+        <p
+          style={{
+            margin: "0 0 12px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "#52525b",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          Quick Access
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "12px",
+          }}
+        >
+          {[
+            { href: "/templates", label: "Templates", Icon: LayoutTemplate, description: "Manage post templates" },
+            { href: "/schedule", label: "Schedule", Icon: Clock, description: "Configure posting schedule" },
+            { href: "/logs", label: "Logs", Icon: ScrollText, description: "View activity logs" },
+          ].map(({ href, label, Icon, description }) => (
+            <Link
+              key={href}
+              href={href}
+              style={{ textDecoration: "none" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "16px 20px",
+                  background: "#0f0f0f",
+                  border: "1px solid #1a1a1a",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s ease, background 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#2a2a2a";
+                  (e.currentTarget as HTMLDivElement).style.background = "#141414";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#1a1a1a";
+                  (e.currentTarget as HTMLDivElement).style.background = "#0f0f0f";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Icon size={16} style={{ color: "#6366f1", flexShrink: 0 }} />
+                  <div>
+                    <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#e4e4e7" }}>
+                      {label}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#52525b" }}>
+                      {description}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight size={14} style={{ color: "#3f3f46", flexShrink: 0 }} />
+              </div>
+            </Link>
+          ))}
         </div>
-      </SectionCard>
+      </div>
     </div>
   );
 }
