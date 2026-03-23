@@ -35,6 +35,22 @@ const nextConfig = {
       "@rspack/binding",
     ],
   },
+  async redirects() {
+    return [
+      { source: "/promotions", destination: "/promote", permanent: true },
+      { source: "/promotions/new", destination: "/promote/new", permanent: true },
+      { source: "/promotions/:id", destination: "/promote/:id", permanent: true },
+      { source: "/queue", destination: "/promote", permanent: true },
+      { source: "/calendar", destination: "/promote", permanent: true },
+      { source: "/research", destination: "/content", permanent: true },
+      { source: "/blog-posts", destination: "/content", permanent: true },
+      { source: "/email-drafts", destination: "/content", permanent: true },
+      { source: "/opportunities", destination: "/content", permanent: true },
+      { source: "/templates", destination: "/settings", permanent: true },
+      { source: "/schedule", destination: "/settings", permanent: true },
+      { source: "/logs", destination: "/settings", permanent: true },
+    ];
+  },
 };
 
 const path = require("path");
