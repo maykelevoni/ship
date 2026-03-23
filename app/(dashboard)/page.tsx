@@ -134,6 +134,57 @@ async function getGateModeEnabled(): Promise<boolean> {
   }
 }
 
+async function getPendingApprovals() {
+  try {
+    return await db.contentPiece.findMany({
+      where: { approved: false, status: "generated" },
+      select: { id: true, platform: true, content: true },
+      take: 5,
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function getTodayBlogPost() {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  try {
+    return await db.blogPost.findFirst({
+      where: { date: { gte: today, lt: tomorrow } },
+      select: { id: true, title: true, status: true, ghostUrl: true },
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function getTodayEmailDraft() {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  try {
+    return await db.emailDraft.findFirst({
+      where: { date: { gte: today, lt: tomorrow }, status: { not: "sent" } },
+      select: { id: true, subject: true, status: true },
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function getNewOpportunitiesCount(): Promise<number> {
+  try {
+    return await db.opportunity.count({ where: { status: "new" } });
+  } catch {
+    return 0;
+  }
+}
+
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function TodayViewSkeleton() {
@@ -213,11 +264,24 @@ function TodayViewSkeleton() {
 // ─── Async content component ──────────────────────────────────────────────────
 
 async function TodayContent() {
-  const [pieces, promotion, stats, gateModeEnabled] = await Promise.all([
+  const [
+    pieces,
+    promotion,
+    stats,
+    gateModeEnabled,
+    pendingApprovals,
+    todayBlogPost,
+    todayEmailDraft,
+    newOpportunitiesCount,
+  ] = await Promise.all([
     getTodayPieces(),
     getActivePromotion(),
     getStats(),
     getGateModeEnabled(),
+    getPendingApprovals(),
+    getTodayBlogPost(),
+    getTodayEmailDraft(),
+    getNewOpportunitiesCount(),
   ]);
 
   const todayDate = new Date().toLocaleDateString("en-US", {
@@ -234,6 +298,10 @@ async function TodayContent() {
       promotion={promotion}
       stats={stats}
       gateModeEnabled={gateModeEnabled}
+      pendingApprovals={pendingApprovals}
+      todayBlogPost={todayBlogPost ?? null}
+      todayEmailDraft={todayEmailDraft ?? null}
+      newOpportunitiesCount={newOpportunitiesCount}
     />
   );
 }
