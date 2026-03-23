@@ -1,30 +1,19 @@
 "use client";
-// Task 012: Templates (/templates) and Schedule (/schedule) nav items verified present.
-import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
   LayoutDashboard,
   Megaphone,
-  ListTodo,
-  ScrollText,
+  BookOpen,
   Settings,
   Zap,
-  LayoutTemplate,
-  Clock,
-  TrendingUp,
-  FileText,
-  Mail,
-  Lightbulb,
 } from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
-  badge?: number | null;
-  position?: "bottom";
 }
 
 const mainNavItems: NavItem[] = [
@@ -34,97 +23,31 @@ const mainNavItems: NavItem[] = [
     icon: <LayoutDashboard size={18} />,
   },
   {
-    href: "/promotions",
-    label: "Promotions",
+    href: "/promote",
+    label: "Promote",
     icon: <Megaphone size={18} />,
   },
   {
-    href: "/calendar",
-    label: "Calendar",
-    icon: <CalendarDays size={18} />,
+    href: "/content",
+    label: "Content",
+    icon: <BookOpen size={18} />,
   },
-  {
-    href: "/queue",
-    label: "Queue",
-    icon: <ListTodo size={18} />,
-  },
-  {
-    href: "/logs",
-    label: "Logs",
-    icon: <ScrollText size={18} />,
-  },
-  {
-    href: "/templates",
-    label: "Templates",
-    icon: <LayoutTemplate size={18} />,
-  },
-  {
-    href: "/schedule",
-    label: "Schedule",
-    icon: <Clock size={18} />,
-  },
-  {
-    href: "/research",
-    label: "Research",
-    icon: <TrendingUp size={18} />,
-  },
-  {
-    href: "/blog-posts",
-    label: "Blog",
-    icon: <FileText size={18} />,
-  },
-  {
-    href: "/email-drafts",
-    label: "Email Drafts",
-    icon: <Mail size={18} />,
-  },
-  {
-    href: "/opportunities",
-    label: "Opportunities",
-    icon: <Lightbulb size={18} />,
-  },
-];
-
-const bottomNavItems: NavItem[] = [
   {
     href: "/settings",
     label: "Settings",
     icon: <Settings size={18} />,
-    position: "bottom",
   },
 ];
 
 export function EngineSidebar() {
   const pathname = usePathname();
-  const [queueCount, setQueueCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function fetchQueueCount() {
-      try {
-        const res = await fetch("/api/queue");
-        if (res.ok) {
-          const data = await res.json();
-          const pending = Array.isArray(data)
-            ? data.filter(
-                (item: { status: string }) =>
-                  item.status === "queued" || item.status === "generated",
-              ).length
-            : 0;
-          setQueueCount(pending > 0 ? pending : null);
-        }
-      } catch {
-        // silently fail — badge is non-critical
-      }
-    }
-    fetchQueueCount();
-  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const renderNavItem = (item: NavItem, badge?: number | null) => {
+  const renderNavItem = (item: NavItem) => {
     const active = isActive(item.href);
     return (
       <Link
@@ -162,25 +85,6 @@ export function EngineSidebar() {
           {item.icon}
         </span>
         <span style={{ flex: 1 }}>{item.label}</span>
-        {badge != null && badge > 0 && (
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: "20px",
-              height: "20px",
-              padding: "0 5px",
-              borderRadius: "10px",
-              background: "#6366f1",
-              color: "#fff",
-              fontSize: "11px",
-              fontWeight: 600,
-            }}
-          >
-            {badge}
-          </span>
-        )}
       </Link>
     );
   };
@@ -232,20 +136,8 @@ export function EngineSidebar() {
           gap: "2px",
         }}
       >
-        {mainNavItems.map((item) =>
-          renderNavItem(item, item.href === "/queue" ? queueCount : undefined),
-        )}
+        {mainNavItems.map((item) => renderNavItem(item))}
       </nav>
-
-      {/* Bottom nav (Settings) */}
-      <div
-        style={{
-          padding: "8px 8px 16px",
-          borderTop: "1px solid #1a1a1a",
-        }}
-      >
-        {bottomNavItems.map((item) => renderNavItem(item))}
-      </div>
     </aside>
   );
 }
