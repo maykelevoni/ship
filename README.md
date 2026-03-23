@@ -17,7 +17,7 @@ Launch is an open-source, self-hosted tool that generates platform-specific cont
 - **Research pipeline** — Daily research from YouTube, Reddit, and NewsAPI; topics scored by engagement and relevance
 - **Blog generation** — Writes a long-form SEO blog post from top research and publishes it to Ghost automatically
 - **Social repurposing** — All social formats generated from the blog post (not the promotion) for content-driven days
-- **Email drafts** — Drafts a newsletter from each blog post; editable and sendable via Resend from the dashboard
+- **Email drafts** — Drafts a newsletter from each blog post; editable and sendable via Brevo from the dashboard
 - **Opportunities analysis** — AI scans research for affiliate deals, ghost-writing offers, digital product ideas, and market gaps
 - **Calendar & queue** — Visual calendar, content queue, detailed engine logs
 - **Geo audit** — Scores your promotion description for geographic targeting relevance
@@ -40,7 +40,7 @@ Launch is an open-source, self-hosted tool that generates platform-specific cont
 | Video rendering | Remotion |
 | Image generation | Gemini API |
 | Social posting | post-bridge API |
-| Email | Resend |
+| Email | Brevo |
 | Background jobs | node-cron (worker process) |
 | Testing | Playwright E2E |
 | Package manager | pnpm |
@@ -104,10 +104,6 @@ GEMINI_API_KEY=                # From aistudio.google.com (also used as fallback
 
 # Social posting (https://postbridge.io)
 POSTBRIDGE_API_KEY=
-
-# Email
-RESEND_API_KEY=                # From resend.com
-RESEND_FROM_EMAIL=             # e.g. noreply@yourdomain.com
 ```
 
 ### In-app settings
@@ -124,6 +120,10 @@ Additional settings are stored in the database and configured via the Settings p
 | `ghost_url` | Ghost instance URL (e.g. `http://localhost:2368`) |
 | `ghost_admin_api_key` | Ghost Admin API key for publishing |
 | `gemini_api_key` | Gemini API key for image generation |
+| `brevo_api_key` | Brevo API key for email sending |
+| `brevo_sender_email` | Sender email address for Brevo |
+| `brevo_sender_name` | Sender display name for Brevo |
+| `brevo_to_email` | Recipient email address for newsletters |
 
 ---
 
@@ -225,7 +225,7 @@ launch/
 │   ├── posting/            # Distribution
 │   │   ├── scheduler.ts    # Per-platform posting
 │   │   ├── post-bridge.ts  # post-bridge API client
-│   │   └── resend.ts       # Email posting
+│   │   └── brevo.ts        # Email posting via Brevo
 │   └── media/              # Media generation
 │       ├── image.ts        # PNG generation via Gemini
 │       └── video.ts        # MP4 rendering via Remotion
@@ -375,7 +375,7 @@ All endpoints are under `/api/`.
 |---|---|---|
 | `GET` | `/api/email-drafts` | List email drafts |
 | `PATCH` | `/api/email-drafts/:id` | Update subject/body |
-| `POST` | `/api/email-drafts/:id/send` | Send via Resend |
+| `POST` | `/api/email-drafts/:id/send` | Send via Brevo |
 
 ### Opportunities
 
