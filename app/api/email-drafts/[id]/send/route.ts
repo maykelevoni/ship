@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
-const RESEND_API_URL = "https://api.resend.com";
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
 export const POST = auth(async (req, context) => {
   if (!req.auth) {
@@ -22,96 +22,49 @@ export const POST = auth(async (req, context) => {
       return new Response("Email draft has already been sent", { status: 400 });
     }
 
-    // Load Resend settings from db
+    // Load Brevo settings from db
     const settingRows = await db.setting.findMany({
-      where: { key: { in: ["resend_api_key", "resend_from_email", "resend_list_id"] } },
+      where: {
+        key: {
+          in: ["brevo_api_key", "brevo_sender_email", "brevo_sender_name", "brevo_to_email"],
+        },
+      },
     });
     const settings = Object.fromEntries(settingRows.map((s) => [s.key, s.value]));
 
-    const apiKey = settings["resend_api_key"];
-    const fromEmail = settings["resend_from_email"];
-    const listId = settings["resend_list_id"];
+    const brevoApiKey = settings["brevo_api_key"];
+    const senderEmail = settings["brevo_sender_email"];
+    const senderName = settings["brevo_sender_name"];
+    const toEmail = settings["brevo_to_email"];
 
-    if (!apiKey || !fromEmail) {
+    if (!brevoApiKey || !senderEmail || !toEmail) {
       return new Response(
-        "Missing Resend configuration: resend_api_key and resend_from_email are required",
+        "Missing Brevo configuration: brevo_api_key, brevo_sender_email, and brevo_to_email are required",
         { status: 400 }
       );
     }
 
-    const authHeader = `Bearer ${apiKey}`;
+    const emailPayload = {
+      sender: { name: senderName || "PostForge", email: senderEmail },
+      to: [{ email: toEmail }],
+      subject: draft.subject,
+      htmlContent: draft.body,
+    };
 
-    if (listId) {
-      // Production path: create a Resend broadcast to the audience list, then send it.
-      // This matches the pattern in worker/posting/resend.ts.
-      const broadcastPayload = {
-        audience_id: listId,
-        from: fromEmail,
-        subject: draft.subject,
-        html: draft.body,
-      };
+    const brevoRes = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": brevoApiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailPayload),
+    });
 
-      const broadcastRes = await fetch(`${RESEND_API_URL}/broadcasts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-        },
-        body: JSON.stringify(broadcastPayload),
+    if (!brevoRes.ok) {
+      const text = await brevoRes.text();
+      return new Response(`Brevo email send failed (${brevoRes.status}): ${text}`, {
+        status: 502,
       });
-
-      if (!broadcastRes.ok) {
-        const text = await broadcastRes.text();
-        return new Response(
-          `Resend broadcast creation failed (${broadcastRes.status}): ${text}`,
-          { status: 502 }
-        );
-      }
-
-      const broadcastData = (await broadcastRes.json()) as { id: string };
-      const broadcastId = broadcastData.id;
-
-      const sendRes = await fetch(`${RESEND_API_URL}/broadcasts/${broadcastId}/send`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-        },
-      });
-
-      if (!sendRes.ok) {
-        const text = await sendRes.text();
-        return new Response(
-          `Resend broadcast send failed (${sendRes.status}): ${text}`,
-          { status: 502 }
-        );
-      }
-    } else {
-      // Fallback: no list configured — send a test email to the sender address.
-      // NOTE: In production, set resend_list_id to use audience broadcasting.
-      const emailPayload = {
-        from: fromEmail,
-        to: [fromEmail],
-        subject: draft.subject,
-        html: draft.body,
-      };
-
-      const emailRes = await fetch(`${RESEND_API_URL}/emails`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-        },
-        body: JSON.stringify(emailPayload),
-      });
-
-      if (!emailRes.ok) {
-        const text = await emailRes.text();
-        return new Response(
-          `Resend email send failed (${emailRes.status}): ${text}`,
-          { status: 502 }
-        );
-      }
     }
 
     // Mark draft as sent
