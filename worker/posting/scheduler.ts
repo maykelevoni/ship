@@ -8,7 +8,7 @@ import { db } from '../../lib/db'
 import { getSetting } from '../../lib/settings'
 import { bus } from '../../lib/events'
 import { postToPlatform } from './post-bridge'
-import { sendEmail } from './resend'
+import { sendEmail } from './brevo'
 
 // ---------------------------------------------------------------------------
 // Types
