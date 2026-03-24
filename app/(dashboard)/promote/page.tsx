@@ -92,26 +92,31 @@ function CardSkeleton() {
 
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | PromotionStatus>("all");
 
-  // Fetch all promotions once
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/promotions");
-        if (res.ok) {
-          const data: Promotion[] = await res.json();
-          setPromotions(data);
-        }
-      } catch {
-        // silently fail
-      } finally {
-        setLoading(false);
+  const LIMIT = 50;
+
+  async function fetchPage(pageNum: number, replace: boolean) {
+    try {
+      const res = await fetch(`/api/promotions?page=${pageNum}&limit=${LIMIT}`);
+      if (res.ok) {
+        const json: { data: Promotion[]; total: number } = await res.json();
+        setTotal(json.total);
+        setPromotions((prev) => replace ? json.data : [...prev, ...json.data]);
+        setPage(pageNum);
       }
+    } catch {
+      // silently fail
     }
-    load();
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    fetchPage(1, true).finally(() => setLoading(false));
   }, []);
 
   // Client-side filter
@@ -192,16 +197,18 @@ export default function PromotionsPage() {
           flexWrap: "wrap",
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "22px",
-            fontWeight: 700,
-            color: "#e4e4e7",
-          }}
-        >
-          Promotions
-        </h1>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: "#e4e4e7" }}>
+            Promotions
+          </h1>
+          {!loading && total > 0 && (
+            <span style={{ fontSize: "13px", color: "#52525b" }}>
+              {promotions.length < total
+                ? `${promotions.length} of ${total}`
+                : `${total}`}
+            </span>
+          )}
+        </div>
         <Link
           href="/promote/new"
           style={{
@@ -311,6 +318,33 @@ export default function PromotionsPage() {
           ))
         )}
       </div>
+
+      {/* Load more */}
+      {!loading && promotions.length < total && (
+        <div style={{ textAlign: "center" }}>
+          <button
+            onClick={async () => {
+              setLoadingMore(true);
+              await fetchPage(page + 1, false);
+              setLoadingMore(false);
+            }}
+            disabled={loadingMore}
+            style={{
+              padding: "9px 24px",
+              borderRadius: "8px",
+              border: "1px solid #2a2a2a",
+              background: "transparent",
+              color: "#a1a1aa",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: loadingMore ? "not-allowed" : "pointer",
+              opacity: loadingMore ? 0.6 : 1,
+            }}
+          >
+            {loadingMore ? "Loading…" : `Load more (${total - promotions.length} remaining)`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ export const GET = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as { params: Promise<{ id: string }> }).params;
+    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
 
     const draft = await db.emailDraft.findUnique({
       where: { id },
@@ -34,7 +34,7 @@ export const PATCH = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as { params: Promise<{ id: string }> }).params;
+    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
 
     const body = await req.json();
     const { subject, body: emailBody, suggestedPromos } = body as {

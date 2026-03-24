@@ -17,6 +17,8 @@ export const GET = auth(async (req) => {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") ?? "all";
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
 
     if (!VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
       return Response.json(
@@ -25,12 +27,19 @@ export const GET = auth(async (req) => {
       );
     }
 
-    const promotions = await db.promotion.findMany({
-      where: status === "all" ? undefined : { status },
-      orderBy: { createdAt: "desc" },
-    });
+    const where = status === "all" ? undefined : { status };
 
-    return Response.json(promotions);
+    const [promotions, total] = await Promise.all([
+      db.promotion.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.promotion.count({ where }),
+    ]);
+
+    return Response.json({ data: promotions, total, page, limit });
   } catch (error) {
     return new Response("Internal server error", { status: 500 });
   }

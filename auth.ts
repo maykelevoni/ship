@@ -2,8 +2,11 @@ import authConfig from "@/auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { UserRole } from "@prisma/client";
 import NextAuth, { type DefaultSession } from "next-auth";
+import Email from "next-auth/providers/email";
 
+import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
+import { sendVerificationRequest } from "@/lib/email";
 import { getUserById } from "@/lib/user";
 
 // More info: https://authjs.dev/getting-started/typescript#module-augmentation
@@ -19,12 +22,19 @@ export const {
   handlers: { GET, POST },
   auth,
 } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
-    // error: "/auth/error",
   },
+  providers: [
+    ...authConfig.providers,
+    Email({
+      from: env.EMAIL_FROM,
+      sendVerificationRequest,
+    }),
+  ],
   callbacks: {
     async session({ token, session }) {
       if (session.user) {
@@ -62,6 +72,5 @@ export const {
       return token;
     },
   },
-  ...authConfig,
   // debug: process.env.NODE_ENV !== "production"
 });

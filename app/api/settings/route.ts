@@ -9,9 +9,6 @@ const SETTINGS_DEFAULTS: Record<string, string | null> = {
   postbridge_api_key: null,
   enabled_platforms:
     '["twitter","linkedin","instagram","facebook","reddit","email","tiktok"]',
-  resend_api_key: null,
-  resend_from_email: null,
-  resend_list_id: null,
   timezone: "America/New_York",
   gate_mode: "false",
   daily_run_hour: "6",

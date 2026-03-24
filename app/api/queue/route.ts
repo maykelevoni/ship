@@ -9,28 +9,30 @@ export const GET = auth(async (req) => {
   }
 
   try {
-    const pieces = await db.contentPiece.findMany({
-      where: {
-        status: {
-          in: QUEUE_STATUSES,
-        },
-      },
-      include: {
-        promotion: {
-          select: {
-            name: true,
-            type: true,
-          },
-        },
-      },
-      orderBy: [{ date: "asc" }, { platform: "asc" }],
-    });
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
 
-    const result = pieces.map((piece) => ({
+    const where = { status: { in: QUEUE_STATUSES } };
+
+    const [pieces, total] = await Promise.all([
+      db.contentPiece.findMany({
+        where,
+        include: {
+          promotion: { select: { name: true, type: true } },
+        },
+        orderBy: [{ date: "asc" }, { platform: "asc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      db.contentPiece.count({ where }),
+    ]);
+
+    const data = pieces.map((piece) => ({
       id: piece.id,
       promotionId: piece.promotionId,
-      promotionName: piece.promotion.name,
-      promotionType: piece.promotion.type,
+      promotionName: piece.promotion?.name ?? "",
+      promotionType: piece.promotion?.type ?? "",
       date: piece.date,
       platform: piece.platform,
       content: piece.content,
@@ -41,7 +43,7 @@ export const GET = auth(async (req) => {
       updatedAt: piece.updatedAt,
     }));
 
-    return Response.json(result);
+    return Response.json({ data, total, page, limit });
   } catch (error) {
     return new Response("Internal server error", { status: 500 });
   }

@@ -82,9 +82,9 @@ export const GET = auth(async (req) => {
 
       if (!grouped[dateKey]) {
         grouped[dateKey] = {
-          promotionId: piece.promotion.id,
-          promotionName: piece.promotion.name,
-          promotionType: piece.promotion.type,
+          promotionId: piece.promotion?.id ?? "",
+          promotionName: piece.promotion?.name ?? "",
+          promotionType: piece.promotion?.type ?? "",
           pieces: [],
         };
       }

@@ -15,6 +15,14 @@ import { runSocialRepurposing } from './social/index'
 import { generateEmailDraft } from './email/draft'
 import { analyzeOpportunities } from './opportunities/analyze'
 import { runEngine } from './engine/run'
+import { sendWorkerAlert } from '@/lib/alert'
+
+function onJobError(jobName: string) {
+  return (err: unknown) => {
+    console.error(`[worker] ${jobName} failed:`, err)
+    sendWorkerAlert(jobName, err)
+  }
+}
 
 async function loadSchedule(timezone: string): Promise<void> {
   const entries = await db.scheduleEntry.findMany({
@@ -29,9 +37,7 @@ async function loadSchedule(timezone: string): Promise<void> {
     const dowExpr = days.length === 7 ? '*' : days.join(',')
     const expr = `${m} ${h} * * ${dowExpr}`
     cron.schedule(expr, () => {
-      postPlatform(entry.platform).catch((err) =>
-        console.error(`[worker] Post failed for ${entry.platform}:`, err),
-      )
+      postPlatform(entry.platform).catch(onJobError(`Post ${entry.platform}`))
     }, { timezone })
     console.log(`[worker] Scheduled ${entry.platform} at ${entry.time} (days: ${dowExpr})`)
   }
@@ -51,32 +57,32 @@ async function start(): Promise<void> {
 
   // 6:00 — Research pull
   cron.schedule(`0 ${hour} * * *`, () => {
-    runResearch().catch(err => console.error('[worker] Research failed:', err))
+    runResearch().catch(onJobError('Research'))
   }, cronOptions)
 
   // 6:30 — Blog generation
   cron.schedule(`30 ${hour} * * *`, () => {
-    runBlogGeneration().catch(err => console.error('[worker] Blog generation failed:', err))
+    runBlogGeneration().catch(onJobError('Blog generation'))
   }, cronOptions)
 
   // 7:00 — Social repurposing
   cron.schedule(`0 ${hour + 1} * * *`, () => {
-    runSocialRepurposing().catch(err => console.error('[worker] Social repurposing failed:', err))
+    runSocialRepurposing().catch(onJobError('Social repurposing'))
   }, cronOptions)
 
   // 7:30 — Email draft
   cron.schedule(`30 ${hour + 1} * * *`, () => {
-    generateEmailDraft().catch(err => console.error('[worker] Email draft failed:', err))
+    generateEmailDraft().catch(onJobError('Email draft'))
   }, cronOptions)
 
   // 8:00 — Opportunities analysis
   cron.schedule(`0 ${hour + 2} * * *`, () => {
-    analyzeOpportunities().catch(err => console.error('[worker] Opportunities failed:', err))
+    analyzeOpportunities().catch(onJobError('Opportunities'))
   }, cronOptions)
 
   // Also keep the existing engine run for promotions-based content (legacy)
   cron.schedule(`0 ${hour + 3} * * *`, () => {
-    runEngine().catch(err => console.error('[worker] Engine run failed:', err))
+    runEngine().catch(onJobError('Engine run'))
   }, cronOptions)
 
   // Load posting schedule dynamically from DB

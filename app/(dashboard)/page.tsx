@@ -73,7 +73,7 @@ async function getActivePromotion() {
       orderBy: { createdAt: "asc" },
     });
 
-    if (!piece) return null;
+    if (!piece || !piece.promotion) return null;
 
     return {
       id: piece.promotion.id,
@@ -169,7 +169,7 @@ async function getTodayEmailDraft() {
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   try {
     return await db.emailDraft.findFirst({
-      where: { date: { gte: today, lt: tomorrow }, status: { not: "sent" } },
+      where: { createdAt: { gte: today, lt: tomorrow }, status: { not: "sent" } },
       select: { id: true, subject: true, status: true },
     });
   } catch {
@@ -179,7 +179,7 @@ async function getTodayEmailDraft() {
 
 async function getNewOpportunitiesCount(): Promise<number> {
   try {
-    return await db.opportunity.count({ where: { status: "new" } });
+    return await db.promotionOpportunity.count({ where: { status: "new" } });
   } catch {
     return 0;
   }
