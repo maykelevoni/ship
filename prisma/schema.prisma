@@ -109,6 +109,7 @@ model ContentPiece {
   postBridgeId String?
   postedAt     DateTime?
   error        String?
+  scheduledAt  DateTime?   // null = not scheduled; when set, worker posts at this time
   provider     String     @default("claude")  // "claude" | "gemini"
   templateId   String?
   createdAt    DateTime   @default(now())
