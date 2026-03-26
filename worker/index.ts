@@ -6,7 +6,7 @@
 
 import cron from 'node-cron'
 import { getSetting } from '@/lib/settings'
-import { postPlatform } from './posting/scheduler'
+import { postPlatform, postScheduledPieces } from './posting/scheduler'
 import { seedDefaults } from '@/lib/seeds'
 import { db } from '@/lib/db'
 import { runResearch } from './research/index'
@@ -84,6 +84,12 @@ async function start(): Promise<void> {
   cron.schedule(`0 ${hour + 3} * * *`, () => {
     runEngine().catch(onJobError('Engine run'))
   }, cronOptions)
+
+  // Every 5 minutes — check for scheduled pieces that are due
+  cron.schedule('*/5 * * * *', () => {
+    postScheduledPieces().catch(onJobError('Scheduled posts'))
+  }, cronOptions)
+  console.log('[worker] Scheduled posts check: every 5 minutes')
 
   // Load posting schedule dynamically from DB
   await loadSchedule(timezone)

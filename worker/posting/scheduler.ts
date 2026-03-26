@@ -274,6 +274,51 @@ async function attemptPost(piece: ContentPiece): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Posts all approved ContentPieces that have a scheduledAt <= now.
+ * Called by the worker every 5 minutes.
+ */
+export async function postScheduledPieces(): Promise<void> {
+  const now = new Date()
+
+  const pieces = await db.contentPiece.findMany({
+    where: {
+      status: 'approved',
+      scheduledAt: {
+        not: null,
+        lte: now,
+      },
+    },
+    select: { id: true, platform: true, content: true, mediaPath: true },
+  })
+
+  if (pieces.length === 0) return
+
+  for (const piece of pieces) {
+    console.log(`[scheduler] Posting scheduled piece ${piece.id} (${piece.platform})`)
+    try {
+      const postId = await dispatch(piece)
+      await markPosted(piece.id, postId)
+      bus.emit('post.posted', {
+        contentPieceId: piece.id,
+        platform: piece.platform,
+        postBridgeId: postId,
+        postedAt: new Date().toISOString(),
+      })
+      console.log(`[scheduler] Scheduled piece posted ${piece.platform} (id=${piece.id}, postId=${postId})`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      await markFailed(piece.id, message)
+      bus.emit('post.failed', {
+        contentPieceId: piece.id,
+        platform: piece.platform,
+        error: message,
+      })
+      console.error(`[scheduler] Failed to post scheduled piece ${piece.platform} (id=${piece.id}): ${message}`)
+    }
+  }
+}
+
+/**
  * Called by each platform's cron job in worker/index.ts.
  * Fetches today's content piece for the given platform, posts it, and handles
  * one retry after 30 minutes on failure.
