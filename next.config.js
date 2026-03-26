@@ -34,7 +34,7 @@ const nextConfig = {
       { source: "/promotions", destination: "/promote", permanent: true },
       { source: "/promotions/new", destination: "/promote/new", permanent: true },
       { source: "/promotions/:id", destination: "/promote/:id", permanent: true },
-      { source: "/queue", destination: "/promote", permanent: true },
+      { source: "/queue", destination: "/posts", permanent: true },
       { source: "/calendar", destination: "/promote", permanent: true },
       { source: "/research", destination: "/content", permanent: true },
       { source: "/blog-posts", destination: "/content", permanent: true },

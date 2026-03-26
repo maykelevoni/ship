@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Megaphone,
   BookOpen,
+  FileStack,
   Settings,
   Zap,
 } from "lucide-react";
@@ -31,6 +32,11 @@ const mainNavItems: NavItem[] = [
     href: "/content",
     label: "Content",
     icon: <BookOpen size={18} />,
+  },
+  {
+    href: "/posts",
+    label: "Posts",
+    icon: <FileStack size={18} />,
   },
   {
     href: "/settings",
