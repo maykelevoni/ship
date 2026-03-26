@@ -2,8 +2,8 @@
  * image.ts
  *
  * Renders social-media images using the Google Gemini API
- * (gemini-3.1-flash-image-preview). Produces PNG files from text prompts
- * built by the helpers in image-prompts.ts.
+ * (gemini-2.0-flash-preview-image-generation). Produces PNG files from text
+ * prompts built by the helpers in image-prompts.ts.
  *
  * No Puppeteer is used anywhere in this module.
  */
@@ -74,11 +74,10 @@ export async function renderImage(params: {
 
   // 4. Call Gemini image generation API
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-image-preview',
+    model: 'gemini-2.0-flash-preview-image-generation',
     contents: prompt,
     config: {
       responseModalities: ['IMAGE'],
-      imageConfig: { aspectRatio: '1:1' },
     },
   })
 

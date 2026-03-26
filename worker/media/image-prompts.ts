@@ -2,9 +2,9 @@
  * image-prompts.ts
  *
  * Prompt builders for the Google Gemini image generation API
- * (gemini-3.1-flash-image-preview).  Each function returns a detailed
- * natural-language string that instructs Gemini to produce a 1:1 square
- * social-media card with a dark background, white text, and an
+ * (gemini-2.0-flash-preview-image-generation).  Each function returns a
+ * detailed natural-language string that instructs Gemini to produce a 1:1
+ * square social-media card with a dark background, white text, and an
  * indigo/purple accent.
  */
 
