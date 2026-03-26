@@ -32,6 +32,7 @@ export const {
     ...authConfig.providers,
     Email({
       from: env.EMAIL_FROM,
+      server: "smtp://localhost:25", // required by Auth.js v5; not used — sendVerificationRequest uses Brevo API
       sendVerificationRequest,
     }),
   ],

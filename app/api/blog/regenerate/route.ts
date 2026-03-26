@@ -9,7 +9,7 @@ export const POST = auth(async (req) => {
 
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     await db.blogPost.deleteMany({
       where: { date: { gte: today } },

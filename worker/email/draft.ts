@@ -8,9 +8,9 @@ import { generateText } from '@/lib/ai'
 export async function generateEmailDraft(): Promise<void> {
   // 1. Get today's date window (midnight UTC)
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
 
   // 2. Find today's BlogPost
   const blogPost = await db.blogPost.findFirst({

@@ -24,10 +24,10 @@ export async function selectPromotion(): Promise<Promotion | null> {
   // 2. Find yesterday's promotion from the last engine run
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
-  yesterday.setHours(0, 0, 0, 0)
+  yesterday.setUTCHours(0, 0, 0, 0)
 
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   const lastRun = await db.engineRun.findFirst({
     where: {
@@ -56,7 +56,7 @@ export async function selectPromotion(): Promise<Promotion | null> {
   //    Count engine runs in last 5 days and how many featured a lead magnet
   const fiveDaysAgo = new Date()
   fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5)
-  fiveDaysAgo.setHours(0, 0, 0, 0)
+  fiveDaysAgo.setUTCHours(0, 0, 0, 0)
 
   const recentRuns = await db.engineRun.findMany({
     where: {

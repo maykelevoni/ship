@@ -28,9 +28,12 @@ function isFallbackWorthy(err: unknown): boolean {
     if (status >= 500 && status < 600) return true
   }
 
-  // Check string error message for timeout indicators
+  // Check string error message for timeout or quota/credit exhaustion
   const message = typeof e.message === 'string' ? e.message : ''
   if (message.toLowerCase().includes('timeout') || message.includes('ETIMEDOUT')) {
+    return true
+  }
+  if (message.toLowerCase().includes('credit balance') || message.toLowerCase().includes('quota')) {
     return true
   }
 
@@ -86,7 +89,7 @@ export async function generateText(
   try {
     const genai = new GoogleGenAI({ apiKey: geminiKey })
     const response = await genai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: { systemInstruction: system },
     })
