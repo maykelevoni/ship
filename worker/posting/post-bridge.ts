@@ -23,6 +23,23 @@ async function getAuthHeader(): Promise<string> {
   return `Bearer ${apiKey}`
 }
 
+// Fetch connected social accounts and return the first one matching the platform
+async function getSocialAccountId(platform: Platform, authHeader: string): Promise<number> {
+  const res = await fetch(`${BASE_URL}/v1/social-accounts`, {
+    headers: { Authorization: authHeader },
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`post-bridge /v1/social-accounts failed (${res.status}): ${text}`)
+  }
+  const { data } = await res.json() as { data: { id: number; platform: string; username: string }[] }
+  const match = data.find((a) => a.platform === platform)
+  if (!match) {
+    throw new Error(`No post-bridge social account connected for platform: ${platform}`)
+  }
+  return match.id
+}
+
 async function uploadMedia(mediaPath: string, authHeader: string): Promise<string> {
   const fileBuffer = fs.readFileSync(mediaPath)
   const ext = path.extname(mediaPath).toLowerCase()
@@ -51,19 +68,19 @@ async function uploadMedia(mediaPath: string, authHeader: string): Promise<strin
 }
 
 async function doPostRequest(
-  platform: Platform,
+  socialAccountId: number,
   content: string,
   mediaId: string | undefined,
   scheduledAt: Date | undefined,
   authHeader: string,
 ): Promise<{ id: string; status: string }> {
   const body: Record<string, unknown> = {
-    platform,
-    content,
+    caption: content,
+    social_accounts: [socialAccountId],
   }
 
   if (mediaId) {
-    body.media_id = mediaId
+    body.media_ids = [mediaId]
   }
 
   if (scheduledAt) {
@@ -98,7 +115,7 @@ async function doPostRequest(
     }
 
     const retryData = await retry.json()
-    return { id: retryData.id as string, status: (retryData.status as string) ?? 'scheduled' }
+    return { id: String(retryData.id ?? retryData.data?.id ?? ''), status: (retryData.status as string) ?? 'scheduled' }
   }
 
   if (response.status === 401) {
@@ -111,7 +128,8 @@ async function doPostRequest(
   }
 
   const data = await response.json()
-  return { id: data.id as string, status: (data.status as string) ?? 'scheduled' }
+  const id = data.id ?? data.data?.id ?? data.data?.[0]?.id
+  return { id: String(id ?? ''), status: (data.status as string) ?? 'scheduled' }
 }
 
 export async function postToPlatform(params: {
@@ -121,11 +139,22 @@ export async function postToPlatform(params: {
   scheduledAt?: Date
 }): Promise<{ id: string; status: string }> {
   const authHeader = await getAuthHeader()
+  const socialAccountId = await getSocialAccountId(params.platform, authHeader)
 
   let mediaId: string | undefined
   if (params.mediaPath) {
     mediaId = await uploadMedia(params.mediaPath, authHeader)
   }
 
-  return doPostRequest(params.platform, params.content, mediaId, params.scheduledAt, authHeader)
+  return doPostRequest(socialAccountId, params.content, mediaId, params.scheduledAt, authHeader)
+}
+
+export async function listSocialAccounts(): Promise<{ id: number; platform: string; username: string }[]> {
+  const authHeader = await getAuthHeader()
+  const res = await fetch(`${BASE_URL}/v1/social-accounts`, {
+    headers: { Authorization: authHeader },
+  })
+  if (!res.ok) return []
+  const { data } = await res.json() as { data: { id: number; platform: string; username: string }[] }
+  return data ?? []
 }

@@ -42,7 +42,7 @@ export const GET = auth(async (req) => {
       promotionName: piece.promotion?.name ?? null,
       date: piece.date,
       status: piece.status,
-      contentPreview: piece.content.slice(0, 80),
+      contentPreview: piece.content.replace(/<[^>]+>/g, "").slice(0, 80),
       mediaPath: piece.mediaPath,
       createdAt: piece.createdAt,
       scheduledAt: piece.scheduledAt,
