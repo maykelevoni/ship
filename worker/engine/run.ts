@@ -39,7 +39,7 @@ export async function runEngine(): Promise<void> {
 
   // 1. Create EngineRun record
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   const engineRun = await db.engineRun.create({
     data: {
@@ -135,7 +135,8 @@ export async function runEngine(): Promise<void> {
     const instagramContent = savedPieces['instagram']?.content ?? master
     const videoScript = savedPieces['video']?.content ?? formats['video'] ?? ''
 
-    const [linkedinResult, instagramResult, videoResult] = await Promise.allSettled([
+    // LinkedIn and Instagram image generation always runs
+    const [linkedinResult, instagramResult] = await Promise.allSettled([
       renderImageForPlatform({
         platform: 'linkedin',
         promotion,
@@ -146,11 +147,6 @@ export async function runEngine(): Promise<void> {
         platform: 'instagram',
         promotion,
         content: instagramContent,
-        date: dateStr,
-      }),
-      renderVideoForPromotion({
-        promotion,
-        videoScript,
         date: dateStr,
       }),
     ])
@@ -183,31 +179,65 @@ export async function runEngine(): Promise<void> {
       logger.error('Instagram image generation failed', instagramResult.reason)
     }
 
-    // Save video as its own ContentPiece
-    if (videoResult.status === 'fulfilled') {
-      const videoPath = videoResult.value
-      // Update existing video piece if present, otherwise create a new one
-      const existingVideoId = savedPieces['video']?.id
-      if (existingVideoId) {
-        await db.contentPiece.update({
-          where: { id: existingVideoId },
-          data: { mediaPath: videoPath },
+    // Video script ContentPiece is always saved; MP4 rendering is gated
+    const videoRenderingEnabled = (await getSetting('video_rendering_enabled')) === 'true'
+    const existingVideoId = savedPieces['video']?.id
+
+    if (videoRenderingEnabled) {
+      // Attempt Remotion render — errors are caught so the engine continues
+      try {
+        const videoPath = await renderVideoForPromotion({
+          promotion,
+          videoScript,
+          date: dateStr,
         })
-      } else {
+        if (existingVideoId) {
+          await db.contentPiece.update({
+            where: { id: existingVideoId },
+            data: { mediaPath: videoPath },
+          })
+        } else {
+          await db.contentPiece.create({
+            data: {
+              promotionId: promotion.id,
+              date: today,
+              platform: 'video',
+              content: videoScript,
+              mediaPath: videoPath,
+              status: 'generated',
+            },
+          })
+        }
+        logger.info(`Video saved: ${videoPath}`)
+      } catch (err) {
+        logger.error('Video rendering failed', err)
+        // Ensure script piece exists even when render fails
+        if (!existingVideoId) {
+          await db.contentPiece.create({
+            data: {
+              promotionId: promotion.id,
+              date: today,
+              platform: 'video',
+              content: videoScript,
+              status: 'generated',
+            },
+          })
+        }
+      }
+    } else {
+      logger.info('Video rendering disabled — script saved, no MP4')
+      // Save the video script piece without a mediaPath (if not already saved)
+      if (!existingVideoId) {
         await db.contentPiece.create({
           data: {
             promotionId: promotion.id,
             date: today,
             platform: 'video',
             content: videoScript,
-            mediaPath: videoPath,
             status: 'generated',
           },
         })
       }
-      logger.info(`Video saved: ${videoPath}`)
-    } else {
-      logger.error('Video generation failed', videoResult.reason)
     }
 
     // -----------------------------------------------------------------------
