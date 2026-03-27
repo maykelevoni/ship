@@ -67,6 +67,12 @@ interface BlogPostDetail {
   geoScore?: number | null;
 }
 
+// ─── Media URL helper ─────────────────────────────────────────────────────────
+
+function mediaUrl(p: string): string {
+  return "/" + p.replace("./", "");
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const SOURCE_STYLES: Record<string, { bg: string; color: string }> = {
@@ -195,7 +201,7 @@ function MediaChip({ label, hasMedia }: { label: string; hasMedia: boolean }) {
 
 // ─── Blog post detail view ─────────────────────────────────────────────────────
 
-function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
+function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefresh: () => void }) {
   const [blogExpanded, setBlogExpanded] = useState(false);
   const [emailSubject, setEmailSubject] = useState(post.emailDraft?.subject ?? "");
   const [emailBody, setEmailBody] = useState(post.emailDraft?.body ?? "");
@@ -203,6 +209,10 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
   const [savingEmail, setSavingEmail] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailFeedback, setEmailFeedback] = useState<"sent" | "error" | null>(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [imagesError, setImagesError] = useState<string | null>(null);
+  const [renderingVideo, setRenderingVideo] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   const piecesByPlatform = (platform: string) =>
     post.pieces.filter((p) => p.platform === platform);
@@ -234,6 +244,46 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
       else setEmailFeedback("error");
     } catch { setEmailFeedback("error"); }
     setSendingEmail(false);
+  }
+
+  async function handleGenerateImages() {
+    setGeneratingImages(true);
+    setImagesError(null);
+    try {
+      const res = await fetch(`/api/blog-posts/${post.id}/generate-images`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        setImagesError(err.error ?? "Generation failed");
+        console.error("Generate images failed:", err.error);
+      } else {
+        onRefresh();
+      }
+    } catch (e) {
+      setImagesError("Generation failed");
+      console.error("Generate images error:", e);
+    } finally {
+      setGeneratingImages(false);
+    }
+  }
+
+  async function handleRenderVideo() {
+    setRenderingVideo(true);
+    setVideoError(null);
+    try {
+      const res = await fetch(`/api/blog-posts/${post.id}/render-video`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        setVideoError(err.error ?? "Render failed");
+        console.error("Render video failed:", err.error);
+      } else {
+        onRefresh();
+      }
+    } catch (e) {
+      setVideoError("Render failed");
+      console.error("Render video error:", e);
+    } finally {
+      setRenderingVideo(false);
+    }
   }
 
   const sectionStyle: React.CSSProperties = {
@@ -399,6 +449,74 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
           <div style={sectionHeaderStyle}>
             <ImageIcon size={12} style={{ color: "#6366f1", flexShrink: 0 }} />
             <span style={sectionLabelStyle}>Generated Assets</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+              {imagesError && (
+                <span style={{ fontSize: 11, color: "#f87171" }}>{imagesError}</span>
+              )}
+              <button
+                onClick={handleGenerateImages}
+                disabled={generatingImages}
+                style={{
+                  padding: "3px 8px",
+                  fontSize: 11,
+                  borderRadius: 4,
+                  border: "1px solid #2a2a2a",
+                  background: "#1a1a1a",
+                  color: "#a1a1aa",
+                  cursor: generatingImages ? "not-allowed" : "pointer",
+                  opacity: generatingImages ? 0.4 : 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                {generatingImages && (
+                  <span style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    border: "1.5px solid #6366f1",
+                    borderTopColor: "transparent",
+                    animation: "spin 0.7s linear infinite",
+                  }} />
+                )}
+                {generatingImages ? "Generating..." : "Generate Images"}
+              </button>
+              {videoError && (
+                <span style={{ fontSize: 11, color: "#f87171" }}>{videoError}</span>
+              )}
+              <button
+                onClick={handleRenderVideo}
+                disabled={renderingVideo || !videoPiece}
+                style={{
+                  padding: "3px 8px",
+                  fontSize: 11,
+                  borderRadius: 4,
+                  border: "1px solid #2a2a2a",
+                  background: "#1a1a1a",
+                  color: "#a1a1aa",
+                  cursor: renderingVideo || !videoPiece ? "not-allowed" : "pointer",
+                  opacity: renderingVideo || !videoPiece ? 0.4 : 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                {renderingVideo && (
+                  <span style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    border: "1.5px solid #a855f7",
+                    borderTopColor: "transparent",
+                    animation: "spin 0.7s linear infinite",
+                  }} />
+                )}
+                {renderingVideo ? "Rendering..." : "Render Video"}
+              </button>
+            </div>
           </div>
           <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {imageCard && (
@@ -409,9 +527,29 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
                   {imageCard.mediaPath && <span style={{ fontSize: "10px", color: "#3f3f46" }}>Generated</span>}
                   <CopyButton text={imageCard.content} />
                 </div>
-                <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a" }}>
-                  {imageCard.content.slice(0, 200)}{imageCard.content.length > 200 && "…"}
-                </div>
+                {imageCard.mediaPath ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <img
+                      src={mediaUrl(imageCard.mediaPath)}
+                      alt="Image Card"
+                      style={{ maxWidth: "100%", maxHeight: 320, borderRadius: 6, display: "block", marginTop: 6, border: "1px solid #1a1a1a" }}
+                    />
+                    <a
+                      href={mediaUrl(imageCard.mediaPath)}
+                      download
+                      style={{ fontSize: 11, color: "#6366f1", textDecoration: "none" }}
+                    >
+                      Download
+                    </a>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a" }}>
+                    <span style={{ color: "#3f3f46", fontStyle: "italic" }}>Not generated yet</span>
+                    <div style={{ marginTop: 4 }}>
+                      {imageCard.content.slice(0, 200)}{imageCard.content.length > 200 && "…"}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {imageQuote && (
@@ -422,9 +560,29 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
                   {imageQuote.mediaPath && <span style={{ fontSize: "10px", color: "#3f3f46" }}>Generated</span>}
                   <CopyButton text={imageQuote.content} />
                 </div>
-                <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a" }}>
-                  {imageQuote.content.slice(0, 200)}{imageQuote.content.length > 200 && "…"}
-                </div>
+                {imageQuote.mediaPath ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <img
+                      src={mediaUrl(imageQuote.mediaPath)}
+                      alt="Image Quote"
+                      style={{ maxWidth: "100%", maxHeight: 320, borderRadius: 6, display: "block", marginTop: 6, border: "1px solid #1a1a1a" }}
+                    />
+                    <a
+                      href={mediaUrl(imageQuote.mediaPath)}
+                      download
+                      style={{ fontSize: 11, color: "#6366f1", textDecoration: "none" }}
+                    >
+                      Download
+                    </a>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a" }}>
+                    <span style={{ color: "#3f3f46", fontStyle: "italic" }}>Not generated yet</span>
+                    <div style={{ marginTop: 4 }}>
+                      {imageQuote.content.slice(0, 200)}{imageQuote.content.length > 200 && "…"}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {videoPiece && (
@@ -436,9 +594,27 @@ function BlogPostDetailView({ post }: { post: BlogPostDetail }) {
                   {videoPiece.mediaPath && <span style={{ fontSize: "10px", color: "#4ade80" }}>Rendered</span>}
                   <CopyButton text={videoPiece.content} />
                 </div>
-                <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a", whiteSpace: "pre-wrap" }}>
-                  {videoPiece.content.slice(0, 300)}{videoPiece.content.length > 300 && "…"}
-                </div>
+                {videoPiece.mediaPath ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <video
+                      controls
+                      src={mediaUrl(videoPiece.mediaPath)}
+                      style={{ maxWidth: "100%", maxHeight: 320, borderRadius: 6, display: "block", marginTop: 6, border: "1px solid #1a1a1a" }}
+                    />
+                    <a
+                      href={mediaUrl(videoPiece.mediaPath)}
+                      download
+                      style={{ fontSize: 11, color: "#6366f1", textDecoration: "none" }}
+                    >
+                      Download
+                    </a>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: "12px", color: "#71717a", lineHeight: 1.5, padding: "8px 10px", background: "#111", borderRadius: "5px", border: "1px solid #1a1a1a", whiteSpace: "pre-wrap" }}>
+                    <span style={{ color: "#3f3f46", fontStyle: "italic", display: "block", marginBottom: 4 }}>Not rendered yet</span>
+                    {videoPiece.content.slice(0, 300)}{videoPiece.content.length > 300 && "…"}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -597,16 +773,20 @@ function BlogPostRow({ post }: { post: BlogPostListItem }) {
   const [detail, setDetail] = useState<BlogPostDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleToggle() {
-    if (open) { setOpen(false); return; }
-    setOpen(true);
-    if (detail) return;
+  async function fetchDetail() {
     setLoading(true);
     try {
       const res = await fetch(`/api/blog-posts/${post.id}`);
       if (res.ok) setDetail(await res.json());
     } catch { /* silently fail */ }
     setLoading(false);
+  }
+
+  async function handleToggle() {
+    if (open) { setOpen(false); return; }
+    setOpen(true);
+    if (detail) return;
+    await fetchDetail();
   }
 
   const ss = statusStyle(post.status);
@@ -720,7 +900,7 @@ function BlogPostRow({ post }: { post: BlogPostListItem }) {
               <span style={{ fontSize: "13px", color: "#3f3f46" }}>Loading content kit…</span>
             </div>
           ) : detail ? (
-            <BlogPostDetailView post={detail} />
+            <BlogPostDetailView post={detail} onRefresh={fetchDetail} />
           ) : (
             <div style={{ padding: "24px", textAlign: "center" }}>
               <span style={{ fontSize: "13px", color: "#3f3f46" }}>Failed to load.</span>
