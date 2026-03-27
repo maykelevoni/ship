@@ -9,6 +9,7 @@ import {
   FileStack,
   Settings,
   Zap,
+  Search,
 } from "lucide-react";
 
 interface NavItem {
@@ -24,9 +25,9 @@ const mainNavItems: NavItem[] = [
     icon: <LayoutDashboard size={18} />,
   },
   {
-    href: "/promote",
-    label: "Promote",
-    icon: <Megaphone size={18} />,
+    href: "/research",
+    label: "Research",
+    icon: <Search size={18} />,
   },
   {
     href: "/content",
@@ -37,6 +38,11 @@ const mainNavItems: NavItem[] = [
     href: "/posts",
     label: "Posts",
     icon: <FileStack size={18} />,
+  },
+  {
+    href: "/products",
+    label: "Products",
+    icon: <Megaphone size={18} />,
   },
   {
     href: "/settings",
