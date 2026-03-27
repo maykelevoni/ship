@@ -14,8 +14,7 @@ test.describe("Content page (/content)", () => {
   test("Content page redirects to login when unauthenticated", async ({
     page,
   }) => {
-    await page.goto("/content");
-    await page.waitForLoadState("networkidle");
+    await page.goto("/content", { waitUntil: "commit" });
 
     const url = page.url();
     // Unauthenticated users must land on /login or /api/auth — never a 500
@@ -33,14 +32,11 @@ test.describe("Content page (/content)", () => {
   test("Content page has Run Engine button (or redirects to login)", async ({
     page,
   }) => {
-    await page.goto("/content");
-    await page.waitForLoadState("networkidle");
+    await page.goto("/content", { waitUntil: "commit" });
 
     const url = page.url();
     // Unauthenticated: the app redirects to /login — that is the expected behaviour
-    // We just confirm the redirect happened (not that we can see the button without auth)
     expect(url).toMatch(/localhost:3000\/(content|login|api\/auth)/);
-    // No 500 — page must have loaded successfully
     expect(url).not.toContain("500");
   });
 });
@@ -51,8 +47,7 @@ test.describe("Calendar page (/calendar)", () => {
   test("Calendar page redirects to login when unauthenticated", async ({
     page,
   }) => {
-    await page.goto("/calendar");
-    await page.waitForLoadState("networkidle");
+    await page.goto("/calendar", { waitUntil: "commit" });
 
     const url = page.url();
     // Unauthenticated users must land on /login or /api/auth — never stay on /calendar
@@ -75,7 +70,7 @@ test.describe("Sidebar navigation", () => {
     // The login page is part of the same Next.js app and contains no sidebar.
     // We verify the app is running and that a sidebar with "Posts" is absent.
     await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // The sidebar (if rendered) must NOT have a "Posts" nav link
     const postsLinks = await page.locator("aside").getByRole("link", { name: "Posts" }).count();
@@ -88,7 +83,7 @@ test.describe("Sidebar navigation", () => {
     // Navigate directly to /calendar; the redirect lands on /login.
     // We just verify the redirect is clean (no sidebar with wrong links appears).
     await page.goto("/calendar");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Unauthenticated redirect: confirm we reached /login (no Posts link anywhere)
     const url = page.url();
@@ -101,7 +96,7 @@ test.describe("Sidebar navigation", () => {
 
   test("app root does not 500", async ({ page }) => {
     const response = await page.goto("/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     expect(response?.status()).not.toBe(500);
     expect(response?.status()).not.toBe(404);
