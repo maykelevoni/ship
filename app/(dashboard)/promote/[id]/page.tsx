@@ -96,7 +96,12 @@ export default function EditPromotionPage({
           setError("Failed to load promotion.");
           return;
         }
-        const data: ApiPromotion = await res.json();
+        const raw = await res.json();
+        // benefits is stored as a JSON string in the DB — parse it back to array
+        if (typeof raw.benefits === "string") {
+          try { raw.benefits = JSON.parse(raw.benefits); } catch { raw.benefits = []; }
+        }
+        const data: ApiPromotion = raw;
         setPromotion(data);
       } catch {
         setError("Network error — please try again.");

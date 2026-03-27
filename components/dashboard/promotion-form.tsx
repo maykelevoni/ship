@@ -123,7 +123,12 @@ function buildDefault(initial?: Partial<PromotionFormData>): PromotionFormData {
     notes: initial?.notes ?? "",
     weight: initial?.weight ?? 5,
     price: initial?.price ?? "",
-    benefits: initial?.benefits ?? [""],
+    benefits: (() => {
+      const b = initial?.benefits;
+      if (Array.isArray(b)) return b;
+      if (typeof b === "string") { try { return JSON.parse(b); } catch { return [""]; } }
+      return [""];
+    })(),
     targetAudience: initial?.targetAudience ?? "",
     affiliateLink: initial?.affiliateLink ?? "",
     commission: initial?.commission ?? "",

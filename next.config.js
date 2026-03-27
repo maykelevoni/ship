@@ -36,8 +36,6 @@ const nextConfig = {
       { source: "/promotions/:id", destination: "/promote/:id", permanent: true },
       { source: "/queue", destination: "/posts", permanent: true },
       { source: '/promote', destination: '/products', permanent: false },
-      { source: '/promote/:path*', destination: '/products/:path*', permanent: false },
-      { source: "/calendar", destination: "/products", permanent: true },
       { source: "/blog-posts", destination: "/content", permanent: true },
       { source: "/email-drafts", destination: "/content", permanent: true },
       { source: "/opportunities", destination: "/content", permanent: true },

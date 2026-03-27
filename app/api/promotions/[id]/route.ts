@@ -3,6 +3,28 @@ import { db } from "@/lib/db";
 
 const VALID_STATUSES = ["active", "paused", "archived"] as const;
 
+export const GET = auth(async (req, { params }) => {
+  if (!req.auth) {
+    return new Response("Not authenticated", { status: 401 });
+  }
+
+  try {
+    const { id } = params as { id: string };
+    const promotion = await db.promotion.findUnique({ where: { id } });
+    if (!promotion) {
+      return Response.json({ error: "Promotion not found" }, { status: 404 });
+    }
+    // Parse JSON string fields so clients receive proper arrays
+    const result = {
+      ...promotion,
+      benefits: (() => { try { return typeof promotion.benefits === "string" ? JSON.parse(promotion.benefits) : promotion.benefits; } catch { return []; } })(),
+    };
+    return Response.json(result);
+  } catch {
+    return new Response("Internal server error", { status: 500 });
+  }
+});
+
 export const PATCH = auth(async (req, { params }: { params: { id: string } }) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });

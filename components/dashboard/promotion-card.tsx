@@ -648,7 +648,7 @@ export function PromotionCard({
 
           {/* Edit */}
           <Link
-            href={`/promotions/${promotion.id}`}
+            href={`/promote/${promotion.id}`}
             style={{
               display: "inline-flex",
               alignItems: "center",

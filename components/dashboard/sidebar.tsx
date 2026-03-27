@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   Megaphone,
   BookOpen,
-  FileStack,
+  CalendarDays,
   Settings,
   Zap,
   Search,
@@ -35,9 +35,9 @@ const mainNavItems: NavItem[] = [
     icon: <BookOpen size={18} />,
   },
   {
-    href: "/posts",
-    label: "Posts",
-    icon: <FileStack size={18} />,
+    href: "/calendar",
+    label: "Calendar",
+    icon: <CalendarDays size={18} />,
   },
   {
     href: "/products",
