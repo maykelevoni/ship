@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import posthog from "posthog-js";
-import { PHProvider } from "posthog-js/react";
+import { PostHogProvider as PHProvider } from "posthog-js/react";
 
 import { env } from "@/env.mjs";
 
