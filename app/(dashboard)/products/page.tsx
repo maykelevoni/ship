@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus, Megaphone, Package, ExternalLink } from "lucide-react";
@@ -242,7 +242,7 @@ function NewProductModal({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ProductsPage() {
+function ProductsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = (searchParams.get("tab") ?? "affiliates") as "affiliates" | "own";
@@ -705,5 +705,13 @@ export default function ProductsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "32px", color: "#52525b" }}>Loading…</div>}>
+      <ProductsPageInner />
+    </Suspense>
   );
 }

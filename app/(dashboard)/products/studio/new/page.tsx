@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-export default function ProductStudioNewPage() {
+function ProductStudioNewPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const title = searchParams.get("title") ?? "Untitled Product";
@@ -83,5 +83,13 @@ export default function ProductStudioNewPage() {
       Creating product…
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+export default function ProductStudioNewPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: "32px", color: "#52525b" }}>Loading…</div>}>
+      <ProductStudioNewPageInner />
+    </Suspense>
   );
 }
