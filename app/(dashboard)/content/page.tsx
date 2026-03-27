@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Layers,
   TrendingUp,
@@ -12,6 +13,7 @@ import {
   Tag,
   BookOpen,
   Wrench,
+  Package,
 } from "lucide-react";
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
@@ -820,6 +822,7 @@ function OppStatusBadge({ status }: { status: OpportunityStatus }) {
 }
 
 function OpportunitiesSection() {
+  const router = useRouter();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDismissed, setShowDismissed] = useState(false);
@@ -1040,6 +1043,29 @@ function OpportunitiesSection() {
                           }}
                         >
                           Dismiss
+                        </button>
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/products/studio/new?opportunityId=${opp.id}&title=${encodeURIComponent(opp.title)}`,
+                            )
+                          }
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "5px 10px",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(99,102,241,0.35)",
+                            background: "rgba(99,102,241,0.1)",
+                            color: "#818cf8",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <Package size={11} />
+                          Build Product
                         </button>
                       </div>
                     )}
