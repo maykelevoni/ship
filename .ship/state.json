@@ -1,15 +1,15 @@
 {
   "project": "ship",
-  "feature": "posthog-research-product-studio",
-  "phase": "complete",
-  "current_task": 12,
-  "total_tasks": 12,
-  "completed_tasks": [1,2,3,4,5,6,7,8,9,10,11,12],
+  "feature": "content-kit-calendar-nav",
+  "phase": "implementation",
+  "current_task": 1,
+  "total_tasks": 3,
+  "completed_tasks": [],
   "skipped_tasks": [],
   "failed_tasks": [],
   "playwright_cmd": "npx playwright test",
-  "tests_written": true,
-  "verified": true,
+  "tests_written": false,
+  "verified": false,
   "created_at": "2026-03-27T00:00:00Z",
   "updated_at": "2026-03-27T00:00:00Z"
 }
