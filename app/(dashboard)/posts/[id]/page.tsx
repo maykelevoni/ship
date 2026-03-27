@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import posthog from "posthog-js";
 
 // TipTap cannot run on the server — load the editor client-only
 const PostEditorClient = dynamic(() => import("./editor-client"), {
@@ -28,10 +30,31 @@ const PostEditorClient = dynamic(() => import("./editor-client"), {
   ),
 });
 
+function PostViewTracker({
+  postId,
+  title,
+  topicId,
+}: {
+  postId: string;
+  title?: string;
+  topicId?: string;
+}) {
+  useEffect(() => {
+    posthog.capture("blog_post_viewed", { postId, title, topicId });
+  }, [postId, title, topicId]);
+
+  return null;
+}
+
 export default function PostEditorPage({
   params,
 }: {
   params: { id: string };
 }) {
-  return <PostEditorClient id={params.id} />;
+  return (
+    <>
+      <PostViewTracker postId={params.id} />
+      <PostEditorClient id={params.id} />
+    </>
+  );
 }

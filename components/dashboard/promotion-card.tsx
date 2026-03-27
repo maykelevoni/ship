@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Edit2, Archive, Pause, Play, Zap, AlertCircle } from "lucide-react";
+import posthog from "posthog-js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -422,7 +423,18 @@ export function PromotionCard({
           >
             {promotion.description}
           </p>
-          <span
+          <a
+            href={promotion.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() =>
+              posthog.capture("product_link_clicked", {
+                promotionId: promotion.id,
+                promotionName: promotion.name,
+                platform: "dashboard",
+                destination: promotion.url,
+              })
+            }
             style={{
               fontSize: "11px",
               color: "#3f3f46",
@@ -430,11 +442,12 @@ export function PromotionCard({
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               display: "block",
+              textDecoration: "none",
             }}
             title={promotion.url}
           >
             {promotion.url}
-          </span>
+          </a>
         </div>
 
         {/* GEO row */}

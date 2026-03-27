@@ -7,7 +7,7 @@ interface ScoreEntry {
   rationale?: string
 }
 
-export async function scoreTopics(topics: RawTopic[]): Promise<ScoredTopic[]> {
+export async function scoreTopics(topics: RawTopic[], keyword?: string): Promise<ScoredTopic[]> {
   if (topics.length === 0) return []
 
   const topicList = topics
@@ -16,7 +16,10 @@ export async function scoreTopics(topics: RawTopic[]): Promise<ScoredTopic[]> {
 
   const prompt = `Here is a list of trending topics:\n\n${topicList}\n\nReturn a JSON array where each element has: { "index": <number>, "score": <1-10>, "rationale": "<brief reason>" }. Score each topic from 1 to 10 based on virality potential and content creation potential. Return ONLY the JSON array with no extra text.`
 
-  const system = 'You are a content strategist scoring trending topics for social media and blog content potential. Always respond with valid JSON only.'
+  const keywordContext = keyword
+    ? ` The user is researching the topic: '${keyword}'. Prioritize topics that are most relevant to this keyword.`
+    : ''
+  const system = `You are a content strategist scoring trending topics for social media and blog content potential.${keywordContext} Always respond with valid JSON only.`
 
   try {
     const result = await generateText(prompt, system)

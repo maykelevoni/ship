@@ -7,7 +7,8 @@ export const POST = auth(async (req) => {
   }
 
   try {
-    await runResearch();
+    const { keyword } = await req.json().catch(() => ({})) as { keyword?: string };
+    await runResearch(keyword);
     return Response.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

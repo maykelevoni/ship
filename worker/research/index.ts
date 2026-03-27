@@ -49,7 +49,7 @@ function makeLogger() {
 // Main research runner
 // ---------------------------------------------------------------------------
 
-export async function runResearch(): Promise<void> {
+export async function runResearch(keyword?: string): Promise<void> {
   const logger = makeLogger()
   logger.info('Research worker started')
 
@@ -66,9 +66,9 @@ export async function runResearch(): Promise<void> {
 
   // Fetch all sources in parallel
   const [youtubeResults, redditResults, newsResults] = await Promise.allSettled([
-    fetchYoutubeTrending(youtubeApiKey ?? '', youtubeRegion ?? 'US'),
-    fetchRedditHot(subreddits ?? 'entrepreneur,marketing,smallbusiness,SaaS'),
-    fetchNewsApiHeadlines(newsapiKey ?? '', newsCategories ?? 'business,technology'),
+    fetchYoutubeTrending(youtubeApiKey ?? '', youtubeRegion ?? 'US', keyword),
+    fetchRedditHot(subreddits ?? 'entrepreneur,marketing,smallbusiness,SaaS', keyword),
+    fetchNewsApiHeadlines(newsapiKey ?? '', newsCategories ?? 'business,technology', keyword),
   ])
 
   const allTopics: RawTopic[] = [
@@ -97,7 +97,7 @@ export async function runResearch(): Promise<void> {
 
   // Score all topics with AI
   logger.info('Scoring topics with AI…')
-  const scored = await scoreTopics(deduplicated)
+  const scored = await scoreTopics(deduplicated, keyword)
   logger.info(`Scored ${scored.length} topics`)
 
   // Today at midnight UTC (idempotent date key)
