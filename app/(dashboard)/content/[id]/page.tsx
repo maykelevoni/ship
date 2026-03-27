@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   Layers,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
   Copy,
   Check,
   FileText,
@@ -14,7 +13,6 @@ import {
   Video,
   Mail,
   ExternalLink,
-  Zap,
   Twitter,
   Linkedin,
   MessageSquare,
@@ -27,17 +25,6 @@ interface ResearchTopic {
   title: string;
   source: string;
   score: number;
-}
-
-interface BlogPostListItem {
-  id: string;
-  date: string;
-  title: string;
-  seoDescription: string | null;
-  status: string;
-  ghostUrl: string | null;
-  topic: ResearchTopic | null;
-  piecesCount: number;
 }
 
 interface ContentPiece {
@@ -343,7 +330,7 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
       : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
       {/* ── GEO Score ── */}
       {post.geoScore != null && geoColor && geoBg && (
@@ -768,224 +755,105 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
   );
 }
 
-// ─── Blog Post Row ─────────────────────────────────────────────────────────────
-
-function BlogPostRow({ post }: { post: BlogPostListItem }) {
-  const router = useRouter();
-
-  function handleClick() {
-    router.push("/content/" + post.id);
-  }
-
-  const ss = statusStyle(post.status);
-  const src = post.topic ? sourceBadge(post.topic.source) : null;
-
-  return (
-    <div
-      style={{
-        background: "#0f0f0f",
-        border: "1px solid #1a1a1a",
-        borderRadius: "10px",
-        overflow: "hidden",
-      }}
-    >
-      {/* Row header */}
-      <button
-        onClick={handleClick}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "14px 16px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          textAlign: "left",
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Date */}
-        <span style={{ fontSize: "12px", color: "#52525b", flexShrink: 0, minWidth: "70px" }}>
-          {fmtDate(post.date)}
-        </span>
-
-        {/* Source + score */}
-        {post.topic && src && (
-          <div style={{ display: "flex", gap: "5px", alignItems: "center", flexShrink: 0 }}>
-            <span
-              style={{
-                padding: "1px 7px",
-                borderRadius: "4px",
-                fontSize: "10px",
-                fontWeight: 700,
-                background: src.bg,
-                color: src.color,
-              }}
-            >
-              {sourceLabel(post.topic.source)}
-            </span>
-            <span
-              style={{
-                padding: "1px 6px",
-                borderRadius: "4px",
-                fontSize: "10px",
-                fontWeight: 700,
-                background: post.topic.score >= 8 ? "rgba(74,222,128,0.15)" : post.topic.score >= 5 ? "rgba(251,191,36,0.15)" : "rgba(248,113,113,0.15)",
-                color: post.topic.score >= 8 ? "#4ade80" : post.topic.score >= 5 ? "#fbbf24" : "#f87171",
-              }}
-            >
-              {post.topic.score}
-            </span>
-          </div>
-        )}
-
-        {/* Topic + title */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "1px" }}>
-          {post.topic && (
-            <p style={{ margin: 0, fontSize: "11px", color: "#52525b", lineHeight: 1.3 }}>
-              {post.topic.title}
-            </p>
-          )}
-          <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#e4e4e7", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {post.title}
-          </p>
-        </div>
-
-        {/* Pieces count */}
-        {post.piecesCount > 0 && (
-          <span style={{ fontSize: "11px", color: "#3f3f46", flexShrink: 0 }}>
-            {post.piecesCount} pieces
-          </span>
-        )}
-
-        {/* Status */}
-        <span
-          style={{
-            padding: "3px 9px",
-            borderRadius: "20px",
-            fontSize: "11px",
-            fontWeight: 600,
-            background: ss.bg,
-            color: ss.color,
-            flexShrink: 0,
-          }}
-        >
-          {ss.label}
-        </span>
-
-        {/* Navigate arrow */}
-        <span style={{ color: "#52525b", flexShrink: 0 }}>
-          <ChevronRight size={15} />
-        </span>
-      </button>
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ContentPage() {
-  const [posts, setPosts] = useState<BlogPostListItem[]>([]);
+export default function ContentKitPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+  const [post, setPost] = useState<BlogPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [engineMsg, setEngineMsg] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async () => {
+  async function fetchPost() {
+    setLoading(true);
     try {
-      const res = await fetch("/api/blog-posts");
-      if (res.ok) setPosts(await res.json());
-    } catch { /* silently fail */ }
+      const res = await fetch(`/api/blog-posts/${id}`);
+      if (res.ok) setPost(await res.json());
+    } catch { /* */ }
     setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
-
-  async function handleRunEngine() {
-    setRunning(true);
-    setEngineMsg(null);
-    try {
-      const res = await fetch("/api/engine/run", { method: "POST" });
-      if (res.ok) {
-        setEngineMsg("Engine started — refresh in a moment.");
-        setTimeout(() => fetchPosts(), 8000);
-      } else {
-        setEngineMsg("Failed to start engine.");
-      }
-    } catch {
-      setEngineMsg("Failed to start engine.");
-    }
-    setRunning(false);
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <Layers size={20} style={{ color: "#6366f1", flexShrink: 0 }} />
-          <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: "#e4e4e7" }}>Content</h1>
-          {!loading && (
-            <span style={{ fontSize: "13px", color: "#3f3f46" }}>{posts.length} posts</span>
-          )}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {engineMsg && (
-            <span style={{ fontSize: "12px", color: "#a1a1aa" }}>{engineMsg}</span>
-          )}
-          <button
-            onClick={handleRunEngine}
-            disabled={running}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "none",
-              background: running ? "rgba(99,102,241,0.4)" : "#6366f1",
-              color: "#fff",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: running ? "not-allowed" : "pointer",
-              transition: "opacity 0.15s",
-            }}
-          >
-            <Zap size={14} style={{ animation: running ? "spin 1s linear infinite" : "none" }} />
-            {running ? "Running…" : "Run Engine"}
-          </button>
-        </div>
-      </div>
+  useEffect(() => { fetchPost(); }, [id]);
 
+  const ss = post ? statusStyle(post.status) : null;
+  const src = post?.topic ? sourceBadge(post.topic.source) : null;
+
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 24px 60px" }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
-      {/* Blog post list */}
-      {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} style={{ height: "64px", background: "#1a1a1a", borderRadius: "10px" }} />
-          ))}
-        </div>
-      ) : posts.length === 0 ? (
-        <div
-          style={{
-            padding: "48px 24px",
-            textAlign: "center",
-            background: "#0f0f0f",
-            border: "1px solid #1a1a1a",
-            borderRadius: "10px",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: "14px", color: "#3f3f46", fontWeight: 500 }}>
-            No blog posts yet. Run the engine to generate content.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {posts.map((post) => (
-            <BlogPostRow key={post.id} post={post} />
-          ))}
-        </div>
+      {/* Back button */}
+      <button
+        onClick={() => router.push("/content")}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          marginBottom: 20, padding: "6px 12px", borderRadius: 7,
+          border: "1px solid #1a1a1a", background: "transparent",
+          color: "#71717a", fontSize: 13, cursor: "pointer",
+        }}
+      >
+        ← Content
+      </button>
+
+      {loading && (
+        <div style={{ color: "#3f3f46", fontSize: 13, padding: "40px 0" }}>Loading…</div>
+      )}
+
+      {post && !loading && (
+        <>
+          {/* Post title header */}
+          <div style={{ marginBottom: 20 }}>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#e4e4e7", lineHeight: 1.3 }}>
+              {post.title}
+            </h1>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 12, color: "#52525b" }}>{fmtDate(post.date)}</span>
+              {ss && (
+                <span
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: "20px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    background: ss.bg,
+                    color: ss.color,
+                  }}
+                >
+                  {ss.label}
+                </span>
+              )}
+              {post.topic && src && (
+                <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+                  <span
+                    style={{
+                      padding: "1px 7px",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      background: src.bg,
+                      color: src.color,
+                    }}
+                  >
+                    {sourceLabel(post.topic.source)}
+                  </span>
+                  <span
+                    style={{
+                      padding: "1px 6px",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      background: post.topic.score >= 8 ? "rgba(74,222,128,0.15)" : post.topic.score >= 5 ? "rgba(251,191,36,0.15)" : "rgba(248,113,113,0.15)",
+                      color: post.topic.score >= 8 ? "#4ade80" : post.topic.score >= 5 ? "#fbbf24" : "#f87171",
+                    }}
+                  >
+                    {post.topic.score}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <BlogPostDetailView post={post} onRefresh={fetchPost} />
+        </>
       )}
     </div>
   );
