@@ -56,6 +56,11 @@ export default function MediaStudioPage() {
   const [recentImages, setRecentImages] = useState<MediaAsset[]>([]);
   const [recentVideos, setRecentVideos] = useState<MediaAsset[]>([]);
 
+  // Gallery panel state
+  const [gallery, setGallery] = useState<MediaAsset[]>([]);
+  const [filter, setFilter] = useState<"all" | "image" | "video">("all");
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
   // ── Fetch helpers ────────────────────────────────────────────────────────────
 
   async function fetchRecentImages() {
@@ -79,9 +84,20 @@ export default function MediaStudioPage() {
     } catch { /* ignore */ }
   }
 
+  async function fetchGallery() {
+    try {
+      const res = await fetch("/api/media?limit=50");
+      if (res.ok) {
+        const data: MediaAsset[] = await res.json();
+        setGallery(data);
+      }
+    } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     fetchRecentImages();
     fetchRecentVideos();
+    fetchGallery();
   }, []);
 
   // ── Generate ─────────────────────────────────────────────────────────────────
@@ -113,9 +129,10 @@ export default function MediaStudioPage() {
       } else {
         const data = await res.json();
         setCurrentAssets(data.assets ?? []);
-        // Re-fetch base selectors
+        // Re-fetch base selectors and gallery
         await fetchRecentImages();
         await fetchRecentVideos();
+        await fetchGallery();
       }
     } catch {
       setError("Generation failed");
@@ -136,6 +153,21 @@ export default function MediaStudioPage() {
 
   const videoResultAsset =
     mode === "video" ? currentAssets.find((a) => a.filePath) : null;
+
+  // ── Gallery derived ──────────────────────────────────────────────────────────
+
+  const filtered = gallery.filter(
+    (a) => filter === "all" || a.type === filter
+  );
+  const groups: Record<string, MediaAsset[]> = {};
+  for (const a of filtered) {
+    groups[a.groupId] ??= [];
+    groups[a.groupId].push(a);
+  }
+  const sortedGroups = Object.values(groups).sort(
+    (a, b) =>
+      new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime()
+  );
 
   // ── Styles ───────────────────────────────────────────────────────────────────
 
@@ -508,17 +540,274 @@ export default function MediaStudioPage() {
           </div>
         </div>
 
-        {/* ── RIGHT: Gallery placeholder ────────────────────────────────────── */}
+        {/* ── RIGHT: Gallery panel ──────────────────────────────────────────── */}
         <div
-          id="gallery-placeholder"
           style={{
             flex: 1,
-            minHeight: "200px",
             background: "#111",
             border: "1px solid #1a1a1a",
             borderRadius: "10px",
+            overflow: "hidden",
+            minWidth: 0,
           }}
-        />
+        >
+          {/* Gallery header + filter tabs */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "14px 16px",
+              borderBottom: "1px solid #1a1a1a",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "14px",
+                fontWeight: 700,
+                color: "#e4e4e7",
+              }}
+            >
+              Gallery
+            </span>
+
+            {/* Filter tabs */}
+            <div style={{ display: "flex", gap: "16px" }}>
+              {(["all", "image", "video"] as const).map((f) => {
+                const label = f === "all" ? "All" : f === "image" ? "Images" : "Videos";
+                const active = filter === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: active ? "2px solid #6366f1" : "2px solid transparent",
+                      color: active ? "#e4e4e7" : "#71717a",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: "2px 0 4px",
+                      transition: "color 0.15s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Gallery groups */}
+          <div
+            style={{
+              padding: "12px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              maxHeight: "calc(100vh - 120px)",
+              overflowY: "auto",
+            }}
+          >
+            {sortedGroups.length === 0 && (
+              <span style={{ fontSize: "12px", color: "#3f3f46" }}>
+                No assets yet. Generate something!
+              </span>
+            )}
+
+            {sortedGroups.map((group) => {
+              const firstAsset = group[0];
+              const truncatedPrompt =
+                firstAsset.prompt.length > 60
+                  ? firstAsset.prompt.slice(0, 60) + "…"
+                  : firstAsset.prompt;
+
+              return (
+                <div key={firstAsset.groupId}>
+                  {/* Group header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: "6px",
+                      gap: "8px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "#a1a1aa",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                      }}
+                    >
+                      {truncatedPrompt}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#52525b",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {fmtDate(firstAsset.createdAt)}
+                    </span>
+                  </div>
+
+                  {/* Thumbnails row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    {group.map((asset) => {
+                      const isVideo = asset.type === "video";
+                      const thumbW = isVideo ? 45 : 72;
+                      const thumbH = 72;
+                      const platformLabel = asset.platform ?? "base";
+                      const isHovered = hoveredId === asset.id;
+
+                      return (
+                        <div
+                          key={asset.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "3px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "relative",
+                              width: thumbW,
+                              height: thumbH,
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={() => setHoveredId(asset.id)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            onClick={() => {
+                              setBaseAssetId(asset.id);
+                              setMode(asset.type as "image" | "video");
+                            }}
+                          >
+                            {isVideo ? (
+                              asset.filePath ? (
+                                <video
+                                  src={mediaUrl(asset.filePath)}
+                                  style={{
+                                    width: thumbW,
+                                    height: thumbH,
+                                    objectFit: "cover",
+                                    borderRadius: 4,
+                                    display: "block",
+                                    border: "1px solid #1a1a1a",
+                                  }}
+                                />
+                              ) : (
+                                <div
+                                  style={{
+                                    width: thumbW,
+                                    height: thumbH,
+                                    borderRadius: 4,
+                                    background: "#1a1a1a",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <span style={{ fontSize: 9, color: "#52525b" }}>
+                                    {asset.status}
+                                  </span>
+                                </div>
+                              )
+                            ) : asset.filePath ? (
+                              <img
+                                src={mediaUrl(asset.filePath)}
+                                alt={asset.prompt}
+                                style={{
+                                  width: thumbW,
+                                  height: thumbH,
+                                  objectFit: "cover",
+                                  borderRadius: 4,
+                                  display: "block",
+                                  border: "1px solid #1a1a1a",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: thumbW,
+                                  height: thumbH,
+                                  borderRadius: 4,
+                                  background: "#1a1a1a",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <span style={{ fontSize: 9, color: "#52525b" }}>
+                                  {asset.status}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Download overlay on hover */}
+                            {isHovered && asset.filePath && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  background: "rgba(0,0,0,0.5)",
+                                  borderRadius: 4,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <a
+                                  href={mediaUrl(asset.filePath)}
+                                  download
+                                  style={{
+                                    fontSize: "10px",
+                                    color: "#6366f1",
+                                    textDecoration: "none",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  ↓
+                                </a>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Platform label */}
+                          <span
+                            style={{
+                              fontSize: "9px",
+                              color: "#3f3f46",
+                              textAlign: "center",
+                            }}
+                          >
+                            {platformLabel}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

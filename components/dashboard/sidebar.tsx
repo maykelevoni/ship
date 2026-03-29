@@ -10,6 +10,7 @@ import {
   Settings,
   Zap,
   Search,
+  Camera,
 } from "lucide-react";
 
 interface NavItem {
@@ -33,6 +34,11 @@ const mainNavItems: NavItem[] = [
     href: "/content",
     label: "Content",
     icon: <BookOpen size={18} />,
+  },
+  {
+    href: "/media-studio",
+    label: "Media",
+    icon: <Camera size={18} />,
   },
   {
     href: "/calendar",
