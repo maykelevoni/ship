@@ -235,3 +235,21 @@ model OwnProduct {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+model MediaAsset {
+  id         String       @id @default(cuid())
+  type       String       // 'image' | 'video'
+  prompt     String       @db.Text
+  groupId    String       // all platform resizes from same generation share this
+  parentId   String?      // null = root; set = iterative variation
+  parent     MediaAsset?  @relation("variations", fields: [parentId], references: [id])
+  variations MediaAsset[] @relation("variations")
+  platform   String?      // null = base | 'blog' | 'tiktok' | 'twitter'
+  filePath   String?
+  status     String       @default("pending") // pending | done | failed
+  errorMsg   String?
+  width      Int?
+  height     Int?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
