@@ -8,13 +8,18 @@
  *
  * resizeForPlatforms — uses Sharp to resize the base PNG to platform-specific
  *   dimensions and saves each to ./media/studio/.
+ *
+ * generateStudioVideo — calls Claude to generate (or extend) a short-form video
+ *   script, then renders it with Remotion via renderVideo().
  */
 
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
+import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenAI } from '@google/genai'
 import { getSetting } from '../../lib/settings'
+import { renderVideo } from './video'
 
 // ---------------------------------------------------------------------------
 // Platform size definitions
@@ -107,4 +112,72 @@ export async function resizeForPlatforms(params: {
   )
 
   return results
+}
+
+// ---------------------------------------------------------------------------
+// generateStudioVideo
+// ---------------------------------------------------------------------------
+
+const VIDEO_SCRIPT_SYSTEM = `You are a short-form social video scriptwriter.
+Return ONLY a JSON object (no markdown, no explanation) with the following shape:
+{
+  "hook":   "<one punchy opening sentence that grabs attention>",
+  "points": ["<point 1>", "<point 2>", "<point 3>"],
+  "reveal": "<a surprising or satisfying revelation>",
+  "cta":    "<call to action>"
+}
+All values must be short, conversational, and optimised for vertical video (TikTok / Reels).`
+
+export async function generateStudioVideo(params: {
+  prompt: string
+  parentScript?: string        // JSON string of prior script; Claude will extend it
+  backgroundImageDataUrl?: string  // base64 data URL to pass as Remotion background
+  outputPath: string
+}): Promise<{ filePath: string; script: string }> {
+  const { prompt, parentScript, backgroundImageDataUrl, outputPath } = params
+
+  // ---- Claude script generation ----
+  const apiKey =
+    process.env.ANTHROPIC_API_KEY || (await getSetting('anthropic_api_key')) || undefined
+
+  const client = new Anthropic({ apiKey })
+
+  const userMessage = parentScript
+    ? `Existing script to extend (JSON):\n${parentScript}\n\nNew direction / additions:\n${prompt}`
+    : prompt
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1024,
+    system: VIDEO_SCRIPT_SYSTEM,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+
+  const block = message.content[0]
+  if (block.type !== 'text') {
+    throw new Error(`Unexpected Claude content block type: ${block.type}`)
+  }
+
+  // Strip markdown code fences if Claude wraps the JSON
+  const raw = block.text
+    .replace(/^```[\w]*\n?/, '')
+    .replace(/\n?```$/, '')
+    .trim()
+
+  const parsedScript = JSON.parse(raw) as {
+    hook: string
+    points: string[]
+    reveal: string
+    cta: string
+  }
+
+  // ---- Remotion render ----
+  await renderVideo({
+    script: parsedScript,
+    promotion: { name: '', url: '' },
+    outputPath,
+    backgroundImageDataUrl,
+  })
+
+  return { filePath: outputPath, script: JSON.stringify(parsedScript) }
 }

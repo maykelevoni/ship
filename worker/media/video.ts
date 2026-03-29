@@ -2,7 +2,55 @@ import fs from 'fs'
 import path from 'path'
 import { bundle } from '@remotion/bundler'
 import { renderMedia, selectComposition } from '@remotion/renderer'
+import { GoogleGenAI } from '@google/genai'
 import type { Promotion } from '@prisma/client'
+import { getSetting } from '../../lib/settings'
+
+// ---------------------------------------------------------------------------
+// Background image generator (Gemini)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generates a photorealistic background image for the video using Gemini.
+ * Returns the image as a base64 data URL, or undefined if it fails.
+ */
+async function generateBackgroundImage(hook: string, reveal: string): Promise<string | undefined> {
+  try {
+    const apiKey = await getSetting('gemini_api_key')
+    if (!apiKey) return undefined
+
+    const ai = new GoogleGenAI({ apiKey })
+
+    const prompt = `Create a stunning, cinematic, photorealistic image for a short-form social video.
+
+Topic: "${hook}" — ${reveal}
+
+Visual requirements:
+- Photorealistic scene that visually represents the topic above
+- Show a real environment, people, or subject directly relevant to the topic
+- Cinematic lighting, professional quality, vivid and dramatic
+- 9:16 vertical aspect ratio (portrait, for social video)
+- No text, no UI elements, no overlays — pure visual scene only`
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-image-preview',
+      contents: prompt,
+      config: {
+        responseModalities: ['IMAGE'],
+      },
+    })
+
+    const parts = response.candidates?.[0]?.content?.parts ?? []
+    const imagePart = parts.find((part: any) => part.inlineData)
+    if (!imagePart?.inlineData?.data) return undefined
+
+    const mimeType = imagePart.inlineData.mimeType ?? 'image/png'
+    return `data:${mimeType};base64,${imagePart.inlineData.data}`
+  } catch {
+    // Background image is optional — don't fail the whole render
+    return undefined
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Core renderer
@@ -12,37 +60,36 @@ export async function renderVideo(params: {
   script: { hook: string; points: string[]; reveal: string; cta: string }
   promotion: { name: string; url: string }
   outputPath: string
-  accentColor?: string
+  backgroundImageDataUrl?: string
 }): Promise<string> {
-  const { script, promotion, outputPath, accentColor = '#6366f1' } = params
+  const { script, promotion, outputPath } = params
 
-  // 1. Bundle the Remotion template entry point
-  const entryPoint = path.join(__dirname, '../templates/video/index.tsx')
+  // 1. Generate a photorealistic background image based on the post topic (hook),
+  //    unless a pre-built data URL was provided by the caller.
+  const backgroundImageDataUrl =
+    params.backgroundImageDataUrl ?? (await generateBackgroundImage(script.hook, script.reveal))
+
+  // 2. Bundle the Remotion template entry point
+  const entryPoint = path.join(process.cwd(), 'worker/templates/video/index.tsx')
   const bundled = await bundle({ entryPoint })
 
-  // 2. Build input props matching ShortFormVideoProps
+  // 3. Build input props matching ShortFormVideoProps
   const inputProps = {
-    hook: script.hook,
-    points: script.points,
-    reveal: script.reveal,
-    cta: script.cta,
-    url: promotion.url,
-    productName: promotion.name,
-    accentColor,
+    backgroundImageDataUrl,
   }
 
-  // 3. Select the composition from the bundle
+  // 4. Select the composition from the bundle
   const composition = await selectComposition({
     serveUrl: bundled,
     id: 'ShortFormVideo',
     inputProps,
   })
 
-  // 4. Ensure output directory exists
+  // 5. Ensure output directory exists
   const outputDir = path.dirname(outputPath)
   fs.mkdirSync(outputDir, { recursive: true })
 
-  // 5. Render to MP4
+  // 6. Render to MP4
   await renderMedia({
     composition,
     serveUrl: bundled,
