@@ -247,7 +247,9 @@ model MediaAsset {
   platform   String?      // null = base | 'blog' | 'tiktok' | 'twitter'
   filePath   String?
   status     String       @default("pending") // pending | done | failed
-  errorMsg   String?
+  errorMsg     String?
+  audioPath    String?
+  captionsJson String?      @db.Text
   width      Int?
   height     Int?
   createdAt  DateTime     @default(now())
