@@ -116,9 +116,18 @@ importers:
       '@react-email/html':
         specifier: 0.0.8
         version: 0.0.8(react@18.3.1)
+      '@remotion/animation-utils':
+        specifier: ^4.0.441
+        version: 4.0.441(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@remotion/bundler':
         specifier: ^4.0.438
         version: 4.0.438(@swc/helpers@0.5.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@remotion/captions':
+        specifier: ^4.0.441
+        version: 4.0.441
+      '@remotion/layout-utils':
+        specifier: ^4.0.441
+        version: 4.0.441
       '@remotion/renderer':
         specifier: ^4.0.0
         version: 4.0.438(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2669,11 +2678,20 @@ packages:
   '@remirror/core-constants@3.0.0':
     resolution: {integrity: sha512-42aWfPrimMfDKDi4YegyS7x+/0tlzaqwPQCULLanv3DMIlu96KTJR0fM5isWX2UViOqlGnX6YFgqWepcX+XMNg==}
 
+  '@remotion/animation-utils@4.0.441':
+    resolution: {integrity: sha512-fEILwrsffMBstWcprheHbe0GIdKPA8KRodQP66e0L25IfnCJLdgemHuxjtd1zOks545tKLweBJYbJ/tw9G002w==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
   '@remotion/bundler@4.0.438':
     resolution: {integrity: sha512-2CVJhgQvdYwh+ioYMZ5xIA+22NIX1/sARTOqDd9nRzxrueTuHN3/U0fhygdwz6TsoVqM9EuDsP1RPSeUbXURpw==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
+
+  '@remotion/captions@4.0.441':
+    resolution: {integrity: sha512-WK0mV3Zg+ODlX6eZQqA/Ki/PH+3+ssx/croVw+Oy1HwIytnXf497hiFtjjoEqL3Yx/hT/j5jrq9oRp0iAvuZZw==}
 
   '@remotion/compositor-darwin-arm64@4.0.438':
     resolution: {integrity: sha512-iRw31eVGczU9gdvJtdNttX09dy9RyZfO/yI+Vtl6LNMWemKrLLuup2gDbU7i7QVw2a6vUH+cv/2eLUtbKdvQJw==}
@@ -2709,6 +2727,9 @@ packages:
     resolution: {integrity: sha512-uso+PNYVQax2wZekkDsfPQrrRT35wySGf6sC2CbQXiwBeHAtsksZZlPpM/N00Rg227ew9jVit7pevdxwt7AD6A==}
     cpu: [x64]
     os: [win32]
+
+  '@remotion/layout-utils@4.0.441':
+    resolution: {integrity: sha512-VS0ndCaQqReM3KJpvk6kVOtnr+INlqDa7kJxXqiREKWxoRjOuZ47m2i+gCrBlXlQfsMcVbi9KkLcRZ/FR4uRvQ==}
 
   '@remotion/licensing@4.0.438':
     resolution: {integrity: sha512-JYg8ebbVkDJDnKt0BZV7OEptAysKkIWTdRPVGdwPeNw6CMcCooPPDuR7gGHjPtm0Odn/A3EKUopCX3kTvyWTPQ==}
@@ -6416,6 +6437,12 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
+  remotion@4.0.441:
+    resolution: {integrity: sha512-m0010sJn8KpW4mEB7aq0CKSNnw048w5cG/uvT9AqGNMfERjXyE+uLBaX769tP/lJ0pNfUWGii/iQMkd5pHZC3A==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
   repeat-string@1.6.1:
     resolution: {integrity: sha512-PV0dzCYDNfRi1jCDbJzpW7jNNDRuCOG/jI5ctQcGKt/clZD+YcPS3yIlWuTJMmESC8aevCFmWJy5wjAFgNqN6w==}
     engines: {node: '>=0.10'}
@@ -9857,6 +9884,12 @@ snapshots:
 
   '@remirror/core-constants@3.0.0': {}
 
+  '@remotion/animation-utils@4.0.441(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      remotion: 4.0.441(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+
   '@remotion/bundler@4.0.438(@swc/helpers@0.5.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@remotion/media-parser': 4.0.438
@@ -9883,6 +9916,8 @@ snapshots:
       - webpack-cli
       - webpack-hot-middleware
 
+  '@remotion/captions@4.0.441': {}
+
   '@remotion/compositor-darwin-arm64@4.0.438':
     optional: true
 
@@ -9903,6 +9938,8 @@ snapshots:
 
   '@remotion/compositor-win32-x64-msvc@4.0.438':
     optional: true
+
+  '@remotion/layout-utils@4.0.441': {}
 
   '@remotion/licensing@4.0.438': {}
 
@@ -14503,6 +14540,11 @@ snapshots:
       - supports-color
 
   remotion@4.0.438(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
+  remotion@4.0.441(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
