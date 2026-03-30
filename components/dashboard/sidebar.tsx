@@ -11,6 +11,7 @@ import {
   Zap,
   Search,
   Camera,
+  FileStack,
 } from "lucide-react";
 
 interface NavItem {
@@ -34,6 +35,11 @@ const mainNavItems: NavItem[] = [
     href: "/content",
     label: "Content",
     icon: <BookOpen size={18} />,
+  },
+  {
+    href: "/posts",
+    label: "Posts",
+    icon: <FileStack size={18} />,
   },
   {
     href: "/media-studio",
