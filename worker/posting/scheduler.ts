@@ -1,6 +1,6 @@
 /**
  * Posting scheduler — called by each platform's cron job in worker/index.ts.
- * Fetches today's approved (or generated) content piece for the given platform
+ * Fetches today's approved content piece for the given platform
  * and dispatches it to the appropriate posting client.
  */
 
@@ -47,8 +47,7 @@ function todayRange(): { gte: Date; lt: Date } {
 
 /**
  * Fetches the content piece to post for the given platform today.
- * Priority: approved > generated (when gate_mode is off).
- * Returns null if nothing is available.
+ * Only returns pieces with status 'approved'. Returns null if nothing is available.
  */
 async function fetchTodayPiece(
   platform: string,
@@ -67,22 +66,7 @@ async function fetchTodayPiece(
 
   if (approved) return approved
 
-  // 2. If gate_mode is off, fall back to generated pieces
-  const gateMode = await getSetting('gate_mode')
-  if (gateMode === 'true') {
-    return null
-  }
-
-  const generated = await db.contentPiece.findFirst({
-    where: {
-      platform,
-      status: 'generated',
-      date: range,
-    },
-    select: { id: true, platform: true, content: true, mediaPath: true },
-  })
-
-  return generated ?? null
+  return null
 }
 
 /**
