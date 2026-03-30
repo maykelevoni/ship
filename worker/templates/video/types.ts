@@ -7,6 +7,8 @@ export interface Caption {
   text: string
   startMs: number
   endMs: number
+  timestampMs: number | null
+  confidence: number | null
 }
 
 export interface CaptionedSlideshowProps {

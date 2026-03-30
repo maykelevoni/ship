@@ -10,6 +10,8 @@ export interface Caption {
   text: string
   startMs: number
   endMs: number
+  timestampMs: number | null
+  confidence: number | null
 }
 
 export interface VoiceoverResult {
@@ -105,6 +107,8 @@ export async function generateVoiceover(params: {
           text: wordChars.join(''),
           startMs: character_start_times_seconds[wordStart] * 1000,
           endMs: character_end_times_seconds[wordEnd] * 1000,
+          timestampMs: null,
+          confidence: null,
         })
         wordChars = []
       }
@@ -125,6 +129,8 @@ export async function generateVoiceover(params: {
       text: wordChars.join(''),
       startMs: character_start_times_seconds[wordStart] * 1000,
       endMs: character_end_times_seconds[wordEnd] * 1000,
+      timestampMs: null,
+      confidence: null,
     })
   }
 

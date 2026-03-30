@@ -85,12 +85,19 @@ export const CaptionedSlideshow: React.FC<CaptionedSlideshowProps> = ({
       {/* Caption pages */}
       {pages.map((page, i) => {
         const startMs = page.startMs
-        const endMs = page.endMs ?? (i < pages.length - 1 ? pages[i + 1].startMs : durationInFrames / fps * 1000)
+        const endMs = page.startMs + page.durationMs
         const startFrame = Math.floor(startMs / 1000 * fps)
         const endFrame = Math.ceil(endMs / 1000 * fps)
+        const pageCaptions = page.tokens.map((t) => ({
+          text: t.text,
+          startMs: t.fromMs,
+          endMs: t.toMs,
+          timestampMs: null,
+          confidence: null,
+        }))
         return (
           <Sequence key={i} from={startFrame} durationInFrames={endFrame - startFrame}>
-            <SubtitlePage captions={page.tokens} startFrame={startFrame} />
+            <SubtitlePage captions={pageCaptions} startFrame={startFrame} />
           </Sequence>
         )
       })}
