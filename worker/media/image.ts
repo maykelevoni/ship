@@ -1,87 +1,54 @@
 /**
  * image.ts
  *
- * Renders social-media images using the Google Gemini API
- * (gemini-2.0-flash-preview-image-generation). Produces PNG files from text
- * prompts built by the helpers in image-prompts.ts.
+ * Two-step image generation:
+ * 1. Gemini generates a photorealistic background scene (no text)
+ * 2. Sharp composites the exact post title + URL as text overlay
  *
- * No Puppeteer is used anywhere in this module.
+ * This prevents Gemini from overriding our text with its own marketing copy.
  */
 
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 import { GoogleGenAI } from '@google/genai'
 import type { Promotion } from '@prisma/client'
 import { getSetting } from '../../lib/settings'
-import {
-  buildTextCardPrompt,
-  buildQuoteCardPrompt,
-  buildStatCardPrompt,
-  getStyleForPromotion,
-  type ImageStyle,
-} from './image-prompts'
+import type { ImageStyle } from './image-prompts'
 
 // ---------------------------------------------------------------------------
-// Core renderer
+// Step 1: Generate background scene with Gemini (no text)
 // ---------------------------------------------------------------------------
 
-export async function renderImage(params: {
-  style: ImageStyle
-  promptData: Record<string, string>
-  outputPath: string
-}): Promise<string> {
-  const { style, promptData, outputPath } = params
+async function generateBackgroundScene(params: {
+  topic: string
+  description?: string
+}): Promise<Buffer> {
+  const { topic, description } = params
 
-  // 1. Fetch API key from Setting table
   const apiKey = await getSetting('gemini_api_key')
-  if (!apiKey) {
-    throw new Error('gemini_api_key not found in Setting table')
-  }
+  if (!apiKey) throw new Error('gemini_api_key not found in Setting table')
 
-  // 2. Initialize Gemini client
   const ai = new GoogleGenAI({ apiKey })
 
-  // 3. Build the prompt string for the requested style
-  let prompt: string
-  switch (style) {
-    case 'text-card':
-      prompt = buildTextCardPrompt({
-        headline: promptData.headline ?? '',
-        subtext: promptData.subtext,
-        badge: promptData.badge,
-        url: promptData.url,
-        accentColor: promptData.accentColor,
-      })
-      break
-    case 'quote-card':
-      prompt = buildQuoteCardPrompt({
-        quote: promptData.quote ?? '',
-        attribution: promptData.attribution,
-        url: promptData.url,
-      })
-      break
-    case 'stat-card':
-      prompt = buildStatCardPrompt({
-        stat: promptData.stat ?? '',
-        label: promptData.label ?? '',
-        context: promptData.context,
-        url: promptData.url,
-      })
-      break
-    default:
-      throw new Error(`Unknown image style: ${style}`)
-  }
+  const prompt = `Create a stunning, photorealistic, cinematic background image for a social media post.
 
-  // 4. Call Gemini image generation API
+Topic: "${topic}"${description ? `\nContext: ${description}` : ''}
+
+Visual requirements:
+- Photorealistic scene that visually represents the topic above
+- Show a real environment, people, or subject directly related to this topic
+- Cinematic lighting, professional photography quality, vivid and dramatic
+- Square 1:1 aspect ratio (1080x1080px)
+- NO text, NO typography, NO words, NO overlays of any kind
+- Pure visual scene only — text will be added separately`
+
   const response = await ai.models.generateContent({
-    model: 'gemini-2.0-flash-preview-image-generation',
+    model: 'gemini-3.1-flash-image-preview',
     contents: prompt,
-    config: {
-      responseModalities: ['IMAGE'],
-    },
+    config: { responseModalities: ['IMAGE'] },
   })
 
-  // 5. Extract base64 image data from response parts
   const parts = response.candidates?.[0]?.content?.parts ?? []
   const imagePart = parts.find((part: any) => part.inlineData)
 
@@ -89,13 +56,134 @@ export async function renderImage(params: {
     throw new Error('Gemini response did not contain an image part')
   }
 
-  const base64Data: string = imagePart.inlineData.data
+  return Buffer.from(imagePart.inlineData.data, 'base64')
+}
 
-  // 6. Write PNG to disk
-  fs.writeFileSync(outputPath, Buffer.from(base64Data, 'base64'))
+// ---------------------------------------------------------------------------
+// Step 2: Composite text overlay using Sharp
+// ---------------------------------------------------------------------------
 
-  // 7. Return the output path
+async function compositeTextOverlay(params: {
+  backgroundBuffer: Buffer
+  headline: string
+  subtext?: string
+  url?: string
+  outputPath: string
+}): Promise<string> {
+  const { backgroundBuffer, headline, subtext, url, outputPath } = params
+
+  const width = 1080
+  const height = 1080
+  const padding = 60
+  const lineHeight = 68
+  const fontSize = 58
+
+  // Resize background to 1080x1080
+  const bg = await sharp(backgroundBuffer)
+    .resize(width, height, { fit: 'cover' })
+    .toBuffer()
+
+  // Wrap headline into lines (~30 chars per line)
+  const words = headline.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    if ((current + ' ' + word).trim().length > 30) {
+      if (current) lines.push(current.trim())
+      current = word
+    } else {
+      current = (current + ' ' + word).trim()
+    }
+  }
+  if (current) lines.push(current.trim())
+
+  // Text band height: dark solid bar at the BOTTOM covering ~40% of image
+  const bandHeight = Math.min(
+    lines.length * lineHeight + (subtext ? 70 : 0) + (url ? 50 : 0) + padding * 2,
+    height * 0.55
+  )
+  const bandY = height - bandHeight
+
+  // Y positions (from top of band)
+  const headlineStartY = bandY + padding + fontSize
+  const subtextY = headlineStartY + lines.length * lineHeight + 28
+  const urlY = height - padding - 8
+
+  const headlineSvg = lines.map((line, i) =>
+    `<text x="${padding}" y="${headlineStartY + i * lineHeight}"
+      font-size="${fontSize}" font-weight="bold" fill="white"
+      font-family="Arial, Helvetica, sans-serif">${escapeXml(line)}</text>`
+  ).join('\n')
+
+  const subtextSvg = subtext
+    ? `<text x="${padding}" y="${subtextY}"
+        font-size="30" fill="#d4d4d4"
+        font-family="Arial, Helvetica, sans-serif"
+        >${escapeXml(subtext.substring(0, 90))}${subtext.length > 90 ? '…' : ''}</text>`
+    : ''
+
+  const urlSvg = url
+    ? `<text x="${padding}" y="${urlY}"
+        font-size="24" fill="#a1a1aa"
+        font-family="Arial, Helvetica, sans-serif">${escapeXml(url)}</text>`
+    : ''
+
+  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+  <!-- DEBUG: bright red band to confirm Sharp is running -->
+  <rect x="0" y="0" width="${width}" height="40" fill="red"/>
+  <!-- Solid dark band at bottom — covers Gemini's baked-in text -->
+  <rect x="0" y="${bandY}" width="${width}" height="${bandHeight}" fill="rgba(0,0,0,0.82)"/>
+  <!-- Thin accent line at top of band -->
+  <rect x="0" y="${bandY}" width="${width}" height="4" fill="#6366f1"/>
+  ${headlineSvg}
+  ${subtextSvg}
+  ${urlSvg}
+</svg>`
+
+  const svgBuffer = Buffer.from(svg)
+
+  await sharp(bg)
+    .composite([{ input: svgBuffer, top: 0, left: 0 }])
+    .png()
+    .toFile(outputPath)
+
   return outputPath
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+// ---------------------------------------------------------------------------
+// Core renderer (two-step)
+// ---------------------------------------------------------------------------
+
+export async function renderImage(params: {
+  style: ImageStyle
+  promptData: Record<string, string>
+  outputPath: string
+}): Promise<string> {
+  const { promptData, outputPath } = params
+
+  // Step 1: Generate background scene (Gemini, no text)
+  const bgBuffer = await generateBackgroundScene({
+    topic: promptData.headline ?? '',
+    description: promptData.subtext,
+  })
+
+  // Step 2: Composite exact text on top (Sharp)
+  return compositeTextOverlay({
+    backgroundBuffer: bgBuffer,
+    headline: promptData.headline ?? '',
+    subtext: promptData.subtext,
+    url: promptData.url,
+    outputPath,
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -105,33 +193,22 @@ export async function renderImage(params: {
 export async function renderImageForPlatform(params: {
   platform: 'linkedin' | 'instagram'
   promotion: Promotion
-  content: string
+  postTitle: string
+  postDescription?: string
   date: string
 }): Promise<string> {
-  const { platform, promotion, content, date } = params
+  const { platform, promotion, postTitle, postDescription, date } = params
 
-  // Pick style based on promotion type
-  const style = getStyleForPromotion(promotion.type)
-
-  // Build promptData from promotion fields
   const promptData: Record<string, string> = {
-    // text-card / stat-card shared fields
-    headline: promotion.name,
-    subtext: promotion.description,
+    headline: postTitle,
+    subtext: postDescription ?? '',
     url: promotion.url,
-    // quote-card fields
-    quote: content,
-    attribution: promotion.name,
-    // stat-card fields
-    stat: promotion.price ?? '',
-    label: promotion.description,
   }
 
-  // Ensure output directory exists
   const outputDir = path.resolve('./media/images')
   fs.mkdirSync(outputDir, { recursive: true })
 
   const outputPath = path.join(outputDir, `${date}-${platform}.png`)
 
-  return renderImage({ style, promptData, outputPath })
+  return renderImage({ style: 'text-card', promptData, outputPath })
 }

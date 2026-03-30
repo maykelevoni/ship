@@ -1,11 +1,9 @@
 /**
  * image-prompts.ts
  *
- * Prompt builders for the Google Gemini image generation API
- * (gemini-2.0-flash-preview-image-generation).  Each function returns a
- * detailed natural-language string that instructs Gemini to produce a 1:1
- * square social-media card with a dark background, white text, and an
- * indigo/purple accent.
+ * Prompt builders for the Google Gemini image generation API.
+ * Each function returns a prompt that produces a photorealistic marketing
+ * image — pure visual scene, no text overlays.
  */
 
 // ---------------------------------------------------------------------------
@@ -17,10 +15,8 @@ export type ImageStyle = 'text-card' | 'quote-card' | 'stat-card'
 export interface TextCardData {
   headline: string
   subtext?: string
-  /** Short badge label rendered at the top, e.g. "FREE EBOOK" */
+  /** Short badge label, e.g. "FREE EBOOK" — used to inform the scene */
   badge?: string
-  /** URL displayed as small muted text at the bottom */
-  url?: string
   /** Override the default indigo accent color (hex). Default: #6366f1 */
   accentColor?: string
 }
@@ -28,8 +24,6 @@ export interface TextCardData {
 export interface QuoteCardData {
   quote: string
   attribution?: string
-  /** URL displayed as small muted text at the bottom */
-  url?: string
 }
 
 export interface StatCardData {
@@ -39,103 +33,63 @@ export interface StatCardData {
   label: string
   /** Optional extra context sentence */
   context?: string
-  /** URL displayed as small muted text at the bottom */
-  url?: string
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_ACCENT = '#6366f1'
-
 const BASE_STYLE = `
-Design requirements:
-- Perfectly square 1:1 aspect ratio, suitable for Instagram and LinkedIn posts.
-- Background: solid near-black (#0f0f0f).
-- All primary text: crisp, high-contrast white (#ffffff).
-- Supporting / secondary text: light gray (#a1a1aa).
-- Accent / highlight color: indigo-purple.
-- Typography: modern, clean sans-serif (e.g. Inter, Geist, or similar).
-- Layout: generous padding (≥8% of canvas width on every side), ample vertical
-  breathing room between sections.
-- No photographs, no gradients, no textures — flat, minimal, editorial.
-- No clutter: only the elements described below.
-- The final image must look polished enough to publish directly as a social post.
+Visual style requirements:
+- Square 1:1 aspect ratio (1080×1080px), optimized for Instagram and LinkedIn.
+- Photorealistic, highly detailed scene — real objects, real environments, real people or animals as relevant. NOT abstract shapes, gradients, or patterns.
+- Cinematic lighting, professional photography quality, vivid and saturated colors.
+- No text, no UI elements, no overlays, no watermarks — pure visual scene only.
+- The result must look like a professional stock photo or film still, not a graphic design.
 `.trim()
-
-function urlLine(url?: string): string {
-  return url ? `\n- Bottom: small muted gray URL text "${url}".` : ''
-}
 
 // ---------------------------------------------------------------------------
 // Prompt builders
 // ---------------------------------------------------------------------------
 
 /**
- * Builds a Gemini image-generation prompt for a text/announcement card.
- *
- * Layout (top → bottom):
- *   [optional badge pill]  →  headline  →  [optional subtext]  →  [optional url]
+ * Builds a Gemini prompt that generates a photorealistic marketing image
+ * representing the topic visually — no text overlaid.
  */
 export function buildTextCardPrompt(data: TextCardData): string {
-  const accent = data.accentColor ?? DEFAULT_ACCENT
+  return `Create a stunning square photorealistic image (1:1 ratio).
 
-  const badgeLine = data.badge
-    ? `\n- Top-center: a small rounded pill badge with text "${data.badge}" in bold uppercase white letters on a solid ${accent} background.`
-    : ''
-
-  const subtextLine = data.subtext
-    ? `\n- Below the headline: supporting text "${data.subtext}" in light gray, smaller font.`
-    : ''
-
-  return `Create a square social media image (1:1 ratio).
-
-Layout (top to bottom):${badgeLine}
-- Center: very large bold white headline text — "${data.headline}".${subtextLine}${urlLine(data.url)}
-
-Accent color for this card: ${accent}.
+SCENE: A photorealistic, cinematic image that visually represents this topic:
+"${data.headline}"${data.subtext ? ` — ${data.subtext}` : ''}.
+Show a real, vivid environment or scene directly related to this topic. No product mockups.
 
 ${BASE_STYLE}`
 }
 
 /**
- * Builds a Gemini image-generation prompt for a pull-quote card.
- *
- * Layout (top → bottom):
- *   large opening quotation mark (accent)  →  quote text  →  [attribution]  →  [url]
+ * Builds a Gemini prompt for a photorealistic image representing a quote's theme.
  */
 export function buildQuoteCardPrompt(data: QuoteCardData): string {
-  const attributionLine = data.attribution
-    ? `\n- Below the quote: attribution line "— ${data.attribution}" in light gray italic text, smaller than the quote.`
-    : ''
+  return `Create a stunning square photorealistic image (1:1 ratio).
 
-  return `Create a square social media image (1:1 ratio).
-
-Layout (top to bottom):
-- Top-left: a very large decorative opening quotation mark (" ) in ${DEFAULT_ACCENT} indigo, acting as a visual anchor.
-- Center: the quote text "${data.quote}" in large bold white, centered, with generous line-height.${attributionLine}${urlLine(data.url)}
+SCENE: A photorealistic, cinematic image that visually represents the theme of:
+"${data.quote}"${data.attribution ? ` by ${data.attribution}` : ''}.
+Show a real, relevant scene — a person, environment, or subject that embodies the message.
+Use cinematic lighting and vivid detail.
 
 ${BASE_STYLE}`
 }
 
 /**
- * Builds a Gemini image-generation prompt for a statistics/metric card.
- *
- * Layout (top → bottom):
- *   giant stat number  →  label  →  [context]  →  [url]
+ * Builds a Gemini prompt for a photorealistic image representing a statistic visually.
  */
 export function buildStatCardPrompt(data: StatCardData): string {
-  const contextLine = data.context
-    ? `\n- Below the label: a shorter context sentence "${data.context}" in light gray, smaller font.`
-    : ''
+  return `Create a stunning square photorealistic image (1:1 ratio).
 
-  return `Create a square social media image (1:1 ratio).
-
-Layout (top to bottom):
-- Center: an enormous, bold white metric — "${data.stat}" — displayed in the largest possible font, visually dominant.
-- Directly below: a bold white label — "${data.label}" — in a noticeably smaller but still large font.${contextLine}${urlLine(data.url)}
-- A thin horizontal ${DEFAULT_ACCENT} indigo accent line separates the metric from the label.
+SCENE: A photorealistic, cinematic image that visually represents:
+"${data.label}"${data.context ? ` — ${data.context}` : ''}.
+Show a real, relevant scene with strong visual impact that makes the concept feel credible and impressive.
+Use dynamic lighting and professional photography style.
 
 ${BASE_STYLE}`
 }
@@ -146,12 +100,6 @@ ${BASE_STYLE}`
 
 /**
  * Maps a promotion type string to the most appropriate ImageStyle.
- *
- * | promotionType  | ImageStyle   |
- * |----------------|--------------|
- * | "lead_magnet"  | "text-card"  |
- * | "product"      | "stat-card"  |
- * | (default)      | "text-card"  |
  */
 export function getStyleForPromotion(promotionType: string): ImageStyle {
   switch (promotionType) {

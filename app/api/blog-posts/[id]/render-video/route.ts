@@ -19,22 +19,23 @@ export const POST = auth(async (req, ctx) => {
 
     if (!post) return new Response("Not found", { status: 404 });
 
-    // 2. Find pieces: first by blogPostId, then date fallback
-    let pieces = post.contentPieces;
-    if (pieces.length === 0) {
-      const dayStart = new Date(post.date);
-      dayStart.setUTCHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    // 2. Merge pieces by blogPostId + pieces by date (deduplicated by id)
+    const dayStart = new Date(post.date);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
 
-      pieces = await db.contentPiece.findMany({
-        where: {
-          date: { gte: dayStart, lt: dayEnd },
-          platform: { not: "master" },
-        },
-        orderBy: { platform: "asc" },
-      });
-    }
+    const datePieces = await db.contentPiece.findMany({
+      where: {
+        date: { gte: dayStart, lt: dayEnd },
+        platform: { not: "master" },
+      },
+      orderBy: { platform: "asc" },
+    });
+
+    const byId = new Map(post.contentPieces.map((p) => [p.id, p]));
+    for (const p of datePieces) byId.set(p.id, p);
+    const pieces = Array.from(byId.values());
 
     // 3. Find the video content piece
     const videoPiece = pieces.find((p) => p.platform === "video") ?? null;
@@ -45,10 +46,11 @@ export const POST = auth(async (req, ctx) => {
       );
     }
 
-    // 4. Parse the video script JSON
+    // 4. Parse the video script JSON (strip markdown code fences if present)
     let script: { hook: string; points: string[]; reveal: string; cta: string };
     try {
-      script = JSON.parse(videoPiece.content ?? "");
+      const raw = (videoPiece.content ?? "").replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "").trim();
+      script = JSON.parse(raw);
     } catch {
       return Response.json(
         { error: "Video script is not valid JSON" },

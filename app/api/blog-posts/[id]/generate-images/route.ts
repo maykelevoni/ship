@@ -59,10 +59,10 @@ export const POST = auth(async (req, ctx) => {
     const d = new Date(post.date);
     const date = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 
-    // 6. Generate both images
+    // 6. Generate both images — visual scene is based on the post topic
     const [linkedinPath, instagramPath] = await Promise.all([
-      renderImageForPlatform({ platform: "linkedin", promotion, content: "", date }),
-      renderImageForPlatform({ platform: "instagram", promotion, content: "", date }),
+      renderImageForPlatform({ platform: "linkedin", promotion, postTitle: post.title, postDescription: post.seoDescription ?? undefined, date }),
+      renderImageForPlatform({ platform: "instagram", promotion, postTitle: post.title, postDescription: post.seoDescription ?? undefined, date }),
     ]);
 
     // Relative paths for DB storage

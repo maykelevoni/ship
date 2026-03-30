@@ -18,22 +18,25 @@ export const GET = auth(async (req, ctx) => {
 
     if (!post) return new Response("Not found", { status: 404 });
 
-    // If no pieces linked by blogPostId, fall back to fetching by date
-    let pieces = post.contentPieces;
-    if (pieces.length === 0) {
-      const dayStart = new Date(post.date);
-      dayStart.setUTCHours(0, 0, 0, 0);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    // Always merge pieces by blogPostId + pieces by date (deduplicated by id)
+    const dayStart = new Date(post.date);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
 
-      pieces = await db.contentPiece.findMany({
-        where: {
-          date: { gte: dayStart, lt: dayEnd },
-          platform: { not: "master" },
-        },
-        orderBy: { platform: "asc" },
-      });
-    }
+    const datePieces = await db.contentPiece.findMany({
+      where: {
+        date: { gte: dayStart, lt: dayEnd },
+        platform: { not: "master" },
+      },
+      orderBy: { platform: "asc" },
+    });
+
+    const byId = new Map(post.contentPieces.map((p) => [p.id, p]));
+    for (const p of datePieces) byId.set(p.id, p);
+    const pieces = Array.from(byId.values()).sort((a, b) =>
+      a.platform.localeCompare(b.platform)
+    );
 
     // Fetch geoScore from the first piece that has a promotionId
     let geoScore: number | null = null;
