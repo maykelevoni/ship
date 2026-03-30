@@ -5,6 +5,7 @@ import { renderMedia, selectComposition } from '@remotion/renderer'
 import { GoogleGenAI } from '@google/genai'
 import type { Promotion } from '@prisma/client'
 import { getSetting } from '../../lib/settings'
+import type { Caption } from './audio'
 
 // ---------------------------------------------------------------------------
 // Background image generator (Gemini)
@@ -130,4 +131,42 @@ export async function renderVideoForPromotion(params: {
     promotion: { name: promotion.name, url: promotion.url },
     outputPath,
   })
+}
+
+// ---------------------------------------------------------------------------
+// CaptionedSlideshow renderer
+// ---------------------------------------------------------------------------
+
+export async function renderCaptionedVideo(params: {
+  images: string[]
+  audioDataUrl: string
+  captions: Caption[]
+  durationSeconds: number
+  outputPath: string
+}): Promise<string> {
+  const { images, audioDataUrl, captions, durationSeconds, outputPath } = params
+  const durationInFrames = Math.ceil(durationSeconds * 30)
+
+  const entryPoint = path.join(process.cwd(), 'worker/templates/video/index.tsx')
+  const bundled = await bundle({ entryPoint })
+
+  const inputProps = { images, audioDataUrl, captions, durationInFrames }
+
+  const composition = await selectComposition({
+    serveUrl: bundled,
+    id: 'CaptionedSlideshow',
+    inputProps,
+  })
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+
+  await renderMedia({
+    composition,
+    serveUrl: bundled,
+    codec: 'h264',
+    outputLocation: outputPath,
+    inputProps,
+  })
+
+  return outputPath
 }

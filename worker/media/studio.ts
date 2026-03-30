@@ -19,7 +19,8 @@ import sharp from 'sharp'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenAI } from '@google/genai'
 import { getSetting } from '../../lib/settings'
-import { renderVideo } from './video'
+import { renderCaptionedVideo } from './video'
+import { generateVoiceover } from './audio'
 
 // ---------------------------------------------------------------------------
 // Platform size definitions
@@ -131,9 +132,9 @@ All values must be short, conversational, and optimised for vertical video (TikT
 export async function generateStudioVideo(params: {
   prompt: string
   parentScript?: string        // JSON string of prior script; Claude will extend it
-  backgroundImageDataUrl?: string  // base64 data URL to pass as Remotion background
+  backgroundImageDataUrl?: string  // kept for backwards compatibility — not used in new flow
   outputPath: string
-}): Promise<{ filePath: string; script: string }> {
+}): Promise<{ filePath: string; script: string; audioPath: string; captionsJson: string }> {
   const { prompt, parentScript, backgroundImageDataUrl, outputPath } = params
 
   // ---- Claude script generation ----
@@ -171,13 +172,49 @@ export async function generateStudioVideo(params: {
     cta: string
   }
 
-  // ---- Remotion render ----
-  await renderVideo({
-    script: parsedScript,
-    promotion: { name: '', url: '' },
-    outputPath,
-    backgroundImageDataUrl,
+  // ---- Generate 5 section images in parallel ----
+  const sectionPrompts = [
+    `Cinematic scene: ${parsedScript.hook}. Vertical 9:16 portrait, photorealistic, no text`,
+    `Cinematic scene: ${parsedScript.points[0]}. Vertical 9:16 portrait, photorealistic, no text`,
+    `Cinematic scene: ${parsedScript.points[1]}. Vertical 9:16 portrait, photorealistic, no text`,
+    `Cinematic scene: ${parsedScript.points[2]}. Vertical 9:16 portrait, photorealistic, no text`,
+    `Cinematic scene: ${parsedScript.reveal}. Vertical 9:16 portrait, photorealistic, no text`,
+  ]
+
+  const imageResults = await Promise.all(
+    sectionPrompts.map((prompt, i) =>
+      generateStudioImage({
+        prompt,
+        outputPath: outputPath.replace('.mp4', `-img${i}.png`),
+      })
+    )
+  )
+  const imageDataUrls = imageResults.map(
+    (r) => `data:image/png;base64,${r.buffer.toString('base64')}`
+  )
+
+  // ---- Generate ElevenLabs voiceover ----
+  const narrationText = [
+    parsedScript.hook,
+    ...parsedScript.points,
+    parsedScript.reveal,
+    parsedScript.cta,
+  ].join('. ') + '.'
+
+  const audioOutputPath = outputPath.replace('.mp4', '.mp3')
+  const { audioPath, audioDataUrl, captions, durationSeconds } = await generateVoiceover({
+    text: narrationText,
+    outputPath: audioOutputPath,
   })
 
-  return { filePath: outputPath, script: JSON.stringify(parsedScript) }
+  // ---- Render CaptionedSlideshow ----
+  await renderCaptionedVideo({
+    images: imageDataUrls,
+    audioDataUrl,
+    captions,
+    durationSeconds,
+    outputPath,
+  })
+
+  return { filePath: outputPath, script: JSON.stringify(parsedScript), audioPath, captionsJson: JSON.stringify(captions) }
 }
