@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { FileStack } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-interface PostListItem {
+interface BlogPost {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  ghostId: string | null;
+  ghostUrl: string | null;
+  createdAt: string;
+}
+
+interface SocialPost {
   id: string;
   platform: string;
   promotionId: string | null;
@@ -17,201 +27,467 @@ interface PostListItem {
   mediaPath: string | null;
   createdAt: string;
   scheduledAt: string | null;
+  error?: string | null;
 }
 
-// ─── Filter tabs ──────────────────────────────────────────────────────────────
+interface EmailDraft {
+  id: string;
+  subject: string;
+  status: string;
+  sentAt: string | null;
+  createdAt: string;
+  blogPost: { title: string; ghostUrl: string | null } | null;
+}
 
-type TabValue = "all" | "draft" | "approved" | "posted" | "failed";
+// ─── Tab config ────────────────────────────────────────────────────────────────
 
-const TABS: { label: string; value: TabValue }[] = [
-  { label: "All", value: "all" },
-  { label: "Draft", value: "draft" },
-  { label: "Approved", value: "approved" },
-  { label: "Posted", value: "posted" },
-  { label: "Failed", value: "failed" },
+type TabKey = "blog" | "twitter" | "linkedin" | "video" | "instagram" | "reddit" | "email";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "blog", label: "Blog" },
+  { key: "twitter", label: "X" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "video", label: "TikTok" },
+  { key: "instagram", label: "Instagram" },
+  { key: "reddit", label: "Reddit" },
+  { key: "email", label: "Email" },
 ];
 
-// Maps UI tab value → API status param
-function tabToStatus(tab: TabValue): string | null {
-  if (tab === "all") return null;
-  if (tab === "draft") return "generated";
-  return tab; // approved, posted, failed are the same
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ─── Badge helpers ────────────────────────────────────────────────────────────
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
-function getPlatformBadgeStyle(platform: string): React.CSSProperties {
-  switch (platform) {
-    case "twitter":
-      return { background: "rgba(29,155,240,0.15)", color: "#1d9bf0" };
-    case "linkedin":
-      return { background: "rgba(0,119,181,0.15)", color: "#0a66c2" };
-    case "instagram":
-      return { background: "rgba(225,48,108,0.15)", color: "#e1306c" };
-    case "reddit":
-      return { background: "rgba(255,69,0,0.15)", color: "#ff4500" };
-    case "email":
-      return { background: "rgba(74,222,128,0.15)", color: "#4ade80" };
-    case "video":
-      return { background: "rgba(168,85,247,0.15)", color: "#a855f7" };
-    default:
-      return { background: "rgba(82,82,91,0.15)", color: "#71717a" };
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, "");
+}
+
+function truncate(str: string, len: number): string {
+  return str.length > len ? str.slice(0, len) + "…" : str;
+}
+
+// ─── Style constants ───────────────────────────────────────────────────────────
+
+const pillStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "2px 8px",
+  borderRadius: "20px",
+  fontSize: "11px",
+  fontWeight: 600,
+};
+
+const headerColStyle: React.CSSProperties = {
+  fontSize: "11px",
+  fontWeight: 700,
+  color: "#52525b",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
+
+// ─── Status badge helpers ──────────────────────────────────────────────────────
+
+function getBlogStatusBadge(status: string): { style: React.CSSProperties; label: string } {
+  if (status === "published") {
+    return {
+      style: { background: "rgba(34,197,94,0.15)", color: "#22c55e" },
+      label: "Published",
+    };
   }
+  return {
+    style: { background: "rgba(251,191,36,0.15)", color: "#fbbf24" },
+    label: "Draft",
+  };
 }
 
-function getStatusBadgeStyle(status: string): { style: React.CSSProperties; label: string } {
+function getSocialStatusBadge(
+  status: string,
+  scheduledAt: string | null,
+  error?: string | null
+): { style: React.CSSProperties; label: string; title?: string } {
   switch (status) {
     case "generated":
-      return {
-        style: { background: "rgba(251,191,36,0.15)", color: "#fbbf24" },
-        label: "Draft",
-      };
+      return { style: { background: "rgba(251,191,36,0.15)", color: "#fbbf24" }, label: "Draft" };
     case "approved":
+      if (scheduledAt) {
+        return {
+          style: { background: "rgba(59,130,246,0.15)", color: "#60a5fa" },
+          label: `Scheduled ${formatDate(scheduledAt)}`,
+        };
+      }
       return {
         style: { background: "rgba(99,102,241,0.15)", color: "#818cf8" },
         label: "Approved",
       };
     case "posted":
       return {
-        style: { background: "rgba(74,222,128,0.15)", color: "#4ade80" },
-        label: "Posted",
+        style: { background: "rgba(34,197,94,0.15)", color: "#22c55e" },
+        label: scheduledAt ? `Posted ${formatDate(scheduledAt)}` : "Posted",
       };
     case "failed":
       return {
         style: { background: "rgba(248,113,113,0.15)", color: "#f87171" },
         label: "Failed",
+        title: error ?? undefined,
       };
+    case "posting":
+      return { style: { background: "rgba(82,82,91,0.15)", color: "#71717a" }, label: "Posting…" };
     case "rejected":
-      return {
-        style: { background: "rgba(82,82,91,0.15)", color: "#71717a" },
-        label: "Rejected",
-      };
+      return { style: { background: "rgba(82,82,91,0.15)", color: "#71717a" }, label: "Rejected" };
     default:
-      return {
-        style: { background: "rgba(82,82,91,0.15)", color: "#71717a" },
-        label: status,
-      };
+      return { style: { background: "rgba(82,82,91,0.15)", color: "#71717a" }, label: status };
   }
 }
 
-function platformLabel(platform: string): string {
-  const labels: Record<string, string> = {
-    twitter: "Twitter",
-    linkedin: "LinkedIn",
-    instagram: "Instagram",
-    reddit: "Reddit",
-    email: "Email",
-    video: "Video",
-  };
-  return labels[platform] ?? platform.charAt(0).toUpperCase() + platform.slice(1);
+function getEmailStatusBadge(status: string): { style: React.CSSProperties; label: string } {
+  if (status === "sent") {
+    return { style: { background: "rgba(34,197,94,0.15)", color: "#22c55e" }, label: "Sent" };
+  }
+  return { style: { background: "rgba(251,191,36,0.15)", color: "#fbbf24" }, label: "Pending" };
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+// ─── Skeleton ──────────────────────────────────────────────────────────────────
 
-// ─── Skeleton row ─────────────────────────────────────────────────────────────
-
-function SkeletonRow() {
+function SkeletonRows() {
   return (
-    <div
-      style={{
-        height: "48px",
-        background: "#1a1a1a",
-        borderRadius: "6px",
-        marginBottom: "4px",
-      }}
-    />
+    <div style={{ padding: "8px 16px" }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div
+          key={i}
+          style={{
+            height: "52px",
+            background: "#1a1a1a",
+            borderRadius: "6px",
+            marginBottom: "4px",
+          }}
+        />
+      ))}
+    </div>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Attention count helper ─────────────────────────────────────────────────────
 
-export default function PostsPage() {
-  const [pieces, setPieces] = useState<PostListItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabValue>("all");
+function attentionCount(
+  tab: TabKey,
+  blogPosts: BlogPost[],
+  socialData: Record<string, SocialPost[]>,
+  emailDrafts: EmailDraft[]
+): number {
+  if (tab === "blog") {
+    return blogPosts.filter((p) => p.status === "draft").length;
+  }
+  if (tab === "email") {
+    return emailDrafts.filter((d) => d.status === "pending").length;
+  }
+  const posts = socialData[tab] ?? [];
+  return posts.filter((p) => p.status === "generated" || p.status === "failed").length;
+}
 
-  const LIMIT = 50;
+// ─── Page ──────────────────────────────────────────────────────────────────────
 
-  async function fetchPosts(pageNum: number, replace: boolean, tab: TabValue) {
+export default function ContentHubPage() {
+  const router = useRouter();
+
+  const [activeTab, setActiveTab] = useState<TabKey>("blog");
+
+  // Per-tab data
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [emailDrafts, setEmailDrafts] = useState<EmailDraft[]>([]);
+  const [socialData, setSocialData] = useState<Record<string, SocialPost[]>>({});
+
+  // Per-tab loading
+  const [loadingTabs, setLoadingTabs] = useState<Record<string, boolean>>({});
+  // Which tabs have already been fetched
+  const [fetchedTabs, setFetchedTabs] = useState<Set<string>>(new Set());
+
+  // Per-item action in-flight sets
+  const [publishing, setPublishing] = useState<Set<string>>(new Set());
+  const [publishedIds, setPublishedIds] = useState<Set<string>>(new Set());
+  const [approving, setApproving] = useState<Set<string>>(new Set());
+  const [sending, setSending] = useState<Set<string>>(new Set());
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+
+  // Inline schedule picker state: id → { open, value }
+  const [schedulePickers, setSchedulePickers] = useState<
+    Record<string, { open: boolean; value: string }>
+  >({});
+  const [scheduling, setScheduling] = useState<Set<string>>(new Set());
+
+  // Error messages per item
+  const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
+
+  // ── Fetch helpers ────────────────────────────────────────────────────────────
+
+  const fetchTab = useCallback(
+    async (tab: TabKey) => {
+      if (fetchedTabs.has(tab)) return;
+      setLoadingTabs((prev) => ({ ...prev, [tab]: true }));
+      try {
+        if (tab === "blog") {
+          const res = await fetch("/api/blog-posts");
+          if (res.ok) {
+            const data: BlogPost[] = await res.json();
+            setBlogPosts(data);
+          }
+        } else if (tab === "email") {
+          const res = await fetch("/api/email-drafts");
+          if (res.ok) {
+            const data: EmailDraft[] = await res.json();
+            setEmailDrafts(data);
+          }
+        } else {
+          const res = await fetch(`/api/posts?platform=${tab}&limit=100`);
+          if (res.ok) {
+            const json: { data: SocialPost[] } = await res.json();
+            setSocialData((prev) => ({ ...prev, [tab]: json.data }));
+          }
+        }
+        setFetchedTabs((prev) => new Set(prev).add(tab));
+      } catch {
+        // silently fail
+      } finally {
+        setLoadingTabs((prev) => ({ ...prev, [tab]: false }));
+      }
+    },
+    [fetchedTabs]
+  );
+
+  function handleTabClick(tab: TabKey) {
+    setActiveTab(tab);
+    fetchTab(tab);
+  }
+
+  // Trigger blog tab on mount
+  if (!fetchedTabs.has("blog") && !loadingTabs["blog"]) {
+    fetchTab("blog");
+  }
+
+  // ── Blog actions ─────────────────────────────────────────────────────────────
+
+  async function handlePublish(id: string) {
+    setPublishing((prev) => new Set(prev).add(id));
+    setItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
     try {
-      const statusParam = tabToStatus(tab);
-      const statusQuery = statusParam ? `&status=${statusParam}` : "";
-      const res = await fetch(`/api/posts?page=${pageNum}&limit=${LIMIT}${statusQuery}`);
+      const res = await fetch(`/api/blog-posts/${id}/publish`, { method: "POST" });
       if (res.ok) {
-        const json: { data: PostListItem[]; total: number } = await res.json();
-        setTotal(json.total);
-        setPieces((prev) => (replace ? json.data : [...prev, ...json.data]));
-        setPage(pageNum);
+        setBlogPosts((prev) =>
+          prev.map((p) => (p.id === id ? { ...p, status: "published" } : p))
+        );
+        setPublishedIds((prev) => new Set(prev).add(id));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setItemErrors((prev) => ({
+          ...prev,
+          [id]: (err as { error?: string }).error ?? "Publish failed.",
+        }));
       }
     } catch {
-      // silently fail
+      setItemErrors((prev) => ({ ...prev, [id]: "Publish failed." }));
+    } finally {
+      setPublishing((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
     }
   }
 
-  useEffect(() => {
-    setLoading(true);
-    setPieces([]);
-    fetchPosts(1, true, activeTab).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  // ── Social actions ───────────────────────────────────────────────────────────
 
-  // Tab counts: derived client-side from loaded pieces
-  function getTabCount(tab: TabValue): number {
-    if (tab === "all") return pieces.length;
-    const status = tabToStatus(tab);
-    return pieces.filter((p) => p.status === status).length;
+  async function handleApprove(tab: string, id: string) {
+    setApproving((prev) => new Set(prev).add(id));
+    // Optimistic
+    setSocialData((prev) => ({
+      ...prev,
+      [tab]: (prev[tab] ?? []).map((p) =>
+        p.id === id ? { ...p, status: "approved" } : p
+      ),
+    }));
+    try {
+      const res = await fetch(`/api/posts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      });
+      if (!res.ok) {
+        // revert
+        setSocialData((prev) => ({
+          ...prev,
+          [tab]: (prev[tab] ?? []).map((p) =>
+            p.id === id ? { ...p, status: "generated" } : p
+          ),
+        }));
+        setItemErrors((prev) => ({ ...prev, [id]: "Approve failed." }));
+      }
+    } catch {
+      setSocialData((prev) => ({
+        ...prev,
+        [tab]: (prev[tab] ?? []).map((p) =>
+          p.id === id ? { ...p, status: "generated" } : p
+        ),
+      }));
+      setItemErrors((prev) => ({ ...prev, [id]: "Approve failed." }));
+    } finally {
+      setApproving((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+    }
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  function openSchedulePicker(id: string) {
+    setSchedulePickers((prev) => ({
+      ...prev,
+      [id]: { open: true, value: prev[id]?.value ?? "" },
+    }));
+  }
 
-  const pillStyle: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "2px 8px",
-    borderRadius: "20px",
-    fontSize: "11px",
-    fontWeight: 600,
-  };
+  function closeSchedulePicker(id: string) {
+    setSchedulePickers((prev) => {
+      const n = { ...prev };
+      delete n[id];
+      return n;
+    });
+  }
 
-  const colStyles = {
-    platform: { width: "110px", flexShrink: 0 } as React.CSSProperties,
-    promotion: { flex: 1, minWidth: 0 } as React.CSSProperties,
-    date: { width: "72px", flexShrink: 0, color: "#52525b", fontSize: "12px" } as React.CSSProperties,
-    status: { width: "100px", flexShrink: 0 } as React.CSSProperties,
-    preview: { flex: 2, minWidth: 0, color: "#a1a1aa", fontSize: "12px" } as React.CSSProperties,
-    actions: { width: "64px", flexShrink: 0, textAlign: "right" as const } as React.CSSProperties,
-  };
+  async function handleSetSchedule(tab: string, id: string) {
+    const val = schedulePickers[id]?.value;
+    if (!val) return;
+    setScheduling((prev) => new Set(prev).add(id));
+    const iso = new Date(val).toISOString();
+    // Optimistic
+    setSocialData((prev) => ({
+      ...prev,
+      [tab]: (prev[tab] ?? []).map((p) =>
+        p.id === id ? { ...p, scheduledAt: iso } : p
+      ),
+    }));
+    closeSchedulePicker(id);
+    try {
+      const res = await fetch(`/api/posts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledAt: iso }),
+      });
+      if (!res.ok) {
+        setItemErrors((prev) => ({ ...prev, [id]: "Schedule failed." }));
+      }
+    } catch {
+      setItemErrors((prev) => ({ ...prev, [id]: "Schedule failed." }));
+    } finally {
+      setScheduling((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+    }
+  }
+
+  // ── Email actions ────────────────────────────────────────────────────────────
+
+  async function handleSend(id: string) {
+    setSending((prev) => new Set(prev).add(id));
+    setItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    try {
+      const res = await fetch(`/api/email-drafts/${id}/send`, { method: "POST" });
+      if (res.ok) {
+        setEmailDrafts((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, status: "sent", sentAt: new Date().toISOString() } : d))
+        );
+        setSentIds((prev) => new Set(prev).add(id));
+      } else {
+        setItemErrors((prev) => ({ ...prev, [id]: "Send failed." }));
+      }
+    } catch {
+      setItemErrors((prev) => ({ ...prev, [id]: "Send failed." }));
+    } finally {
+      setSending((prev) => {
+        const n = new Set(prev);
+        n.delete(id);
+        return n;
+      });
+    }
+  }
+
+  // ── Shared row styles ─────────────────────────────────────────────────────────
+
+  function rowBaseStyle(idx: number): React.CSSProperties {
+    return {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      padding: "12px 16px",
+      background: idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f",
+      borderBottom: "1px solid #1a1a1a",
+      minHeight: "52px",
+      boxSizing: "border-box",
+    };
+  }
+
+  function actionBtn(
+    variant: "indigo" | "green" | "ghost" | "dashed",
+    disabled?: boolean
+  ): React.CSSProperties {
+    const base: React.CSSProperties = {
+      padding: "4px 12px",
+      borderRadius: "6px",
+      fontSize: "12px",
+      fontWeight: 600,
+      cursor: disabled ? "not-allowed" : "pointer",
+      opacity: disabled ? 0.5 : 1,
+      whiteSpace: "nowrap",
+      transition: "opacity 0.15s",
+    };
+    if (variant === "indigo") {
+      return { ...base, background: "#6366f1", color: "#fff", border: "none" };
+    }
+    if (variant === "green") {
+      return { ...base, background: "#22c55e", color: "#000", border: "none" };
+    }
+    if (variant === "dashed") {
+      return {
+        ...base,
+        background: "transparent",
+        color: "#a1a1aa",
+        border: "1px dashed #3f3f46",
+      };
+    }
+    // ghost
+    return {
+      ...base,
+      background: "transparent",
+      color: "#6366f1",
+      border: "1px solid #6366f1",
+    };
+  }
+
+  // ── Render tabs ───────────────────────────────────────────────────────────────
+
+  const isLoading = !!loadingTabs[activeTab];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <FileStack size={20} style={{ color: "#6366f1", flexShrink: 0 }} />
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "22px",
-              fontWeight: 700,
-              color: "#e4e4e7",
-            }}
-          >
-            Posts
-          </h1>
-        </div>
-        {!loading && total > 0 && (
-          <span style={{ fontSize: "13px", color: "#52525b" }}>
-            {pieces.length < total ? `${pieces.length} of ${total}` : `${total}`}
-          </span>
-        )}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <FileStack size={20} style={{ color: "#6366f1", flexShrink: 0 }} />
+        <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: "#e4e4e7" }}>
+          Posts
+        </h1>
       </div>
 
-      {/* Filter tabs */}
+      {/* Tab bar */}
       <div
         style={{
           display: "flex",
@@ -221,15 +497,16 @@ export default function PostsPage() {
           borderRadius: "8px",
           padding: "4px",
           width: "fit-content",
+          flexWrap: "wrap",
         }}
       >
         {TABS.map((tab) => {
-          const isActive = activeTab === tab.value;
-          const count = getTabCount(tab.value);
+          const isActive = activeTab === tab.key;
+          const count = attentionCount(tab.key, blogPosts, socialData, emailDrafts);
           return (
             <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
+              key={tab.key}
+              onClick={() => handleTabClick(tab.key)}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -270,7 +547,7 @@ export default function PostsPage() {
         })}
       </div>
 
-      {/* Table */}
+      {/* Content table */}
       <div
         style={{
           background: "#0f0f0f",
@@ -279,164 +556,507 @@ export default function PostsPage() {
           overflow: "hidden",
         }}
       >
-        {/* Header row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            padding: "10px 16px",
-            borderBottom: "1px solid #1a1a1a",
-          }}
-        >
-          <span style={{ ...colStyles.platform, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Platform</span>
-          <span style={{ ...colStyles.promotion, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Promotion</span>
-          <span style={{ ...colStyles.date, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Date</span>
-          <span style={{ ...colStyles.status, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</span>
-          <span style={{ ...colStyles.preview, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Preview</span>
-          <span style={{ ...colStyles.actions, fontSize: "11px", fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Edit</span>
-        </div>
+        {/* ── BLOG TAB ───────────────────────────────────────────────────── */}
+        {activeTab === "blog" && (
+          <>
+            {/* Column headers */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 16px",
+                borderBottom: "1px solid #1a1a1a",
+              }}
+            >
+              <span style={{ ...headerColStyle, flex: 1 }}>Title</span>
+              <span style={{ ...headerColStyle, width: "80px", flexShrink: 0 }}>Date</span>
+              <span style={{ ...headerColStyle, width: "90px", flexShrink: 0 }}>Status</span>
+              <span style={{ ...headerColStyle, width: "220px", flexShrink: 0 }}>Actions</span>
+            </div>
 
-        {/* Rows */}
-        {loading ? (
-          <div style={{ padding: "8px 16px" }}>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <SkeletonRow key={i} />
-            ))}
-          </div>
-        ) : pieces.length === 0 ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "48px 24px",
-            }}
-          >
-            <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
-              No content pieces yet.
-            </p>
-          </div>
-        ) : (
-          pieces.map((piece, idx) => {
-            const platformBadge = getPlatformBadgeStyle(piece.platform);
-            const { style: statusStyle, label: statusLabel } = getStatusBadgeStyle(piece.status);
-            return (
-              <Link
-                key={piece.id}
-                href={`/posts/${piece.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  background: idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f",
-                  borderBottom: idx < pieces.length - 1 ? "1px solid #1a1a1a" : "none",
-                  textDecoration: "none",
-                  color: "inherit",
-                  cursor: "pointer",
-                  transition: "background 0.1s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.background = "#141414";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.background =
-                    idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f";
-                }}
-              >
-                {/* Platform */}
-                <div style={colStyles.platform}>
-                  <span style={{ ...pillStyle, ...platformBadge }}>
-                    {platformLabel(piece.platform)}
-                  </span>
-                </div>
+            {isLoading ? (
+              <SkeletonRows />
+            ) : blogPosts.length === 0 ? (
+              <EmptyState label="Blog" />
+            ) : (
+              blogPosts.map((post, idx) => {
+                const { style: badgeStyle, label: badgeLabel } = getBlogStatusBadge(post.status);
+                const isPublishing = publishing.has(post.id);
+                const isPublished = publishedIds.has(post.id) || post.status === "published";
+                const errMsg = itemErrors[post.id];
+                const showPublish = post.status === "draft" && !!post.ghostId;
 
-                {/* Promotion */}
-                <div
-                  style={{
-                    ...colStyles.promotion,
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "#e4e4e7",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {piece.promotionName ?? "—"}
-                </div>
-
-                {/* Date */}
-                <div style={colStyles.date}>
-                  {formatDate(piece.date)}
-                </div>
-
-                {/* Status */}
-                <div style={colStyles.status}>
-                  <span style={{ ...pillStyle, ...statusStyle }}>
-                    {statusLabel}
-                  </span>
-                </div>
-
-                {/* Preview */}
-                <div
-                  style={{
-                    ...colStyles.preview,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {piece.contentPreview}
-                </div>
-
-                {/* Edit link */}
-                <div style={colStyles.actions}>
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      color: "#6366f1",
+                return (
+                  <div
+                    key={post.id}
+                    style={rowBaseStyle(idx)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = "#141414";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background =
+                        idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f";
                     }}
                   >
-                    Edit →
-                  </span>
-                </div>
-              </Link>
-            );
-          })
+                    {/* Title */}
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#e4e4e7",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {post.ghostUrl ? (
+                        <a
+                          href={post.ghostUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#e4e4e7", textDecoration: "none" }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {truncate(post.title, 60)}
+                        </a>
+                      ) : (
+                        truncate(post.title, 60)
+                      )}
+                    </div>
+
+                    {/* Date */}
+                    <div
+                      style={{
+                        width: "80px",
+                        flexShrink: 0,
+                        fontSize: "12px",
+                        color: "#52525b",
+                      }}
+                    >
+                      {formatDate(post.date)}
+                    </div>
+
+                    {/* Status */}
+                    <div style={{ width: "90px", flexShrink: 0 }}>
+                      <span style={{ ...pillStyle, ...badgeStyle }}>{badgeLabel}</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div
+                      style={{
+                        width: "220px",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      {post.ghostUrl && (
+                        <a
+                          href={post.ghostUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#a1a1aa",
+                            border: "1px solid #2a2a2a",
+                            background: "transparent",
+                            textDecoration: "none",
+                            whiteSpace: "nowrap",
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View in Ghost
+                        </a>
+                      )}
+                      {showPublish && (
+                        <button
+                          disabled={isPublishing || isPublished}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePublish(post.id);
+                          }}
+                          style={actionBtn("indigo", isPublishing || isPublished)}
+                        >
+                          {isPublishing
+                            ? "Publishing…"
+                            : isPublished
+                            ? "Published ✓"
+                            : "Publish"}
+                        </button>
+                      )}
+                      {errMsg && (
+                        <span style={{ fontSize: "11px", color: "#f87171" }}>{errMsg}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {/* ── SOCIAL TABS ────────────────────────────────────────────────── */}
+        {(activeTab === "twitter" ||
+          activeTab === "linkedin" ||
+          activeTab === "video" ||
+          activeTab === "instagram" ||
+          activeTab === "reddit") && (
+          <>
+            {/* Column headers */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 16px",
+                borderBottom: "1px solid #1a1a1a",
+              }}
+            >
+              <span style={{ ...headerColStyle, width: "110px", flexShrink: 0 }}>Status</span>
+              <span style={{ ...headerColStyle, flex: 1 }}>Preview</span>
+              <span style={{ ...headerColStyle, width: "80px", flexShrink: 0 }}>Date</span>
+              <span style={{ ...headerColStyle, width: "140px", flexShrink: 0 }}>Actions</span>
+            </div>
+
+            {isLoading ? (
+              <SkeletonRows />
+            ) : (socialData[activeTab] ?? []).length === 0 ? (
+              <EmptyState label={TABS.find((t) => t.key === activeTab)?.label ?? activeTab} />
+            ) : (
+              (socialData[activeTab] ?? []).map((post, idx) => {
+                const badge = getSocialStatusBadge(post.status, post.scheduledAt, post.error);
+                const isApproving = approving.has(post.id);
+                const isScheduling = scheduling.has(post.id);
+                const picker = schedulePickers[post.id];
+                const errMsg = itemErrors[post.id];
+
+                return (
+                  <div key={post.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                    <div
+                      style={{
+                        ...rowBaseStyle(idx),
+                        borderBottom: "none",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => router.push(`/posts/${post.id}`)}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.background = "#141414";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.background =
+                          idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f";
+                      }}
+                    >
+                      {/* Status badge */}
+                      <div style={{ width: "110px", flexShrink: 0 }}>
+                        <span
+                          style={{ ...pillStyle, ...badge.style }}
+                          title={badge.title}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {/* Preview */}
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          fontSize: "13px",
+                          color: "#a1a1aa",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {truncate(stripHtml(post.contentPreview), 80)}
+                      </div>
+
+                      {/* Date */}
+                      <div
+                        style={{
+                          width: "80px",
+                          flexShrink: 0,
+                          fontSize: "12px",
+                          color: "#52525b",
+                        }}
+                      >
+                        {formatDate(post.date)}
+                      </div>
+
+                      {/* Actions */}
+                      <div
+                        style={{
+                          width: "140px",
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          flexWrap: "wrap",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {post.status === "generated" && (
+                          <button
+                            disabled={isApproving}
+                            onClick={() => handleApprove(activeTab, post.id)}
+                            style={actionBtn("indigo", isApproving)}
+                          >
+                            {isApproving ? "Approving…" : "Approve"}
+                          </button>
+                        )}
+                        {post.status === "approved" && !post.scheduledAt && (
+                          <button
+                            onClick={() => openSchedulePicker(post.id)}
+                            style={actionBtn("dashed", false)}
+                          >
+                            Schedule
+                          </button>
+                        )}
+                        {post.status === "approved" && post.scheduledAt && (
+                          <button
+                            onClick={() => openSchedulePicker(post.id)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#6366f1",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              padding: "4px 0",
+                            }}
+                          >
+                            Reschedule
+                          </button>
+                        )}
+                        {post.status === "failed" && (
+                          <a
+                            href={`/posts/${post.id}`}
+                            style={{
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color: "#f87171",
+                              textDecoration: "none",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View →
+                          </a>
+                        )}
+                        {errMsg && (
+                          <span style={{ fontSize: "11px", color: "#f87171" }}>{errMsg}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Inline schedule picker */}
+                    {picker?.open && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "8px 16px 12px",
+                          background: "#0a0a0a",
+                          borderTop: "1px solid #1a1a1a",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="datetime-local"
+                          value={picker.value}
+                          onChange={(e) =>
+                            setSchedulePickers((prev) => ({
+                              ...prev,
+                              [post.id]: { open: true, value: e.target.value },
+                            }))
+                          }
+                          style={{
+                            padding: "6px 10px",
+                            background: "#0f0f0f",
+                            border: "1px solid #2a2a2a",
+                            borderRadius: "6px",
+                            color: "#e4e4e7",
+                            fontSize: "13px",
+                            outline: "none",
+                            colorScheme: "dark",
+                          }}
+                        />
+                        <button
+                          disabled={!picker.value || isScheduling}
+                          onClick={() => handleSetSchedule(activeTab, post.id)}
+                          style={actionBtn("indigo", !picker.value || isScheduling)}
+                        >
+                          {isScheduling ? "Saving…" : "Set"}
+                        </button>
+                        <button
+                          onClick={() => closeSchedulePicker(post.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#52525b",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                            padding: "4px",
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {/* ── EMAIL TAB ──────────────────────────────────────────────────── */}
+        {activeTab === "email" && (
+          <>
+            {/* Column headers */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                padding: "10px 16px",
+                borderBottom: "1px solid #1a1a1a",
+              }}
+            >
+              <span style={{ ...headerColStyle, flex: 1 }}>Subject</span>
+              <span style={{ ...headerColStyle, width: "160px", flexShrink: 0 }}>Source</span>
+              <span style={{ ...headerColStyle, width: "90px", flexShrink: 0 }}>Status</span>
+              <span style={{ ...headerColStyle, width: "80px", flexShrink: 0 }}>Sent</span>
+              <span style={{ ...headerColStyle, width: "100px", flexShrink: 0 }}>Actions</span>
+            </div>
+
+            {isLoading ? (
+              <SkeletonRows />
+            ) : emailDrafts.length === 0 ? (
+              <EmptyState label="Email" />
+            ) : (
+              emailDrafts.map((draft, idx) => {
+                const { style: badgeStyle, label: badgeLabel } = getEmailStatusBadge(draft.status);
+                const isSending = sending.has(draft.id);
+                const isSent = sentIds.has(draft.id) || draft.status === "sent";
+                const errMsg = itemErrors[draft.id];
+
+                return (
+                  <div
+                    key={draft.id}
+                    style={rowBaseStyle(idx)}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background = "#141414";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.background =
+                        idx % 2 === 0 ? "#0a0a0a" : "#0f0f0f";
+                    }}
+                  >
+                    {/* Subject */}
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#e4e4e7",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {truncate(draft.subject, 60)}
+                    </div>
+
+                    {/* Source blog title */}
+                    <div
+                      style={{
+                        width: "160px",
+                        flexShrink: 0,
+                        fontSize: "11px",
+                        color: "#52525b",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {draft.blogPost?.title ?? "—"}
+                    </div>
+
+                    {/* Status */}
+                    <div style={{ width: "90px", flexShrink: 0 }}>
+                      <span style={{ ...pillStyle, ...badgeStyle }}>{badgeLabel}</span>
+                    </div>
+
+                    {/* Sent date */}
+                    <div
+                      style={{
+                        width: "80px",
+                        flexShrink: 0,
+                        fontSize: "12px",
+                        color: "#52525b",
+                      }}
+                    >
+                      {draft.sentAt ? formatDate(draft.sentAt) : "—"}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ width: "100px", flexShrink: 0 }}>
+                      {draft.status === "pending" && (
+                        <>
+                          <button
+                            disabled={isSending || isSent}
+                            onClick={() => handleSend(draft.id)}
+                            style={actionBtn("green", isSending || isSent)}
+                          >
+                            {isSending ? "Sending…" : isSent ? "Sent ✓" : "Send"}
+                          </button>
+                          {errMsg && (
+                            <span
+                              style={{ fontSize: "11px", color: "#f87171", display: "block", marginTop: "2px" }}
+                            >
+                              {errMsg}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Load more */}
-      {!loading && pieces.length < total && (
-        <div style={{ textAlign: "center" }}>
-          <button
-            onClick={async () => {
-              setLoadingMore(true);
-              await fetchPosts(page + 1, false, activeTab);
-              setLoadingMore(false);
-            }}
-            disabled={loadingMore}
-            style={{
-              padding: "9px 24px",
-              borderRadius: "8px",
-              border: "1px solid #2a2a2a",
-              background: "transparent",
-              color: "#a1a1aa",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: loadingMore ? "not-allowed" : "pointer",
-              opacity: loadingMore ? 0.6 : 1,
-            }}
-          >
-            {loadingMore
-              ? "Loading…"
-              : `Load more (${total - pieces.length} remaining)`}
-          </button>
-        </div>
-      )}
+// ─── Empty state component ─────────────────────────────────────────────────────
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "48px 24px",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
+        No {label} content yet.
+      </p>
     </div>
   );
 }

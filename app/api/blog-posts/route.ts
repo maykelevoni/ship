@@ -22,6 +22,7 @@ export const GET = auth(async (req) => {
         slug: p.slug,
         seoDescription: p.seoDescription,
         status: p.status,
+        ghostId: p.ghostId,
         ghostUrl: p.ghostUrl,
         topic: p.topic,
         piecesCount: p._count.contentPieces,
