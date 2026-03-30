@@ -27,6 +27,8 @@ interface SettingsData {
   research_youtube_region: string | null;
   research_news_categories: string | null;
   blog_author_name: string | null;
+  elevenlabs_api_key: string | null;
+  elevenlabs_voice_id: string | null;
 }
 
 const ALL_PLATFORMS = [
@@ -372,6 +374,12 @@ export default function SettingsPage() {
   const [brevoLoading, setBrevoLoading] = useState(false);
   const [brevoFeedback, setBrevoFeedback] = useState<"saved" | "error" | null>(null);
 
+  // ElevenLabs section
+  const [elevenlabsKey, setElevenlabsKey] = useState("");
+  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("21m00Tcm4TlvDq8ikWAM");
+  const [elevenlabsLoading, setElevenlabsLoading] = useState(false);
+  const [elevenlabsFeedback, setElevenlabsFeedback] = useState<"saved" | "error" | null>(null);
+
   // Research & Blog section
   const [youtubeKey, setYoutubeKey] = useState("");
   const [newsapiKey, setNewsapiKey] = useState("");
@@ -409,6 +417,8 @@ export default function SettingsPage() {
         setBrevoSenderEmail(data.brevo_sender_email ?? "");
         setBrevoSenderName(data.brevo_sender_name ?? "");
         setBrevoToEmail(data.brevo_to_email ?? "");
+        setElevenlabsKey(data.elevenlabs_api_key ?? "");
+        setElevenlabsVoiceId(data.elevenlabs_voice_id ?? "21m00Tcm4TlvDq8ikWAM");
         setYoutubeKey(data.youtube_api_key ?? "");
         setNewsapiKey(data.newsapi_key ?? "");
         setGhostUrl(data.ghost_url ?? "");
@@ -501,6 +511,17 @@ export default function SettingsPage() {
       },
       setBrevoLoading,
       setBrevoFeedback
+    );
+  }
+
+  function saveElevenLabs() {
+    saveSection(
+      {
+        elevenlabs_api_key: elevenlabsKey,
+        elevenlabs_voice_id: elevenlabsVoiceId,
+      },
+      setElevenlabsLoading,
+      setElevenlabsFeedback
     );
   }
 
@@ -914,6 +935,42 @@ export default function SettingsPage() {
                 loading={brevoLoading}
                 feedback={brevoFeedback}
               />
+            </div>
+          </SectionCard>
+
+          {/* Audio ElevenLabs */}
+          <SectionCard
+            title="Audio (ElevenLabs)"
+            description="AI voiceover for captioned video generation."
+          >
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <FieldRow label="ElevenLabs API Key">
+                <PasswordInput
+                  value={elevenlabsKey}
+                  onChange={setElevenlabsKey}
+                  placeholder="sk_..."
+                />
+              </FieldRow>
+              <FieldRow label="Voice">
+                <select
+                  value={elevenlabsVoiceId}
+                  onChange={(e) => setElevenlabsVoiceId(e.target.value)}
+                  style={{
+                    background: "#0a0a0a",
+                    border: "1px solid #1f1f1f",
+                    borderRadius: "6px",
+                    color: "#e4e4e7",
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    width: "100%",
+                  }}
+                >
+                  <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Female, warm)</option>
+                  <option value="pNInz6obpgDQGcFmaJgB">Adam (Male, confident)</option>
+                  <option value="EXAVITQu4vr4xnSDxMaL">Bella (Female, soft)</option>
+                </select>
+              </FieldRow>
+              <SaveButton onClick={saveElevenLabs} loading={elevenlabsLoading} feedback={elevenlabsFeedback} />
             </div>
           </SectionCard>
         </>
