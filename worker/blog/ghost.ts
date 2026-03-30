@@ -171,7 +171,7 @@ export async function publishToGhost(
     slug: post.slug,
     html,
     custom_excerpt: post.seoDescription,
-    status: 'published',
+    status: 'draft',
   }
 
   if (authorName) {
