@@ -3,6 +3,8 @@ import { getSetting } from '../../lib/settings'
 import { fetchYoutubeTrending } from './youtube'
 import { fetchRedditHot } from './reddit'
 import { fetchNewsApiHeadlines } from './news'
+import { fetchHackerNewsTop } from './hackernews'
+import { fetchGoogleTrends } from './trends'
 import { scoreTopics } from './score'
 
 // ---------------------------------------------------------------------------
@@ -65,19 +67,23 @@ export async function runResearch(keyword?: string): Promise<void> {
   logger.info(`Settings loaded — subreddits: ${subreddits ?? '(default)'}, youtube region: ${youtubeRegion ?? 'US'}, news categories: ${newsCategories ?? '(default)'}`)
 
   // Fetch all sources in parallel
-  const [youtubeResults, redditResults, newsResults] = await Promise.allSettled([
+  const [youtubeResults, redditResults, newsResults, hackernewsResults, trendsResults] = await Promise.allSettled([
     fetchYoutubeTrending(youtubeApiKey ?? '', youtubeRegion ?? 'US', keyword),
     fetchRedditHot(subreddits ?? 'entrepreneur,marketing,smallbusiness,SaaS', keyword),
     fetchNewsApiHeadlines(newsapiKey ?? '', newsCategories ?? 'business,technology', keyword),
+    fetchHackerNewsTop(keyword),
+    fetchGoogleTrends(keyword),
   ])
 
   const allTopics: RawTopic[] = [
     ...(youtubeResults.status === 'fulfilled' ? youtubeResults.value : []),
     ...(redditResults.status === 'fulfilled' ? redditResults.value : []),
     ...(newsResults.status === 'fulfilled' ? newsResults.value : []),
+    ...(hackernewsResults.status === 'fulfilled' ? hackernewsResults.value : []),
+    ...(trendsResults.status === 'fulfilled' ? trendsResults.value : []),
   ]
 
-  logger.info(`Fetched ${allTopics.length} raw topics (youtube: ${youtubeResults.status === 'fulfilled' ? youtubeResults.value.length : 0}, reddit: ${redditResults.status === 'fulfilled' ? redditResults.value.length : 0}, news: ${newsResults.status === 'fulfilled' ? newsResults.value.length : 0})`)
+  logger.info(`Fetched ${allTopics.length} raw topics (youtube: ${youtubeResults.status === 'fulfilled' ? youtubeResults.value.length : 0}, reddit: ${redditResults.status === 'fulfilled' ? redditResults.value.length : 0}, news: ${newsResults.status === 'fulfilled' ? newsResults.value.length : 0}, hackernews: ${hackernewsResults.status === 'fulfilled' ? hackernewsResults.value.length : 0}, trends: ${trendsResults.status === 'fulfilled' ? trendsResults.value.length : 0})`)
 
   // Deduplicate by title (case-insensitive)
   const seen = new Set<string>()
