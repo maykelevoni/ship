@@ -203,3 +203,116 @@ export async function runBlogGeneration(): Promise<void> {
   logger.info(`ResearchTopic marked as selected (id: ${topic.id})`)
   logger.info('Blog generation completed successfully')
 }
+
+// ---------------------------------------------------------------------------
+// Per-topic export — non-destructive (does NOT delete existing posts or reset
+// other topics' selected flags)
+// ---------------------------------------------------------------------------
+
+export async function runBlogGenerationForTopic(topicId: string): Promise<import('@prisma/client').BlogPost> {
+  const logger = makeLogger()
+
+  // 1. Fetch the specific topic by ID
+  const topic = await db.researchTopic.findUnique({ where: { id: topicId } })
+
+  if (!topic) {
+    throw new Error('ResearchTopic not found: ' + topicId)
+  }
+
+  logger.info('Blog generation started for topic: "' + topic.title + '"')
+
+  // 2. Generate blog post content
+  logger.info('Generating blog post with AI…')
+  const postContent = await generateBlogPost({
+    title: topic.title,
+    summary: topic.summary ?? undefined,
+    url: topic.url ?? undefined,
+  })
+  logger.info(`Blog post generated: "${postContent.title}" — ${postContent.imagePrompts.length} image prompt(s)`)
+
+  // 3. Generate images for each [IMAGE: ...] marker
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const dateStr = today.toISOString().slice(0, 10) // YYYY-MM-DD
+
+  const blogImagesDir = path.resolve('./public/blog-images')
+  fs.mkdirSync(blogImagesDir, { recursive: true })
+
+  let processedContent = postContent.content
+
+  for (let i = 0; i < postContent.imagePrompts.length; i++) {
+    const prompt = postContent.imagePrompts[i]
+    const filename = `${dateStr}-${topicId.slice(0, 8)}-${i}.png`
+    const outputPath = path.join(blogImagesDir, filename)
+    const publicSrc = `/blog-images/${filename}`
+
+    logger.info(`Generating image ${i + 1}/${postContent.imagePrompts.length}…`)
+
+    try {
+      await generateBlogImage(prompt, outputPath)
+      logger.info(`Image saved: ${outputPath}`)
+
+      // Replace the [IMAGE: ...] marker in content with an <img> tag
+      processedContent = processedContent.replace(
+        /\[IMAGE:[^\]]*\]/,
+        `<img src="${publicSrc}" alt="${prompt.slice(0, 100).replace(/"/g, "'")}" />`,
+      )
+    } catch (err) {
+      logger.error(`Image generation failed for prompt ${i + 1}`, err)
+      // Remove the marker so it doesn't appear in the published post
+      processedContent = processedContent.replace(/\[IMAGE:[^\]]*\]/, '')
+    }
+  }
+
+  // Update content with processed version (images replaced)
+  postContent.content = processedContent
+
+  // 4. Create the BlogPost record (non-destructive — no deleteMany)
+  const blogPost = await db.blogPost.create({
+    data: {
+      date: today,
+      topicId: topic.id,
+      title: postContent.title,
+      slug: postContent.slug,
+      seoDescription: postContent.seoDescription,
+      content: postContent.content,
+      status: 'draft',
+    },
+  })
+
+  logger.info(`BlogPost saved to DB (id: ${blogPost.id})`)
+
+  // 5. Mark only the target topic as selected (other topics untouched)
+  await db.researchTopic.update({
+    where: { id: topicId },
+    data: { selected: true },
+  })
+
+  logger.info(`ResearchTopic marked as selected (id: ${topicId})`)
+
+  // 6. Optionally publish to Ghost (non-fatal if it fails)
+  const ghostUrl = await getSetting('ghost_url')
+  const ghostAdminApiKey = await getSetting('ghost_admin_api_key')
+  const blogAuthorName = await getSetting('blog_author_name')
+
+  if (ghostUrl && ghostAdminApiKey) {
+    logger.info('Publishing to Ghost CMS…')
+    try {
+      const result = await publishToGhost(
+        postContent,
+        ghostUrl,
+        ghostAdminApiKey,
+        blogAuthorName,
+      )
+      logger.info(`Published to Ghost: ${result.ghostUrl} (id: ${result.ghostId})`)
+    } catch (err) {
+      logger.error('Ghost publishing failed', err)
+    }
+  } else {
+    logger.info('Ghost credentials not configured — saved as draft')
+  }
+
+  logger.info('Blog generation for topic completed successfully')
+
+  return blogPost
+}
