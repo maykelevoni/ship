@@ -1,18 +1,41 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Zap, Loader2, Activity, CheckSquare, FileText, Mail, Lightbulb, CheckCircle } from "lucide-react";
+import { useCallback, useState } from "react";
+import {
+  Activity,
+  CheckCircle,
+  CheckSquare,
+  FileText,
+  Lightbulb,
+  Loader2,
+  Mail,
+  Zap,
+} from "lucide-react";
+
 import { useStream, type StreamEvent } from "@/hooks/use-stream";
+
+import { ContentPreview } from "./content-preview";
 import {
   PlatformStatusCard,
   PlatformStatusCardEmpty,
   type ContentPieceData,
 } from "./platform-status-card";
-import { ContentPreview } from "./content-preview";
 
-const PLATFORMS = ["twitter", "linkedin", "video", "reddit", "instagram", "email"] as const;
+const PLATFORMS = [
+  "twitter",
+  "linkedin",
+  "video",
+  "reddit",
+  "instagram",
+  "email",
+] as const;
 
-type PromotionType = "product" | "service" | "affiliate" | "lead_magnet" | "content";
+type PromotionType =
+  | "product"
+  | "service"
+  | "affiliate"
+  | "lead_magnet"
+  | "content";
 
 interface ActivePromotion {
   id: string;
@@ -57,6 +80,7 @@ interface TodayViewProps {
   todayBlogPost: TodayBlogPost | null;
   todayEmailDraft: TodayEmailDraft | null;
   newOpportunitiesCount: number;
+  lastEngineRun: { status: string; createdAt: string } | null;
 }
 
 const TYPE_BADGE: Record<
@@ -81,8 +105,7 @@ const TYPE_BADGE: Record<
 function GeoScoreChip({ score }: { score: number | null }) {
   if (score === null) return null;
 
-  const color =
-    score >= 70 ? "#4ade80" : score >= 40 ? "#fbbf24" : "#f87171";
+  const color = score >= 70 ? "#4ade80" : score >= 40 ? "#fbbf24" : "#f87171";
   const bg =
     score >= 70
       ? "rgba(74,222,128,0.12)"
@@ -167,6 +190,7 @@ export function TodayView({
   todayBlogPost,
   todayEmailDraft: initialEmailDraft,
   newOpportunitiesCount,
+  lastEngineRun,
 }: TodayViewProps) {
   const [pieces, setPieces] = useState<ContentPieceData[]>(initialPieces);
   const [runStatus, setRunStatus] = useState<"idle" | "running" | "done">(
@@ -176,8 +200,12 @@ export function TodayView({
   const [previewPiece, setPreviewPiece] = useState<
     (ContentPieceData & { promotionName: string }) | null
   >(null);
-  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(initialPendingApprovals);
-  const [emailDraft, setEmailDraft] = useState<TodayEmailDraft | null>(initialEmailDraft);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>(
+    initialPendingApprovals,
+  );
+  const [emailDraft, setEmailDraft] = useState<TodayEmailDraft | null>(
+    initialEmailDraft,
+  );
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSentMessage, setEmailSentMessage] = useState<string | null>(null);
 
@@ -211,7 +239,9 @@ export function TodayView({
     if (event.type === "engine_completed" || event.type === "engine_failed") {
       setRunStatus("done");
       const msg =
-        event.type === "engine_completed" ? "Engine completed" : "Engine failed";
+        event.type === "engine_completed"
+          ? "Engine completed"
+          : "Engine failed";
       setStreamEvents((prev) => [
         ...prev.slice(-49),
         `[${new Date().toLocaleTimeString()}] ${msg}`,
@@ -281,13 +311,17 @@ export function TodayView({
     setSendingEmail(true);
     setEmailSentMessage(null);
     try {
-      const res = await fetch(`/api/email-drafts/${id}/send`, { method: "POST" });
+      const res = await fetch(`/api/email-drafts/${id}/send`, {
+        method: "POST",
+      });
       if (res.ok) {
-        setEmailDraft((prev) => prev ? { ...prev, status: "sent" } : prev);
+        setEmailDraft((prev) => (prev ? { ...prev, status: "sent" } : prev));
         setEmailSentMessage("Email sent successfully!");
       } else {
         const data = await res.json().catch(() => ({}));
-        setEmailSentMessage((data as { error?: string }).error ?? "Failed to send email.");
+        setEmailSentMessage(
+          (data as { error?: string }).error ?? "Failed to send email.",
+        );
       }
     } catch {
       setEmailSentMessage("Failed to send email.");
@@ -296,7 +330,10 @@ export function TodayView({
     }
   }
 
-  async function handleApprovalAction(id: string, action: "approve" | "reject") {
+  async function handleApprovalAction(
+    id: string,
+    action: "approve" | "reject",
+  ) {
     try {
       await fetch(`/api/queue/${id}`, {
         method: "PATCH",
@@ -318,7 +355,7 @@ export function TodayView({
   }
 
   const typeBadge = promotion
-    ? TYPE_BADGE[promotion.type] ?? TYPE_BADGE.content
+    ? (TYPE_BADGE[promotion.type] ?? TYPE_BADGE.content)
     : null;
 
   return (
@@ -472,15 +509,17 @@ export function TodayView({
                   color: "#ffffff",
                   fontSize: "13px",
                   fontWeight: 600,
-                  cursor:
-                    runStatus === "running" ? "not-allowed" : "pointer",
+                  cursor: runStatus === "running" ? "not-allowed" : "pointer",
                   flexShrink: 0,
                   transition: "background 0.15s ease",
                   whiteSpace: "nowrap",
                 }}
               >
                 {runStatus === "running" ? (
-                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                  <Loader2
+                    size={14}
+                    style={{ animation: "spin 1s linear infinite" }}
+                  />
                 ) : (
                   <Zap size={14} />
                 )}
@@ -501,7 +540,9 @@ export function TodayView({
             <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
               No active promotion for today.
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#3f3f46" }}>
+            <p
+              style={{ margin: "4px 0 0", fontSize: "12px", color: "#3f3f46" }}
+            >
               Add a promotion and run the engine to get started.
             </p>
             <button
@@ -524,7 +565,10 @@ export function TodayView({
               }}
             >
               {runStatus === "running" ? (
-                <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                <Loader2
+                  size={14}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
               ) : (
                 <Zap size={14} />
               )}
@@ -608,26 +652,87 @@ export function TodayView({
               padding: "16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <CheckSquare size={16} style={{ color: "#f59e0b", flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
+              <CheckSquare
+                size={16}
+                style={{ color: "#f59e0b", flexShrink: 0 }}
+              />
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#a1a1aa",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Approvals
               </span>
             </div>
             {pendingApprovals.length > 0 ? (
               <>
-                <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#e4e4e7", fontWeight: 600 }}>
-                  {pendingApprovals.length} item{pendingApprovals.length !== 1 ? "s" : ""} need approval
+                <p
+                  style={{
+                    margin: "0 0 10px",
+                    fontSize: "14px",
+                    color: "#e4e4e7",
+                    fontWeight: 600,
+                  }}
+                >
+                  {pendingApprovals.length} item
+                  {pendingApprovals.length !== 1 ? "s" : ""} need approval
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "10px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    marginBottom: "10px",
+                  }}
+                >
                   {pendingApprovals.slice(0, 3).map((item) => (
-                    <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                      <span style={{ fontSize: "12px", color: "#71717a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                        {item.platform}: {item.content.slice(0, 40)}{item.content.length > 40 ? "…" : ""}
+                    <div
+                      key={item.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "#71717a",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          flex: 1,
+                        }}
+                      >
+                        {item.platform}: {item.content.slice(0, 40)}
+                        {item.content.length > 40 ? "…" : ""}
                       </span>
                       <button
                         onClick={() => handleApprovalAction(item.id, "approve")}
-                        style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "4px", border: "none", background: "rgba(245,158,11,0.15)", color: "#f59e0b", cursor: "pointer", flexShrink: 0, fontWeight: 600 }}
+                        style={{
+                          fontSize: "11px",
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          border: "none",
+                          background: "rgba(245,158,11,0.15)",
+                          color: "#f59e0b",
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          fontWeight: 600,
+                        }}
                       >
                         Approve
                       </button>
@@ -636,15 +741,27 @@ export function TodayView({
                 </div>
                 <a
                   href="/promote"
-                  style={{ fontSize: "12px", color: "#6366f1", textDecoration: "none", fontWeight: 600 }}
+                  style={{
+                    fontSize: "12px",
+                    color: "#6366f1",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Review in Promote →
                 </a>
               </>
             ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <CheckCircle size={16} style={{ color: "#4ade80", flexShrink: 0 }} />
-                <span style={{ fontSize: "14px", color: "#71717a" }}>All content approved</span>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <CheckCircle
+                  size={16}
+                  style={{ color: "#4ade80", flexShrink: 0 }}
+                />
+                <span style={{ fontSize: "14px", color: "#71717a" }}>
+                  All content approved
+                </span>
               </div>
             )}
           </div>
@@ -658,16 +775,41 @@ export function TodayView({
               padding: "16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
               <FileText size={16} style={{ color: "#818cf8", flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#a1a1aa",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Blog Post
               </span>
             </div>
             {todayBlogPost ? (
               <>
-                <p style={{ margin: "0 0 6px", fontSize: "14px", color: "#e4e4e7", fontWeight: 600, lineHeight: "1.4" }}>
-                  {todayBlogPost.title.length > 60 ? todayBlogPost.title.slice(0, 60) + "…" : todayBlogPost.title}
+                <p
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: "14px",
+                    color: "#e4e4e7",
+                    fontWeight: 600,
+                    lineHeight: "1.4",
+                  }}
+                >
+                  {todayBlogPost.title.length > 60
+                    ? todayBlogPost.title.slice(0, 60) + "…"
+                    : todayBlogPost.title}
                 </p>
                 <span
                   style={{
@@ -677,8 +819,14 @@ export function TodayView({
                     borderRadius: "4px",
                     fontSize: "11px",
                     fontWeight: 600,
-                    color: todayBlogPost.status === "published" ? "#4ade80" : "#fbbf24",
-                    background: todayBlogPost.status === "published" ? "rgba(74,222,128,0.12)" : "rgba(251,191,36,0.12)",
+                    color:
+                      todayBlogPost.status === "published"
+                        ? "#4ade80"
+                        : "#fbbf24",
+                    background:
+                      todayBlogPost.status === "published"
+                        ? "rgba(74,222,128,0.12)"
+                        : "rgba(251,191,36,0.12)",
                   }}
                 >
                   {todayBlogPost.status}
@@ -686,13 +834,20 @@ export function TodayView({
                 <br />
                 <a
                   href="/content"
-                  style={{ fontSize: "12px", color: "#6366f1", textDecoration: "none", fontWeight: 600 }}
+                  style={{
+                    fontSize: "12px",
+                    color: "#6366f1",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   View in Content →
                 </a>
               </>
             ) : (
-              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>No blog post today</p>
+              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
+                No blog post today
+              </p>
             )}
           </div>
 
@@ -705,25 +860,63 @@ export function TodayView({
               padding: "16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
               <Mail size={16} style={{ color: "#818cf8", flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#a1a1aa",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Email Draft
               </span>
             </div>
             {emailDraft ? (
               emailDraft.status === "sent" ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <CheckCircle size={16} style={{ color: "#4ade80", flexShrink: 0 }} />
-                  <span style={{ fontSize: "14px", color: "#71717a" }}>Email already sent</span>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <CheckCircle
+                    size={16}
+                    style={{ color: "#4ade80", flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: "14px", color: "#71717a" }}>
+                    Email already sent
+                  </span>
                 </div>
               ) : (
                 <>
-                  <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#e4e4e7", fontWeight: 600, lineHeight: "1.4" }}>
+                  <p
+                    style={{
+                      margin: "0 0 10px",
+                      fontSize: "14px",
+                      color: "#e4e4e7",
+                      fontWeight: 600,
+                      lineHeight: "1.4",
+                    }}
+                  >
                     {emailDraft.subject}
                   </p>
                   {emailSentMessage && (
-                    <p style={{ margin: "0 0 8px", fontSize: "12px", color: emailSentMessage.includes("success") ? "#4ade80" : "#f87171" }}>
+                    <p
+                      style={{
+                        margin: "0 0 8px",
+                        fontSize: "12px",
+                        color: emailSentMessage.includes("success")
+                          ? "#4ade80"
+                          : "#f87171",
+                      }}
+                    >
                       {emailSentMessage}
                     </p>
                   )}
@@ -737,7 +930,9 @@ export function TodayView({
                       padding: "7px 14px",
                       borderRadius: "6px",
                       border: "none",
-                      background: sendingEmail ? "rgba(99,102,241,0.4)" : "#6366f1",
+                      background: sendingEmail
+                        ? "rgba(99,102,241,0.4)"
+                        : "#6366f1",
                       color: "#ffffff",
                       fontSize: "12px",
                       fontWeight: 600,
@@ -745,7 +940,10 @@ export function TodayView({
                     }}
                   >
                     {sendingEmail ? (
-                      <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                      <Loader2
+                        size={12}
+                        style={{ animation: "spin 1s linear infinite" }}
+                      />
                     ) : (
                       <Mail size={12} />
                     )}
@@ -754,7 +952,9 @@ export function TodayView({
                 </>
               )
             ) : (
-              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>No unsent email draft today</p>
+              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
+                No unsent email draft today
+              </p>
             )}
           </div>
 
@@ -767,26 +967,59 @@ export function TodayView({
               padding: "16px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <Lightbulb size={16} style={{ color: "#fbbf24", flexShrink: 0 }} />
-              <span style={{ fontSize: "12px", fontWeight: 600, color: "#a1a1aa", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
+              <Lightbulb
+                size={16}
+                style={{ color: "#fbbf24", flexShrink: 0 }}
+              />
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#a1a1aa",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 Opportunities
               </span>
             </div>
             {newOpportunitiesCount > 0 ? (
               <>
-                <p style={{ margin: "0 0 10px", fontSize: "14px", color: "#e4e4e7", fontWeight: 600 }}>
-                  {newOpportunitiesCount} new opportunit{newOpportunitiesCount !== 1 ? "ies" : "y"}
+                <p
+                  style={{
+                    margin: "0 0 10px",
+                    fontSize: "14px",
+                    color: "#e4e4e7",
+                    fontWeight: 600,
+                  }}
+                >
+                  {newOpportunitiesCount} new opportunit
+                  {newOpportunitiesCount !== 1 ? "ies" : "y"}
                 </p>
                 <a
                   href="/content"
-                  style={{ fontSize: "12px", color: "#6366f1", textDecoration: "none", fontWeight: 600 }}
+                  style={{
+                    fontSize: "12px",
+                    color: "#6366f1",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   Review →
                 </a>
               </>
             ) : (
-              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>No new opportunities</p>
+              <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
+                No new opportunities
+              </p>
             )}
           </div>
         </div>

@@ -1,7 +1,11 @@
 import { Suspense } from "react";
+import { unstable_cache } from "next/cache";
+
 import { db } from "@/lib/db";
-import { TodayView } from "@/components/dashboard/today-view";
 import type { ContentPieceData } from "@/components/dashboard/platform-status-card";
+import { TodayView } from "@/components/dashboard/today-view";
+
+export const revalidate = 30;
 
 // ─── Data fetching helpers ────────────────────────────────────────────────────
 
@@ -92,47 +96,61 @@ async function getActivePromotion() {
   }
 }
 
-async function getStats() {
-  try {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+const getStats = unstable_cache(
+  async function getStats() {
+    try {
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
-    // Start of this week (Monday)
-    const dayOfWeek = today.getUTCDay(); // 0 = Sunday
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStart = new Date(today);
-    weekStart.setUTCDate(weekStart.getUTCDate() - daysFromMonday);
+      // Start of this week (Monday)
+      const dayOfWeek = today.getUTCDay(); // 0 = Sunday
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const weekStart = new Date(today);
+      weekStart.setUTCDate(weekStart.getUTCDate() - daysFromMonday);
 
-    const [activePromotionsCount, contentPiecesToday, postsThisWeek] =
-      await Promise.all([
-        db.promotion.count({ where: { status: "active" } }),
-        db.contentPiece.count({
-          where: { date: { gte: today, lt: tomorrow } },
-        }),
-        db.contentPiece.count({
-          where: {
-            status: "posted",
-            date: { gte: weekStart, lt: tomorrow },
-          },
-        }),
-      ]);
+      const [activePromotionsCount, contentPiecesToday, postsThisWeek] =
+        await Promise.all([
+          db.promotion.count({ where: { status: "active" } }),
+          db.contentPiece.count({
+            where: { date: { gte: today, lt: tomorrow } },
+          }),
+          db.contentPiece.count({
+            where: {
+              status: "posted",
+              date: { gte: weekStart, lt: tomorrow },
+            },
+          }),
+        ]);
 
-    return { activePromotionsCount, contentPiecesToday, postsThisWeek };
-  } catch {
-    return { activePromotionsCount: 0, contentPiecesToday: 0, postsThisWeek: 0 };
-  }
-}
+      return { activePromotionsCount, contentPiecesToday, postsThisWeek };
+    } catch {
+      return {
+        activePromotionsCount: 0,
+        contentPiecesToday: 0,
+        postsThisWeek: 0,
+      };
+    }
+  },
+  ["today-stats"],
+  { revalidate: 30 },
+);
 
-async function getGateModeEnabled(): Promise<boolean> {
-  try {
-    const setting = await db.setting.findUnique({ where: { key: "gate_mode" } });
-    return setting?.value === "true";
-  } catch {
-    return false;
-  }
-}
+const getGateModeEnabled = unstable_cache(
+  async function getGateModeEnabled(): Promise<boolean> {
+    try {
+      const setting = await db.setting.findUnique({
+        where: { key: "gate_mode" },
+      });
+      return setting?.value === "true";
+    } catch {
+      return false;
+    }
+  },
+  ["gate-mode"],
+  { revalidate: 60 },
+);
 
 async function getPendingApprovals() {
   try {
@@ -169,7 +187,10 @@ async function getTodayEmailDraft() {
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   try {
     return await db.emailDraft.findFirst({
-      where: { createdAt: { gte: today, lt: tomorrow }, status: { not: "sent" } },
+      where: {
+        createdAt: { gte: today, lt: tomorrow },
+        status: { not: "sent" },
+      },
       select: { id: true, subject: true, status: true },
     });
   } catch {
@@ -177,11 +198,26 @@ async function getTodayEmailDraft() {
   }
 }
 
-async function getNewOpportunitiesCount(): Promise<number> {
+const getNewOpportunitiesCount = unstable_cache(
+  async function getNewOpportunitiesCount(): Promise<number> {
+    try {
+      return await db.promotionOpportunity.count({ where: { status: "new" } });
+    } catch {
+      return 0;
+    }
+  },
+  ["opps-count"],
+  { revalidate: 30 },
+);
+
+async function getLastEngineRun() {
   try {
-    return await db.promotionOpportunity.count({ where: { status: "new" } });
+    return await db.engineRun.findFirst({
+      orderBy: { createdAt: "desc" },
+      select: { id: true, status: true, createdAt: true },
+    });
   } catch {
-    return 0;
+    return null;
   }
 }
 
@@ -273,6 +309,7 @@ async function TodayContent() {
     todayBlogPost,
     todayEmailDraft,
     newOpportunitiesCount,
+    lastEngineRun,
   ] = await Promise.all([
     getTodayPieces(),
     getActivePromotion(),
@@ -282,6 +319,7 @@ async function TodayContent() {
     getTodayBlogPost(),
     getTodayEmailDraft(),
     getNewOpportunitiesCount(),
+    getLastEngineRun(),
   ]);
 
   const todayDate = new Date().toLocaleDateString("en-US", {
@@ -302,6 +340,14 @@ async function TodayContent() {
       todayBlogPost={todayBlogPost ?? null}
       todayEmailDraft={todayEmailDraft ?? null}
       newOpportunitiesCount={newOpportunitiesCount}
+      lastEngineRun={
+        lastEngineRun
+          ? {
+              status: lastEngineRun.status,
+              createdAt: lastEngineRun.createdAt.toISOString(),
+            }
+          : null
+      }
     />
   );
 }
