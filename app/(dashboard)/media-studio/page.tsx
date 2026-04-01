@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,31 +67,37 @@ export default function MediaStudioPage() {
     try {
       const res = await fetch("/api/media?type=image&limit=20");
       if (res.ok) {
-        const data: MediaAsset[] = await res.json();
-        // Only base assets (platform=null) for the selector
-        setRecentImages(data.filter((a) => a.platform === null));
+        const data = await res.json();
+        const assets: MediaAsset[] = data.assets ?? [];
+        setRecentImages(assets.filter((a) => a.platform === null));
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   async function fetchRecentVideos() {
     try {
       const res = await fetch("/api/media?type=video&limit=10");
       if (res.ok) {
-        const data: MediaAsset[] = await res.json();
-        setRecentVideos(data);
+        const data = await res.json();
+        setRecentVideos(data.assets ?? []);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   async function fetchGallery() {
     try {
       const res = await fetch("/api/media?limit=50");
       if (res.ok) {
-        const data: MediaAsset[] = await res.json();
-        setGallery(data);
+        const data = await res.json();
+        setGallery(data.assets ?? []);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   useEffect(() => {
@@ -148,7 +154,7 @@ export default function MediaStudioPage() {
   // For current result preview
   const baseResultAsset = currentAssets.find((a) => a.platform === null);
   const platformAssets = currentAssets.filter(
-    (a) => a.platform !== null && a.filePath
+    (a) => a.platform !== null && a.filePath,
   );
 
   const videoResultAsset =
@@ -156,9 +162,7 @@ export default function MediaStudioPage() {
 
   // ── Gallery derived ──────────────────────────────────────────────────────────
 
-  const filtered = gallery.filter(
-    (a) => filter === "all" || a.type === filter
-  );
+  const filtered = gallery.filter((a) => filter === "all" || a.type === filter);
   const groups: Record<string, MediaAsset[]> = {};
   for (const a of filtered) {
     groups[a.groupId] ??= [];
@@ -166,7 +170,7 @@ export default function MediaStudioPage() {
   }
   const sortedGroups = Object.values(groups).sort(
     (a, b) =>
-      new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime()
+      new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime(),
   );
 
   // ── Styles ───────────────────────────────────────────────────────────────────
@@ -208,16 +212,15 @@ export default function MediaStudioPage() {
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           gap: "20px",
-          alignItems: "flex-start",
-          maxWidth: "1400px",
+          maxWidth: "860px",
           margin: "0 auto",
         }}
       >
-        {/* ── LEFT: Workspace panel ─────────────────────────────────────────── */}
+        {/* ── Workspace panel ───────────────────────────────────────────────── */}
         <div
           style={{
-            flex: "0 0 420px",
             background: "#111",
             border: "1px solid #1a1a1a",
             borderRadius: "10px",
@@ -505,8 +508,7 @@ export default function MediaStudioPage() {
                 border: "none",
                 background:
                   generating || !prompt.trim() ? "#1a1a1a" : "#6366f1",
-                color:
-                  generating || !prompt.trim() ? "#52525b" : "#fff",
+                color: generating || !prompt.trim() ? "#52525b" : "#fff",
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor:
@@ -540,15 +542,13 @@ export default function MediaStudioPage() {
           </div>
         </div>
 
-        {/* ── RIGHT: Gallery panel ──────────────────────────────────────────── */}
+        {/* ── Gallery panel ─────────────────────────────────────────────────── */}
         <div
           style={{
-            flex: 1,
             background: "#111",
             border: "1px solid #1a1a1a",
             borderRadius: "10px",
             overflow: "hidden",
-            minWidth: 0,
           }}
         >
           {/* Gallery header + filter tabs */}
@@ -574,7 +574,8 @@ export default function MediaStudioPage() {
             {/* Filter tabs */}
             <div style={{ display: "flex", gap: "16px" }}>
               {(["all", "image", "video"] as const).map((f) => {
-                const label = f === "all" ? "All" : f === "image" ? "Images" : "Videos";
+                const label =
+                  f === "all" ? "All" : f === "image" ? "Images" : "Videos";
                 const active = filter === f;
                 return (
                   <button
@@ -583,7 +584,9 @@ export default function MediaStudioPage() {
                     style={{
                       background: "transparent",
                       border: "none",
-                      borderBottom: active ? "2px solid #6366f1" : "2px solid transparent",
+                      borderBottom: active
+                        ? "2px solid #6366f1"
+                        : "2px solid transparent",
                       color: active ? "#e4e4e7" : "#71717a",
                       fontSize: "12px",
                       fontWeight: 600,
@@ -606,7 +609,7 @@ export default function MediaStudioPage() {
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              maxHeight: "calc(100vh - 120px)",
+
               overflowY: "auto",
             }}
           >
@@ -723,7 +726,9 @@ export default function MediaStudioPage() {
                                     justifyContent: "center",
                                   }}
                                 >
-                                  <span style={{ fontSize: 9, color: "#52525b" }}>
+                                  <span
+                                    style={{ fontSize: 9, color: "#52525b" }}
+                                  >
                                     {asset.status}
                                   </span>
                                 </div>

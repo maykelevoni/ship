@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Settings, Eye, EyeOff, Save, LayoutTemplate, Clock, ScrollText, ArrowRight } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  ArrowRight,
+  Clock,
+  Eye,
+  EyeOff,
+  LayoutTemplate,
+  Save,
+  ScrollText,
+  Settings,
+} from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SettingsData {
   anthropic_api_key: string | null;
   gemini_api_key: string | null;
-  ai_fallback_enabled: string | null;
+  openrouter_api_key: string | null;
+  openrouter_model: string | null;
   postbridge_api_key: string | null;
   enabled_platforms: string | null;
   brevo_api_key: string | null;
@@ -123,7 +133,13 @@ function SectionCard({
   );
 }
 
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div
       style={{
@@ -354,17 +370,20 @@ export default function SettingsPage() {
   // AI section
   const [anthropicKey, setAnthropicKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
-  const [aiFallback, setAiFallback] = useState(true);
+  const [openrouterKey, setOpenrouterKey] = useState("");
+  const [openrouterModel, setOpenrouterModel] = useState("openai/gpt-4o-mini");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<"saved" | "error" | null>(null);
 
   // Posting section
   const [postbridgeKey, setPostbridgeKey] = useState("");
   const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>(
-    ALL_PLATFORMS.map((p) => p.id)
+    ALL_PLATFORMS.map((p) => p.id),
   );
   const [postingLoading, setPostingLoading] = useState(false);
-  const [postingFeedback, setPostingFeedback] = useState<"saved" | "error" | null>(null);
+  const [postingFeedback, setPostingFeedback] = useState<
+    "saved" | "error" | null
+  >(null);
 
   // Brevo section
   const [brevoKey, setBrevoKey] = useState("");
@@ -372,32 +391,44 @@ export default function SettingsPage() {
   const [brevoSenderName, setBrevoSenderName] = useState("");
   const [brevoToEmail, setBrevoToEmail] = useState("");
   const [brevoLoading, setBrevoLoading] = useState(false);
-  const [brevoFeedback, setBrevoFeedback] = useState<"saved" | "error" | null>(null);
+  const [brevoFeedback, setBrevoFeedback] = useState<"saved" | "error" | null>(
+    null,
+  );
 
   // ElevenLabs section
   const [elevenlabsKey, setElevenlabsKey] = useState("");
-  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState("21m00Tcm4TlvDq8ikWAM");
+  const [elevenlabsVoiceId, setElevenlabsVoiceId] = useState(
+    "21m00Tcm4TlvDq8ikWAM",
+  );
   const [elevenlabsLoading, setElevenlabsLoading] = useState(false);
-  const [elevenlabsFeedback, setElevenlabsFeedback] = useState<"saved" | "error" | null>(null);
+  const [elevenlabsFeedback, setElevenlabsFeedback] = useState<
+    "saved" | "error" | null
+  >(null);
 
   // Research & Blog section
   const [youtubeKey, setYoutubeKey] = useState("");
   const [newsapiKey, setNewsapiKey] = useState("");
   const [ghostUrl, setGhostUrl] = useState("");
   const [ghostAdminKey, setGhostAdminKey] = useState("");
-  const [researchSubreddits, setResearchSubreddits] = useState("entrepreneur,marketing,smallbusiness,SaaS");
+  const [researchSubreddits, setResearchSubreddits] = useState(
+    "entrepreneur,marketing,smallbusiness,SaaS",
+  );
   const [youtubeRegion, setYoutubeRegion] = useState("US");
   const [newsCategories, setNewsCategories] = useState("business,technology");
   const [blogAuthorName, setBlogAuthorName] = useState("");
   const [researchLoading, setResearchLoading] = useState(false);
-  const [researchFeedback, setResearchFeedback] = useState<"saved" | "error" | null>(null);
+  const [researchFeedback, setResearchFeedback] = useState<
+    "saved" | "error" | null
+  >(null);
 
   // General section
   const [timezone, setTimezone] = useState("America/New_York");
   const [gateMode, setGateMode] = useState(false);
   const [dailyRunHour, setDailyRunHour] = useState("6");
   const [generalLoading, setGeneralLoading] = useState(false);
-  const [generalFeedback, setGeneralFeedback] = useState<"saved" | "error" | null>(null);
+  const [generalFeedback, setGeneralFeedback] = useState<
+    "saved" | "error" | null
+  >(null);
 
   const [pageLoading, setPageLoading] = useState(true);
 
@@ -410,7 +441,8 @@ export default function SettingsPage() {
         const data: SettingsData = await res.json();
         setAnthropicKey(data.anthropic_api_key ?? "");
         setGeminiKey(data.gemini_api_key ?? "");
-        setAiFallback(parseBool(data.ai_fallback_enabled));
+        setOpenrouterKey(data.openrouter_api_key ?? "");
+        setOpenrouterModel(data.openrouter_model ?? "openai/gpt-4o-mini");
         setPostbridgeKey(data.postbridge_api_key ?? "");
         setEnabledPlatforms(parsePlatforms(data.enabled_platforms));
         setBrevoKey(data.brevo_api_key ?? "");
@@ -418,14 +450,21 @@ export default function SettingsPage() {
         setBrevoSenderName(data.brevo_sender_name ?? "");
         setBrevoToEmail(data.brevo_to_email ?? "");
         setElevenlabsKey(data.elevenlabs_api_key ?? "");
-        setElevenlabsVoiceId(data.elevenlabs_voice_id ?? "21m00Tcm4TlvDq8ikWAM");
+        setElevenlabsVoiceId(
+          data.elevenlabs_voice_id ?? "21m00Tcm4TlvDq8ikWAM",
+        );
         setYoutubeKey(data.youtube_api_key ?? "");
         setNewsapiKey(data.newsapi_key ?? "");
         setGhostUrl(data.ghost_url ?? "");
         setGhostAdminKey(data.ghost_admin_api_key ?? "");
-        setResearchSubreddits(data.research_subreddits ?? "entrepreneur,marketing,smallbusiness,SaaS");
+        setResearchSubreddits(
+          data.research_subreddits ??
+            "entrepreneur,marketing,smallbusiness,SaaS",
+        );
         setYoutubeRegion(data.research_youtube_region ?? "US");
-        setNewsCategories(data.research_news_categories ?? "business,technology");
+        setNewsCategories(
+          data.research_news_categories ?? "business,technology",
+        );
         setBlogAuthorName(data.blog_author_name ?? "");
         setTimezone(data.timezone ?? "America/New_York");
         setGateMode(parseBool(data.gate_mode));
@@ -447,7 +486,7 @@ export default function SettingsPage() {
   async function saveSection(
     payload: Record<string, string | boolean>,
     setLoading: (v: boolean) => void,
-    setFeedback: (v: "saved" | "error" | null) => void
+    setFeedback: (v: "saved" | "error" | null) => void,
   ) {
     setLoading(true);
     setFeedback(null);
@@ -472,7 +511,7 @@ export default function SettingsPage() {
 
   function togglePlatform(id: string) {
     setEnabledPlatforms((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
     );
   }
 
@@ -483,10 +522,11 @@ export default function SettingsPage() {
       {
         anthropic_api_key: anthropicKey,
         gemini_api_key: geminiKey,
-        ai_fallback_enabled: String(aiFallback),
+        openrouter_api_key: openrouterKey,
+        openrouter_model: openrouterModel,
       },
       setAiLoading,
-      setAiFeedback
+      setAiFeedback,
     );
   }
 
@@ -497,7 +537,7 @@ export default function SettingsPage() {
         enabled_platforms: JSON.stringify(enabledPlatforms),
       },
       setPostingLoading,
-      setPostingFeedback
+      setPostingFeedback,
     );
   }
 
@@ -510,7 +550,7 @@ export default function SettingsPage() {
         brevo_to_email: brevoToEmail,
       },
       setBrevoLoading,
-      setBrevoFeedback
+      setBrevoFeedback,
     );
   }
 
@@ -521,7 +561,7 @@ export default function SettingsPage() {
         elevenlabs_voice_id: elevenlabsVoiceId,
       },
       setElevenlabsLoading,
-      setElevenlabsFeedback
+      setElevenlabsFeedback,
     );
   }
 
@@ -538,7 +578,7 @@ export default function SettingsPage() {
         blog_author_name: blogAuthorName,
       },
       setResearchLoading,
-      setResearchFeedback
+      setResearchFeedback,
     );
   }
 
@@ -548,10 +588,12 @@ export default function SettingsPage() {
       {
         timezone,
         gate_mode: String(gateMode),
-        daily_run_hour: String(isNaN(hour) ? 6 : Math.max(0, Math.min(23, hour))),
+        daily_run_hour: String(
+          isNaN(hour) ? 6 : Math.max(0, Math.min(23, hour)),
+        ),
       },
       setGeneralLoading,
-      setGeneralFeedback
+      setGeneralFeedback,
     );
   }
 
@@ -567,7 +609,9 @@ export default function SettingsPage() {
           padding: "80px 0",
         }}
       >
-        <span style={{ fontSize: "13px", color: "#52525b" }}>Loading settings…</span>
+        <span style={{ fontSize: "13px", color: "#52525b" }}>
+          Loading settings…
+        </span>
       </div>
     );
   }
@@ -708,7 +752,8 @@ export default function SettingsPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(180px, 1fr))",
                     gap: "8px",
                   }}
                 >
@@ -779,16 +824,10 @@ export default function SettingsPage() {
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
               <FieldRow label="YouTube API Key">
-                <PasswordInput
-                  value={youtubeKey}
-                  onChange={setYoutubeKey}
-                />
+                <PasswordInput value={youtubeKey} onChange={setYoutubeKey} />
               </FieldRow>
               <FieldRow label="NewsAPI Key">
-                <PasswordInput
-                  value={newsapiKey}
-                  onChange={setNewsapiKey}
-                />
+                <PasswordInput value={newsapiKey} onChange={setNewsapiKey} />
               </FieldRow>
               <FieldRow label="Ghost URL">
                 <TextInput
@@ -847,16 +886,9 @@ export default function SettingsPage() {
           {/* AI Providers */}
           <SectionCard
             title="AI Providers"
-            description="Configure API keys for text and image generation."
+            description="Gemini is primary. OpenRouter is the fallback when Gemini fails."
           >
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <FieldRow label="Anthropic API Key">
-                <PasswordInput
-                  value={anthropicKey}
-                  onChange={setAnthropicKey}
-                  placeholder="sk-ant-..."
-                />
-              </FieldRow>
               <FieldRow label="Gemini API Key">
                 <PasswordInput
                   value={geminiKey}
@@ -864,14 +896,43 @@ export default function SettingsPage() {
                   placeholder="AIza..."
                 />
               </FieldRow>
-              <div style={{ paddingBottom: "20px", borderBottom: "1px solid #141414", marginBottom: "20px" }}>
-                <Toggle
-                  checked={aiFallback}
-                  onChange={setAiFallback}
-                  label="Auto-switch to Gemini when Claude is unavailable"
+              <FieldRow label="OpenRouter API Key">
+                <PasswordInput
+                  value={openrouterKey}
+                  onChange={setOpenrouterKey}
+                  placeholder="sk-or-..."
                 />
-              </div>
-              <SaveButton onClick={saveAI} loading={aiLoading} feedback={aiFeedback} />
+              </FieldRow>
+              <FieldRow label="OpenRouter Model">
+                <input
+                  type="text"
+                  value={openrouterModel}
+                  onChange={(e) => setOpenrouterModel(e.target.value)}
+                  placeholder="openai/gpt-4o-mini"
+                  style={{
+                    background: "#141414",
+                    border: "1px solid #27272a",
+                    borderRadius: "8px",
+                    color: "#fafafa",
+                    fontSize: "13px",
+                    padding: "8px 12px",
+                    width: "100%",
+                    outline: "none",
+                  }}
+                />
+              </FieldRow>
+              <FieldRow label="Anthropic API Key">
+                <PasswordInput
+                  value={anthropicKey}
+                  onChange={setAnthropicKey}
+                  placeholder="sk-ant-..."
+                />
+              </FieldRow>
+              <SaveButton
+                onClick={saveAI}
+                loading={aiLoading}
+                feedback={aiFeedback}
+              />
             </div>
           </SectionCard>
 
@@ -965,12 +1026,22 @@ export default function SettingsPage() {
                     width: "100%",
                   }}
                 >
-                  <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Female, warm)</option>
-                  <option value="pNInz6obpgDQGcFmaJgB">Adam (Male, confident)</option>
-                  <option value="EXAVITQu4vr4xnSDxMaL">Bella (Female, soft)</option>
+                  <option value="21m00Tcm4TlvDq8ikWAM">
+                    Rachel (Female, warm)
+                  </option>
+                  <option value="pNInz6obpgDQGcFmaJgB">
+                    Adam (Male, confident)
+                  </option>
+                  <option value="EXAVITQu4vr4xnSDxMaL">
+                    Bella (Female, soft)
+                  </option>
                 </select>
               </FieldRow>
-              <SaveButton onClick={saveElevenLabs} loading={elevenlabsLoading} feedback={elevenlabsFeedback} />
+              <SaveButton
+                onClick={saveElevenLabs}
+                loading={elevenlabsLoading}
+                feedback={elevenlabsFeedback}
+              />
             </div>
           </SectionCard>
         </>
@@ -998,15 +1069,26 @@ export default function SettingsPage() {
           }}
         >
           {[
-            { href: "/templates", label: "Templates", Icon: LayoutTemplate, description: "Manage post templates" },
-            { href: "/schedule", label: "Schedule", Icon: Clock, description: "Configure posting schedule" },
-            { href: "/logs", label: "Logs", Icon: ScrollText, description: "View activity logs" },
+            {
+              href: "/templates",
+              label: "Templates",
+              Icon: LayoutTemplate,
+              description: "Manage post templates",
+            },
+            {
+              href: "/schedule",
+              label: "Schedule",
+              Icon: Clock,
+              description: "Configure posting schedule",
+            },
+            {
+              href: "/logs",
+              label: "Logs",
+              Icon: ScrollText,
+              description: "View activity logs",
+            },
           ].map(({ href, label, Icon, description }) => (
-            <Link
-              key={href}
-              href={href}
-              style={{ textDecoration: "none" }}
-            >
+            <Link key={href} href={href} style={{ textDecoration: "none" }}>
               <div
                 style={{
                   display: "flex",
@@ -1020,26 +1102,48 @@ export default function SettingsPage() {
                   transition: "border-color 0.15s ease, background 0.15s ease",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = "#2a2a2a";
-                  (e.currentTarget as HTMLDivElement).style.background = "#141414";
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    "#2a2a2a";
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "#141414";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = "#1a1a1a";
-                  (e.currentTarget as HTMLDivElement).style.background = "#0f0f0f";
+                  (e.currentTarget as HTMLDivElement).style.borderColor =
+                    "#1a1a1a";
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "#0f0f0f";
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                >
                   <Icon size={16} style={{ color: "#6366f1", flexShrink: 0 }} />
                   <div>
-                    <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#e4e4e7" }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#e4e4e7",
+                      }}
+                    >
                       {label}
                     </p>
-                    <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#52525b" }}>
+                    <p
+                      style={{
+                        margin: "2px 0 0",
+                        fontSize: "11px",
+                        color: "#52525b",
+                      }}
+                    >
                       {description}
                     </p>
                   </div>
                 </div>
-                <ArrowRight size={14} style={{ color: "#3f3f46", flexShrink: 0 }} />
+                <ArrowRight
+                  size={14}
+                  style={{ color: "#3f3f46", flexShrink: 0 }}
+                />
               </div>
             </Link>
           ))}
