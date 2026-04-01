@@ -1,11 +1,13 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 /** All settings keys with their default values (null means no default — return null if not set). */
 const SETTINGS_DEFAULTS: Record<string, string | null> = {
   anthropic_api_key: null,
   gemini_api_key: null,
-  ai_fallback_enabled: "true",
+  openrouter_api_key: null,
+  openrouter_model: "openai/gpt-4o-mini",
   postbridge_api_key: null,
   enabled_platforms:
     '["twitter","linkedin","instagram","facebook","reddit","email","tiktok"]',
@@ -71,8 +73,8 @@ export const POST = auth(async (req) => {
           where: { key },
           update: { value: String(value) },
           create: { key, value: String(value) },
-        })
-      )
+        }),
+      ),
     );
 
     return Response.json({ ok: true });
