@@ -131,6 +131,37 @@ export async function runEngine(): Promise<void> {
       }
     }
 
+    // Ensure the email piece is always saved — formatEmail() is a pure
+    // formatter that never calls generateText(), so it may be excluded from
+    // platform loops that only iterate AI-generated entries.  Save it here
+    // if the loop above did not already create it.
+    if (!savedPieces["email"] && formats["email"]) {
+      try {
+        const { content: emailContent, provider: emailProvider } =
+          formats["email"];
+        const emailPiece = await db.contentPiece.create({
+          data: {
+            promotionId: promotion.id,
+            date: today,
+            platform: "email",
+            content: emailContent,
+            provider: emailProvider,
+            status: "generated",
+          },
+        });
+        savedPieces["email"] = { id: emailPiece.id, content: emailContent };
+        bus.emit("engine.event", {
+          type: "content.generated",
+          payload: { runId, platform: "email", pieceId: emailPiece.id },
+        });
+        logger.info(
+          `Platform "email" content saved (id: ${emailPiece.id}, provider: ${emailProvider})`,
+        );
+      } catch (err) {
+        logger.error('Failed to save content piece for platform "email"', err);
+      }
+    }
+
     // -----------------------------------------------------------------------
     // 7. Generate media in parallel
     // -----------------------------------------------------------------------
