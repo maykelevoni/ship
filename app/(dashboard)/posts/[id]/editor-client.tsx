@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -44,7 +44,10 @@ function getPlatformBadgeStyle(platform: string): React.CSSProperties {
   }
 }
 
-function getStatusBadgeStyle(status: string): { style: React.CSSProperties; label: string } {
+function getStatusBadgeStyle(status: string): {
+  style: React.CSSProperties;
+  label: string;
+} {
   switch (status) {
     case "generated":
       return {
@@ -88,7 +91,9 @@ function platformLabel(platform: string): string {
     email: "Email",
     video: "Video",
   };
-  return labels[platform] ?? platform.charAt(0).toUpperCase() + platform.slice(1);
+  return (
+    labels[platform] ?? platform.charAt(0).toUpperCase() + platform.slice(1)
+  );
 }
 
 function formatDate(date: string): string {
@@ -166,6 +171,7 @@ export default function PostEditorClient({ id }: { id: string }) {
   const [piece, setPiece] = useState<ContentPiece | null>(null);
   const [localStatus, setLocalStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Action state
   const [saving, setSaving] = useState(false);
@@ -177,16 +183,33 @@ export default function PostEditorClient({ id }: { id: string }) {
   const [scheduledAt, setScheduledAt] = useState("");
 
   // Feedback messages: null | { type: 'ok' | 'err'; text: string }
-  const [saveFb, setSaveFb] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [approveFb, setApproveFb] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [rejectFb, setRejectFb] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [postFb, setPostFb] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [scheduleFb, setScheduleFb] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [saveFb, setSaveFb] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [approveFb, setApproveFb] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [rejectFb, setRejectFb] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [postFb, setPostFb] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [scheduleFb, setScheduleFb] = useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
 
   // Feedback auto-clear helpers
   function clearAfter(
-    setter: React.Dispatch<React.SetStateAction<{ type: "ok" | "err"; text: string } | null>>,
-    ms = 3000
+    setter: React.Dispatch<
+      React.SetStateAction<{ type: "ok" | "err"; text: string } | null>
+    >,
+    ms = 3000,
   ) {
     setTimeout(() => setter(null), ms);
   }
@@ -216,12 +239,18 @@ export default function PostEditorClient({ id }: { id: string }) {
             const d = new Date(data.scheduledAt);
             const pad = (n: number) => String(n).padStart(2, "0");
             setScheduledAt(
-              `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+              `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
             );
           }
+        } else if (res.status === 404) {
+          setFetchError("Post not found.");
+        } else if (res.status === 401) {
+          setFetchError("Not authenticated. Please sign in.");
+        } else {
+          setFetchError(`Failed to load post (${res.status}).`);
         }
       } catch {
-        // silently fail
+        setFetchError("Network error — could not load post.");
       } finally {
         setLoading(false);
       }
@@ -317,7 +346,10 @@ export default function PostEditorClient({ id }: { id: string }) {
         setPostFb({ type: "ok", text: "✓ Posted!" });
       } else {
         const err = await res.json().catch(() => ({}));
-        setPostFb({ type: "err", text: (err as { error?: string }).error ?? "Post failed." });
+        setPostFb({
+          type: "err",
+          text: (err as { error?: string }).error ?? "Post failed.",
+        });
       }
     } catch {
       setPostFb({ type: "err", text: "Post failed." });
@@ -356,11 +388,39 @@ export default function PostEditorClient({ id }: { id: string }) {
   if (loading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <div style={{ height: "20px", width: "120px", background: "#1a1a1a", borderRadius: "6px" }} />
-        <div style={{ height: "36px", width: "300px", background: "#1a1a1a", borderRadius: "8px" }} />
+        <div
+          style={{
+            height: "20px",
+            width: "120px",
+            background: "#1a1a1a",
+            borderRadius: "6px",
+          }}
+        />
+        <div
+          style={{
+            height: "36px",
+            width: "300px",
+            background: "#1a1a1a",
+            borderRadius: "8px",
+          }}
+        />
         <div style={{ display: "flex", gap: "24px" }}>
-          <div style={{ flex: 1, height: "500px", background: "#1a1a1a", borderRadius: "10px" }} />
-          <div style={{ width: "280px", height: "400px", background: "#1a1a1a", borderRadius: "10px" }} />
+          <div
+            style={{
+              flex: 1,
+              height: "500px",
+              background: "#1a1a1a",
+              borderRadius: "10px",
+            }}
+          />
+          <div
+            style={{
+              width: "280px",
+              height: "400px",
+              background: "#1a1a1a",
+              borderRadius: "10px",
+            }}
+          />
         </div>
       </div>
     );
@@ -369,8 +429,13 @@ export default function PostEditorClient({ id }: { id: string }) {
   if (!piece) {
     return (
       <div style={{ padding: "48px 0", textAlign: "center" }}>
-        <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>Post not found.</p>
-        <Link href="/posts" style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none" }}>
+        <p style={{ margin: "0 0 8px", fontSize: "14px", color: "#f87171" }}>
+          {fetchError ?? "Post not found."}
+        </p>
+        <Link
+          href="/posts"
+          style={{ fontSize: "13px", color: "#6366f1", textDecoration: "none" }}
+        >
           ← Back to Posts
         </Link>
       </div>
@@ -378,7 +443,8 @@ export default function PostEditorClient({ id }: { id: string }) {
   }
 
   const platformBadge = getPlatformBadgeStyle(piece.platform);
-  const { style: statusStyle, label: statusLabel } = getStatusBadgeStyle(localStatus);
+  const { style: statusStyle, label: statusLabel } =
+    getStatusBadgeStyle(localStatus);
 
   const pillStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -507,7 +573,9 @@ export default function PostEditorClient({ id }: { id: string }) {
         }}
       >
         {piece.promotionName ?? "Untitled"}
-        <span style={{ fontSize: "14px", fontWeight: 400, color: "#71717a" }}>—</span>
+        <span style={{ fontSize: "14px", fontWeight: 400, color: "#71717a" }}>
+          —
+        </span>
         <span style={{ ...pillStyle, ...platformBadge }}>
           {platformLabel(piece.platform)}
         </span>
@@ -523,7 +591,15 @@ export default function PostEditorClient({ id }: { id: string }) {
         }}
       >
         {/* ── Left column: editor + media ──────────────────────────────────── */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
           {/* Toolbar */}
           <div
             style={{
@@ -685,7 +761,9 @@ export default function PostEditorClient({ id }: { id: string }) {
             {/* Status */}
             <div>
               <p style={metaLabelStyle}>Status</p>
-              <span style={{ ...pillStyle, ...statusStyle }}>{statusLabel}</span>
+              <span style={{ ...pillStyle, ...statusStyle }}>
+                {statusLabel}
+              </span>
             </div>
 
             {/* Promotion */}
@@ -699,7 +777,9 @@ export default function PostEditorClient({ id }: { id: string }) {
             {/* Date */}
             <div>
               <p style={metaLabelStyle}>Date</p>
-              <p style={{ ...metaValueStyle, margin: 0 }}>{formatDate(piece.date)}</p>
+              <p style={{ ...metaValueStyle, margin: 0 }}>
+                {formatDate(piece.date)}
+              </p>
             </div>
 
             {/* Scheduled */}
@@ -740,7 +820,11 @@ export default function PostEditorClient({ id }: { id: string }) {
             <div>
               <button
                 onClick={handleApprove}
-                disabled={approving || localStatus === "approved" || localStatus === "posted"}
+                disabled={
+                  approving ||
+                  localStatus === "approved" ||
+                  localStatus === "posted"
+                }
                 style={{
                   ...actionBtnBase,
                   border: "none",
@@ -754,7 +838,9 @@ export default function PostEditorClient({ id }: { id: string }) {
                       : "#ffffff",
                   opacity: approving ? 0.7 : 1,
                   cursor:
-                    approving || localStatus === "approved" || localStatus === "posted"
+                    approving ||
+                    localStatus === "approved" ||
+                    localStatus === "posted"
                       ? "not-allowed"
                       : "pointer",
                 }}
@@ -762,8 +848,8 @@ export default function PostEditorClient({ id }: { id: string }) {
                 {approving
                   ? "Approving…"
                   : localStatus === "approved"
-                  ? "Approved ✓"
-                  : "Approve"}
+                    ? "Approved ✓"
+                    : "Approve"}
               </button>
               {approveFb && (
                 <p style={feedbackStyle(approveFb.type)}>{approveFb.text}</p>
@@ -782,7 +868,9 @@ export default function PostEditorClient({ id }: { id: string }) {
                   color: "#f87171",
                   opacity: rejecting || localStatus === "posted" ? 0.5 : 1,
                   cursor:
-                    rejecting || localStatus === "posted" ? "not-allowed" : "pointer",
+                    rejecting || localStatus === "posted"
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 {rejecting ? "Rejecting…" : "Reject"}
@@ -804,7 +892,9 @@ export default function PostEditorClient({ id }: { id: string }) {
                   color: localStatus === "posted" ? "#52525b" : "#000000",
                   opacity: posting ? 0.7 : 1,
                   cursor:
-                    posting || localStatus === "posted" ? "not-allowed" : "pointer",
+                    posting || localStatus === "posted"
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 {posting ? (
@@ -883,7 +973,8 @@ export default function PostEditorClient({ id }: { id: string }) {
                       background: "#6366f1",
                       color: "#ffffff",
                       opacity: scheduling || !scheduledAt ? 0.6 : 1,
-                      cursor: scheduling || !scheduledAt ? "not-allowed" : "pointer",
+                      cursor:
+                        scheduling || !scheduledAt ? "not-allowed" : "pointer",
                     }}
                   >
                     {scheduling ? "Saving…" : "Set Schedule"}
