@@ -1,33 +1,33 @@
-import { db } from '../../lib/db'
-import { bus } from '../../lib/events'
-import { getSetting } from '../../lib/settings'
-import { selectPromotion } from './rotation'
-import { generateMaster, generateAllFormats } from './generate'
-import { renderImageForPlatform } from '../media/image'
-import { renderVideoForPromotion } from '../media/video'
+import { db } from "../../lib/db";
+import { bus } from "../../lib/events";
+import { getSetting } from "../../lib/settings";
+import { renderImageForPlatform } from "../media/image";
+import { renderVideoForPromotion } from "../media/video";
+import { generateAllFormats, generateMaster } from "./generate";
+import { selectPromotion } from "./rotation";
 
 // ---------------------------------------------------------------------------
 // Logger helper — appends to a string buffer; caller saves it once at the end
 // ---------------------------------------------------------------------------
 
 function makeLogger() {
-  let log = ''
+  let log = "";
   return {
     info(msg: string) {
-      const line = `[${new Date().toISOString()}] ${msg}`
-      console.log(line)
-      log += line + '\n'
+      const line = `[${new Date().toISOString()}] ${msg}`;
+      console.log(line);
+      log += line + "\n";
     },
     error(msg: string, err?: unknown) {
-      const detail = err instanceof Error ? err.message : String(err ?? '')
-      const line = `[${new Date().toISOString()}] ERROR: ${msg}${detail ? ` — ${detail}` : ''}`
-      console.error(line)
-      log += line + '\n'
+      const detail = err instanceof Error ? err.message : String(err ?? "");
+      const line = `[${new Date().toISOString()}] ERROR: ${msg}${detail ? ` — ${detail}` : ""}`;
+      console.error(line);
+      log += line + "\n";
     },
     get text() {
-      return log
+      return log;
     },
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -35,75 +35,75 @@ function makeLogger() {
 // ---------------------------------------------------------------------------
 
 export async function runEngine(): Promise<void> {
-  const logger = makeLogger()
+  const logger = makeLogger();
 
   // 1. Create EngineRun record
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
   const engineRun = await db.engineRun.create({
     data: {
       date: today,
-      status: 'running',
-      log: '',
+      status: "running",
+      log: "",
     },
-  })
+  });
 
-  const runId = engineRun.id
+  const runId = engineRun.id;
 
   // 2. Emit bus event: engine started
-  bus.emit('engine.event', { type: 'engine.started', payload: { runId } })
-  logger.info('Engine started')
+  bus.emit("engine.event", { type: "engine.started", payload: { runId } });
+  logger.info("Engine started");
 
   try {
     // 3. Select promotion via rotation
-    const promotion = await selectPromotion()
+    const promotion = await selectPromotion();
 
     if (!promotion) {
-      logger.info('No active promotions — engine run completed with no output')
+      logger.info("No active promotions — engine run completed with no output");
       await db.engineRun.update({
         where: { id: runId },
-        data: { status: 'completed', log: logger.text },
-      })
-      return
+        data: { status: "completed", log: logger.text },
+      });
+      return;
     }
 
-    logger.info(`Promoting: ${promotion.name} (${promotion.type})`)
+    logger.info(`Promoting: ${promotion.name} (${promotion.type})`);
 
     // Date string used for file names
-    const dateStr = today.toISOString().slice(0, 10) // YYYY-MM-DD
+    const dateStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
 
     // -----------------------------------------------------------------------
     // 5. Generate master piece
     // -----------------------------------------------------------------------
-    logger.info('Generating master piece…')
-    const masterResult = await generateMaster(promotion)
-    const master = masterResult.content
+    logger.info("Generating master piece…");
+    const masterResult = await generateMaster(promotion);
+    const master = masterResult.content;
 
     const masterPiece = await db.contentPiece.create({
       data: {
         promotionId: promotion.id,
         date: today,
-        platform: 'master',
+        platform: "master",
         content: master,
         provider: masterResult.provider,
-        status: 'generated',
+        status: "generated",
       },
-    })
-    logger.info(`Master piece saved (provider: ${masterResult.provider})`)
+    });
+    logger.info(`Master piece saved (provider: ${masterResult.provider})`);
 
     // -----------------------------------------------------------------------
     // 6. Generate all platform formats in parallel
     // -----------------------------------------------------------------------
-    logger.info('Generating platform formats…')
-    const formats = await generateAllFormats(promotion, master)
+    logger.info("Generating platform formats…");
+    const formats = await generateAllFormats(promotion, master);
 
-    const platformEntries = Object.entries(formats)
-    const savedPieces: Record<string, { id: string; content: string }> = {}
+    const platformEntries = Object.entries(formats);
+    const savedPieces: Record<string, { id: string; content: string }> = {};
 
     for (const [platform, piece] of platformEntries) {
       try {
-        const { content, provider } = piece
+        const { content, provider } = piece;
         const dbPiece = await db.contentPiece.create({
           data: {
             promotionId: promotion.id,
@@ -111,77 +111,116 @@ export async function runEngine(): Promise<void> {
             platform,
             content,
             provider,
-            status: 'generated',
+            status: "generated",
           },
-        })
-        savedPieces[platform] = { id: dbPiece.id, content }
+        });
+        savedPieces[platform] = { id: dbPiece.id, content };
 
-        bus.emit('engine.event', {
-          type: 'content.generated',
+        bus.emit("engine.event", {
+          type: "content.generated",
           payload: { runId, platform, pieceId: dbPiece.id },
-        })
-        logger.info(`Platform "${platform}" content saved (id: ${dbPiece.id}, provider: ${provider})`)
+        });
+        logger.info(
+          `Platform "${platform}" content saved (id: ${dbPiece.id}, provider: ${provider})`,
+        );
       } catch (err) {
-        logger.error(`Failed to save content piece for platform "${platform}"`, err)
+        logger.error(
+          `Failed to save content piece for platform "${platform}"`,
+          err,
+        );
       }
     }
 
     // -----------------------------------------------------------------------
     // 7. Generate media in parallel
     // -----------------------------------------------------------------------
-    logger.info('Generating media assets…')
+    logger.info("Generating media assets…");
 
-    const linkedinContent = savedPieces['linkedin']?.content ?? master
-    const instagramContent = savedPieces['instagram']?.content ?? master
-    const videoScript = savedPieces['video']?.content ?? formats['video'] ?? ''
+    const linkedinContent = savedPieces["linkedin"]?.content ?? master;
+    const instagramContent = savedPieces["instagram"]?.content ?? master;
+    const videoScript = savedPieces["video"]?.content ?? formats["video"] ?? "";
 
     // LinkedIn and Instagram image generation always runs
     const [linkedinResult, instagramResult] = await Promise.allSettled([
       renderImageForPlatform({
-        platform: 'linkedin',
+        platform: "linkedin",
         promotion,
         content: linkedinContent,
         date: dateStr,
       }),
       renderImageForPlatform({
-        platform: 'instagram',
+        platform: "instagram",
         promotion,
         content: instagramContent,
         date: dateStr,
       }),
-    ])
+    ]);
+
+    // Shared groupId so both engine images appear together in the Media Studio gallery
+    const engineImageGroupId = `engine-${runId}`;
 
     // Save linkedin image path
-    if (linkedinResult.status === 'fulfilled') {
-      const linkedinId = savedPieces['linkedin']?.id
+    if (linkedinResult.status === "fulfilled") {
+      const linkedinId = savedPieces["linkedin"]?.id;
       if (linkedinId) {
         await db.contentPiece.update({
           where: { id: linkedinId },
           data: { mediaPath: linkedinResult.value },
-        })
-        logger.info(`LinkedIn image saved: ${linkedinResult.value}`)
+        });
+        logger.info(`LinkedIn image saved: ${linkedinResult.value}`);
+      }
+      try {
+        await db.mediaAsset.create({
+          data: {
+            type: "image",
+            filePath: linkedinResult.value,
+            prompt: `Auto-generated for linkedin — ${promotion.name}`,
+            groupId: engineImageGroupId,
+            platform: "linkedin",
+            status: "done",
+          },
+        });
+        logger.info("LinkedIn MediaAsset record created");
+      } catch (err) {
+        logger.error("Failed to create LinkedIn MediaAsset record", err);
       }
     } else {
-      logger.error('LinkedIn image generation failed', linkedinResult.reason)
+      logger.error("LinkedIn image generation failed", linkedinResult.reason);
     }
 
     // Save instagram image path
-    if (instagramResult.status === 'fulfilled') {
-      const instagramId = savedPieces['instagram']?.id
+    if (instagramResult.status === "fulfilled") {
+      const instagramId = savedPieces["instagram"]?.id;
       if (instagramId) {
         await db.contentPiece.update({
           where: { id: instagramId },
           data: { mediaPath: instagramResult.value },
-        })
-        logger.info(`Instagram image saved: ${instagramResult.value}`)
+        });
+        logger.info(`Instagram image saved: ${instagramResult.value}`);
+      }
+      try {
+        await db.mediaAsset.create({
+          data: {
+            type: "image",
+            filePath: instagramResult.value,
+            prompt: `Auto-generated for instagram — ${promotion.name}`,
+            groupId: engineImageGroupId,
+            platform: "instagram",
+            status: "done",
+          },
+        });
+        logger.info("Instagram MediaAsset record created");
+      } catch (err) {
+        logger.error("Failed to create Instagram MediaAsset record", err);
       }
     } else {
-      logger.error('Instagram image generation failed', instagramResult.reason)
+      logger.error("Instagram image generation failed", instagramResult.reason);
     }
 
     // Video script ContentPiece is always saved; MP4 rendering is gated
-    const videoRenderingEnabled = (await getSetting('video_rendering_enabled')) === 'true'
-    const existingVideoId = savedPieces['video']?.id
+    const videoRenderingEnabled =
+      (await getSetting("video_rendering_enabled")) === "true";
+    const existingVideoId = savedPieces["video"]?.id;
 
     if (videoRenderingEnabled) {
       // Attempt Remotion render — errors are caught so the engine continues
@@ -190,74 +229,76 @@ export async function runEngine(): Promise<void> {
           promotion,
           videoScript,
           date: dateStr,
-        })
+        });
         if (existingVideoId) {
           await db.contentPiece.update({
             where: { id: existingVideoId },
             data: { mediaPath: videoPath },
-          })
+          });
         } else {
           await db.contentPiece.create({
             data: {
               promotionId: promotion.id,
               date: today,
-              platform: 'video',
+              platform: "video",
               content: videoScript,
               mediaPath: videoPath,
-              status: 'generated',
+              status: "generated",
             },
-          })
+          });
         }
-        logger.info(`Video saved: ${videoPath}`)
+        logger.info(`Video saved: ${videoPath}`);
       } catch (err) {
-        logger.error('Video rendering failed', err)
+        logger.error("Video rendering failed", err);
         // Ensure script piece exists even when render fails
         if (!existingVideoId) {
           await db.contentPiece.create({
             data: {
               promotionId: promotion.id,
               date: today,
-              platform: 'video',
+              platform: "video",
               content: videoScript,
-              status: 'generated',
+              status: "generated",
             },
-          })
+          });
         }
       }
     } else {
-      logger.info('Video rendering disabled — script saved, no MP4')
+      logger.info("Video rendering disabled — script saved, no MP4");
       // Save the video script piece without a mediaPath (if not already saved)
       if (!existingVideoId) {
         await db.contentPiece.create({
           data: {
             promotionId: promotion.id,
             date: today,
-            platform: 'video',
+            platform: "video",
             content: videoScript,
-            status: 'generated',
+            status: "generated",
           },
-        })
+        });
       }
     }
 
     // -----------------------------------------------------------------------
     // 8. Apply gate mode
     // -----------------------------------------------------------------------
-    const gateModeRaw = await getSetting('gate_mode')
-    const gateMode = gateModeRaw === 'true'
+    const gateModeRaw = await getSetting("gate_mode");
+    const gateMode = gateModeRaw === "true";
 
     if (!gateMode) {
-      logger.info('Gate mode OFF — auto-approving all content pieces')
+      logger.info("Gate mode OFF — auto-approving all content pieces");
       await db.contentPiece.updateMany({
         where: {
           promotionId: promotion.id,
           date: today,
-          status: 'generated',
+          status: "generated",
         },
-        data: { status: 'approved', approved: true },
-      })
+        data: { status: "approved", approved: true },
+      });
     } else {
-      logger.info('Gate mode ON — pieces remain "generated" pending user approval')
+      logger.info(
+        'Gate mode ON — pieces remain "generated" pending user approval',
+      );
     }
 
     // -----------------------------------------------------------------------
@@ -265,39 +306,39 @@ export async function runEngine(): Promise<void> {
     // -----------------------------------------------------------------------
     const contentCount = await db.contentPiece.count({
       where: { promotionId: promotion.id, date: today },
-    })
+    });
 
-    logger.info(`Engine completed — ${contentCount} content piece(s) saved`)
+    logger.info(`Engine completed — ${contentCount} content piece(s) saved`);
 
     await db.engineRun.update({
       where: { id: runId },
       data: {
-        status: 'completed',
+        status: "completed",
         promotionId: promotion.id,
         contentCount,
         log: logger.text,
       },
-    })
+    });
 
     // 10. Emit engine.completed SSE event
-    bus.emit('engine.event', {
-      type: 'engine.completed',
+    bus.emit("engine.event", {
+      type: "engine.completed",
       payload: { runId, contentCount },
-    })
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    logger.error('Engine run failed', err)
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error("Engine run failed", err);
 
     await db.engineRun
       .update({
         where: { id: runId },
-        data: { status: 'failed', log: logger.text },
+        data: { status: "failed", log: logger.text },
       })
-      .catch(() => undefined)
+      .catch(() => undefined);
 
-    bus.emit('engine.event', {
-      type: 'engine.failed',
+    bus.emit("engine.event", {
+      type: "engine.failed",
       payload: { runId, error: message },
-    })
+    });
   }
 }
