@@ -56,14 +56,17 @@ function buildStrictPrompt(keyword: string): string {
 export async function searchAffiliateProducts(
   keyword: string,
 ): Promise<AffiliateProduct[]> {
-  // First attempt
   let raw: string;
-  try {
-    const result = await generateText(buildPrompt(keyword), SYSTEM_PROMPT);
-    raw = result.text;
-  } catch {
-    return [];
-  }
+  const result = await generateText(buildPrompt(keyword), SYSTEM_PROMPT);
+  raw = result.text;
+
+  // Strip markdown code fences if present
+  console.log("[products] raw AI response (first 200):", raw.slice(0, 200));
+  raw = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
 
   // Try to parse
   let parsed: unknown;
@@ -76,7 +79,11 @@ export async function searchAffiliateProducts(
         buildStrictPrompt(keyword),
         SYSTEM_PROMPT,
       );
-      raw = retryResult.text;
+      raw = retryResult.text
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/, "")
+        .trim();
     } catch {
       return [];
     }

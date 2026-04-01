@@ -13,77 +13,81 @@
  *   script, then renders it with Remotion via renderVideo().
  */
 
-import fs from 'fs'
-import path from 'path'
-import sharp from 'sharp'
-import Anthropic from '@anthropic-ai/sdk'
-import { GoogleGenAI } from '@google/genai'
-import { getSetting } from '../../lib/settings'
-import { renderCaptionedVideo } from './video'
-import { generateVoiceover } from './audio'
+import fs from "fs";
+import path from "path";
+import { GoogleGenAI } from "@google/genai";
+import sharp from "sharp";
+
+import { generateText } from "../../lib/ai";
+import { getSetting } from "../../lib/settings";
+import { generateVoiceover } from "./audio";
+import { renderCaptionedVideo } from "./video";
 
 // ---------------------------------------------------------------------------
 // Platform size definitions
 // ---------------------------------------------------------------------------
 
 const PLATFORM_SIZES = [
-  { platform: 'blog',    width: 1200, height: 628  },
-  { platform: 'tiktok',  width: 1080, height: 1920 },
-  { platform: 'twitter', width: 1200, height: 675  },
-] as const
+  { platform: "blog", width: 1200, height: 628 },
+  { platform: "tiktok", width: 1080, height: 1920 },
+  { platform: "twitter", width: 1200, height: 675 },
+] as const;
 
 // ---------------------------------------------------------------------------
 // generateStudioImage
 // ---------------------------------------------------------------------------
 
 export async function generateStudioImage(params: {
-  prompt: string
-  parentFilePath?: string
-  outputPath: string
+  prompt: string;
+  parentFilePath?: string;
+  outputPath: string;
 }): Promise<{ buffer: Buffer; filePath: string }> {
-  const { prompt, parentFilePath, outputPath } = params
+  const { prompt, parentFilePath, outputPath } = params;
 
-  const apiKey = await getSetting('gemini_api_key')
-  if (!apiKey) throw new Error('gemini_api_key not found in Setting table')
+  const apiKey = await getSetting("gemini_api_key");
+  if (!apiKey) throw new Error("gemini_api_key not found in Setting table");
 
-  const ai = new GoogleGenAI({ apiKey })
+  const ai = new GoogleGenAI({ apiKey });
 
   // Ensure output directory exists
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
   // Build contents array — optionally include parent image as inlineData
-  const contents: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = []
+  const contents: Array<{
+    text?: string;
+    inlineData?: { mimeType: string; data: string };
+  }> = [];
 
   if (parentFilePath) {
-    const parentBuffer = fs.readFileSync(parentFilePath)
+    const parentBuffer = fs.readFileSync(parentFilePath);
     contents.push({
       inlineData: {
-        mimeType: 'image/png',
-        data: parentBuffer.toString('base64'),
+        mimeType: "image/png",
+        data: parentBuffer.toString("base64"),
       },
-    })
+    });
   }
 
-  contents.push({ text: prompt })
+  contents.push({ text: prompt });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-image-preview',
+    model: "gemini-3.1-flash-image-preview",
     contents: contents.length === 1 ? (contents[0].text ?? prompt) : contents,
-    config: { responseModalities: ['IMAGE'] },
-  })
+    config: { responseModalities: ["IMAGE"] },
+  });
 
-  const parts = response.candidates?.[0]?.content?.parts ?? []
-  const imagePart = parts.find((part: any) => part.inlineData)
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((part: any) => part.inlineData);
 
   if (!imagePart?.inlineData?.data) {
-    throw new Error('Gemini response did not contain an image part')
+    throw new Error("Gemini response did not contain an image part");
   }
 
-  const buffer = Buffer.from(imagePart.inlineData.data, 'base64')
+  const buffer = Buffer.from(imagePart.inlineData.data, "base64");
 
-  fs.writeFileSync(outputPath, buffer)
+  fs.writeFileSync(outputPath, buffer);
 
-  return { buffer, filePath: outputPath }
+  return { buffer, filePath: outputPath };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,28 +95,30 @@ export async function generateStudioImage(params: {
 // ---------------------------------------------------------------------------
 
 export async function resizeForPlatforms(params: {
-  sourceBuffer: Buffer
-  groupId: string
-  outputDir: string
-}): Promise<Array<{ platform: string; filePath: string; width: number; height: number }>> {
-  const { sourceBuffer, groupId, outputDir } = params
+  sourceBuffer: Buffer;
+  groupId: string;
+  outputDir: string;
+}): Promise<
+  Array<{ platform: string; filePath: string; width: number; height: number }>
+> {
+  const { sourceBuffer, groupId, outputDir } = params;
 
-  fs.mkdirSync(outputDir, { recursive: true })
+  fs.mkdirSync(outputDir, { recursive: true });
 
   const results = await Promise.all(
     PLATFORM_SIZES.map(async ({ platform, width, height }) => {
-      const outputPath = path.join(outputDir, `${groupId}-${platform}.png`)
+      const outputPath = path.join(outputDir, `${groupId}-${platform}.png`);
 
       await sharp(sourceBuffer)
-        .resize(width, height, { fit: 'cover' })
+        .resize(width, height, { fit: "cover" })
         .png()
-        .toFile(outputPath)
+        .toFile(outputPath);
 
-      return { platform, filePath: outputPath, width, height }
-    })
-  )
+      return { platform, filePath: outputPath, width, height };
+    }),
+  );
 
-  return results
+  return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,50 +133,43 @@ Return ONLY a JSON object (no markdown, no explanation) with the following shape
   "reveal": "<a surprising or satisfying revelation>",
   "cta":    "<call to action>"
 }
-All values must be short, conversational, and optimised for vertical video (TikTok / Reels).`
+All values must be short, conversational, and optimised for vertical video (TikTok / Reels).`;
 
 export async function generateStudioVideo(params: {
-  prompt: string
-  parentScript?: string        // JSON string of prior script; Claude will extend it
-  backgroundImageDataUrl?: string  // kept for backwards compatibility — not used in new flow
-  outputPath: string
-}): Promise<{ filePath: string; script: string; audioPath: string; captionsJson: string }> {
-  const { prompt, parentScript, backgroundImageDataUrl, outputPath } = params
+  prompt: string;
+  parentScript?: string; // JSON string of prior script; Claude will extend it
+  backgroundImageDataUrl?: string; // kept for backwards compatibility — not used in new flow
+  outputPath: string;
+}): Promise<{
+  filePath: string;
+  script: string;
+  audioPath: string;
+  captionsJson: string;
+}> {
+  const { prompt, parentScript, backgroundImageDataUrl, outputPath } = params;
 
-  // ---- Claude script generation ----
-  const apiKey =
-    process.env.ANTHROPIC_API_KEY || (await getSetting('anthropic_api_key')) || undefined
-
-  const client = new Anthropic({ apiKey })
-
+  // ---- Script generation (Gemini primary, OpenRouter fallback) ----
   const userMessage = parentScript
     ? `Existing script to extend (JSON):\n${parentScript}\n\nNew direction / additions:\n${prompt}`
-    : prompt
+    : prompt;
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: VIDEO_SCRIPT_SYSTEM,
-    messages: [{ role: 'user', content: userMessage }],
-  })
+  const { text: rawScript } = await generateText(
+    userMessage,
+    VIDEO_SCRIPT_SYSTEM,
+  );
 
-  const block = message.content[0]
-  if (block.type !== 'text') {
-    throw new Error(`Unexpected Claude content block type: ${block.type}`)
-  }
-
-  // Strip markdown code fences if Claude wraps the JSON
-  const raw = block.text
-    .replace(/^```[\w]*\n?/, '')
-    .replace(/\n?```$/, '')
-    .trim()
+  // Strip markdown code fences
+  const raw = rawScript
+    .replace(/^```[\w]*\n?/, "")
+    .replace(/\n?```$/, "")
+    .trim();
 
   const parsedScript = JSON.parse(raw) as {
-    hook: string
-    points: string[]
-    reveal: string
-    cta: string
-  }
+    hook: string;
+    points: string[];
+    reveal: string;
+    cta: string;
+  };
 
   // ---- Generate 5 section images in parallel ----
   const sectionPrompts = [
@@ -179,33 +178,35 @@ export async function generateStudioVideo(params: {
     `Cinematic scene: ${parsedScript.points[1]}. Vertical 9:16 portrait, photorealistic, no text`,
     `Cinematic scene: ${parsedScript.points[2]}. Vertical 9:16 portrait, photorealistic, no text`,
     `Cinematic scene: ${parsedScript.reveal}. Vertical 9:16 portrait, photorealistic, no text`,
-  ]
+  ];
 
   const imageResults = await Promise.all(
     sectionPrompts.map((prompt, i) =>
       generateStudioImage({
         prompt,
-        outputPath: outputPath.replace('.mp4', `-img${i}.png`),
-      })
-    )
-  )
+        outputPath: outputPath.replace(".mp4", `-img${i}.png`),
+      }),
+    ),
+  );
   const imageDataUrls = imageResults.map(
-    (r) => `data:image/png;base64,${r.buffer.toString('base64')}`
-  )
+    (r) => `data:image/png;base64,${r.buffer.toString("base64")}`,
+  );
 
   // ---- Generate ElevenLabs voiceover ----
-  const narrationText = [
-    parsedScript.hook,
-    ...parsedScript.points,
-    parsedScript.reveal,
-    parsedScript.cta,
-  ].join('. ') + '.'
+  const narrationText =
+    [
+      parsedScript.hook,
+      ...parsedScript.points,
+      parsedScript.reveal,
+      parsedScript.cta,
+    ].join(". ") + ".";
 
-  const audioOutputPath = outputPath.replace('.mp4', '.mp3')
-  const { audioPath, audioDataUrl, captions, durationSeconds } = await generateVoiceover({
-    text: narrationText,
-    outputPath: audioOutputPath,
-  })
+  const audioOutputPath = outputPath.replace(".mp4", ".mp3");
+  const { audioPath, audioDataUrl, captions, durationSeconds } =
+    await generateVoiceover({
+      text: narrationText,
+      outputPath: audioOutputPath,
+    });
 
   // ---- Render CaptionedSlideshow ----
   await renderCaptionedVideo({
@@ -214,7 +215,12 @@ export async function generateStudioVideo(params: {
     captions,
     durationSeconds,
     outputPath,
-  })
+  });
 
-  return { filePath: outputPath, script: JSON.stringify(parsedScript), audioPath, captionsJson: JSON.stringify(captions) }
+  return {
+    filePath: outputPath,
+    script: JSON.stringify(parsedScript),
+    audioPath,
+    captionsJson: JSON.stringify(captions),
+  };
 }
