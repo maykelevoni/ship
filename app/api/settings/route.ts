@@ -12,7 +12,7 @@ const SETTINGS_DEFAULTS: Record<string, string | null> = {
   enabled_platforms:
     '["twitter","linkedin","instagram","facebook","reddit","email","tiktok"]',
   timezone: "America/New_York",
-  gate_mode: "false",
+  gate_mode: "true",
   daily_run_hour: "6",
   youtube_api_key: null,
   reddit_user_agent: "PostForge/1.0",
