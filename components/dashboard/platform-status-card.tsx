@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  Twitter,
-  Linkedin,
-  Video,
-  MessageSquare,
-  Instagram,
-  Mail,
-  Eye,
   CheckCircle,
+  Eye,
+  Instagram,
+  Linkedin,
+  Mail,
+  MessageSquare,
+  Twitter,
+  Video,
   XCircle,
 } from "lucide-react";
 
@@ -136,6 +136,7 @@ export function PlatformStatusCard({
       style={{
         background: "#111111",
         border: "1px solid #1e1e1e",
+        borderLeft: `3px solid ${statusStyle.color}`,
         borderRadius: "10px",
         padding: "16px",
         display: "flex",
@@ -170,7 +171,14 @@ export function PlatformStatusCard({
       </div>
 
       {/* Status badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          flexWrap: "wrap",
+        }}
+      >
         {statusStyle.pulse && (
           <span
             style={{
@@ -198,6 +206,15 @@ export function PlatformStatusCard({
         >
           {statusStyle.label.toUpperCase()}
         </span>
+        {piece.status === "posted" && piece.postedAt && (
+          <span style={{ fontSize: "11px", color: "#52525b" }}>
+            Posted{" "}
+            {new Date(piece.postedAt).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
       </div>
 
       {/* Content preview */}
@@ -232,11 +249,13 @@ export function PlatformStatusCard({
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.color = "#e4e4e7";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#3a3a3a";
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              "#3a3a3a";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLButtonElement).style.color = "#a1a1aa";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#2a2a2a";
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              "#2a2a2a";
           }}
         >
           <Eye size={12} />
@@ -296,11 +315,7 @@ export function PlatformStatusCard({
 }
 
 /** Returns an empty placeholder card for platforms with no content piece yet */
-export function PlatformStatusCardEmpty({
-  platform,
-}: {
-  platform: string;
-}) {
+export function PlatformStatusCardEmpty({ platform }: { platform: string }) {
   const meta = PLATFORM_META[platform] ?? {
     label: platform,
     icon: null,
@@ -312,6 +327,7 @@ export function PlatformStatusCardEmpty({
       style={{
         background: "#111111",
         border: "1px solid #1e1e1e",
+        borderLeft: "3px solid #2a2a2a",
         borderRadius: "10px",
         padding: "16px",
         display: "flex",

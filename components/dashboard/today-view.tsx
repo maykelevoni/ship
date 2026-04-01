@@ -102,6 +102,15 @@ const TYPE_BADGE: Record<
   content: { label: "Content", color: "#a1a1aa", bg: "rgba(161,161,170,0.12)" },
 };
 
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 function GeoScoreChip({ score }: { score: number | null }) {
   if (score === null) return null;
 
@@ -177,6 +186,99 @@ function StreamFeed({ events }: { events: string[] }) {
         </p>
       ))}
     </div>
+  );
+}
+
+/** Single pipeline stage box */
+function PipelineStage({
+  label,
+  value,
+  color,
+  href,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  href?: string;
+}) {
+  const dotColor = color;
+  const inner = (
+    <div
+      style={{
+        flex: 1,
+        background: "#0d0d0d",
+        border: "1px solid #1e1e1e",
+        borderRadius: "6px",
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+        <span
+          style={{
+            width: "6px",
+            height: "6px",
+            borderRadius: "50%",
+            background: dotColor,
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: "11px",
+            color: "#52525b",
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            fontWeight: 500,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <span
+        style={{
+          fontSize: "15px",
+          fontWeight: 700,
+          color: color === "#3f3f46" ? "#52525b" : "#e4e4e7",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <a href={href} style={{ flex: 1, textDecoration: "none", minWidth: 0 }}>
+        {inner}
+      </a>
+    );
+  }
+  return <div style={{ flex: 1, minWidth: 0 }}>{inner}</div>;
+}
+
+/** Arrow separator between pipeline stages */
+function PipelineArrow() {
+  return (
+    <span
+      style={{
+        color: "#3f3f46",
+        fontSize: "14px",
+        flexShrink: 0,
+        paddingTop: "10px",
+      }}
+    >
+      →
+    </span>
   );
 }
 
@@ -358,70 +460,128 @@ export function TodayView({
     ? (TYPE_BADGE[promotion.type] ?? TYPE_BADGE.content)
     : null;
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header */}
-      <div>
-        <p style={{ margin: 0, fontSize: "12px", color: "#52525b" }}>
-          {todayDate}
-        </p>
-        <h1
-          style={{
-            margin: "4px 0 0",
-            fontSize: "22px",
-            fontWeight: 700,
-            color: "#e4e4e7",
-          }}
-        >
-          Today
-        </h1>
-      </div>
+  // ── Status chip logic ────────────────────────────────────────────────────────
+  const failCount = pieces.filter((p) => p.status === "failed").length;
+  const postedCount = pieces.filter((p) => p.status === "posted").length;
+  const total = pieces.length;
 
-      {/* Stats row */}
-      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        {[
-          { label: "Active Promotions", value: stats.activePromotionsCount },
-          { label: "Content Today", value: stats.contentPiecesToday },
-          { label: "Posts This Week", value: stats.postsThisWeek },
-        ].map(({ label, value }) => (
-          <div
-            key={label}
+  const systemStatus: { label: string; color: string; bg: string } =
+    total === 0
+      ? {
+          label: "Engine not run today",
+          color: "#fbbf24",
+          bg: "rgba(251,191,36,0.12)",
+        }
+      : failCount > 0
+        ? {
+            label: `${failCount} failure${failCount !== 1 ? "s" : ""}`,
+            color: "#f87171",
+            bg: "rgba(248,113,113,0.12)",
+          }
+        : postedCount === total
+          ? {
+              label: `All ${total} posted`,
+              color: "#4ade80",
+              bg: "rgba(74,222,128,0.12)",
+            }
+          : {
+              label: `${postedCount}/${total} posted today`,
+              color: "#60a5fa",
+              bg: "rgba(96,165,250,0.12)",
+            };
+
+  // ── Alert banner logic ───────────────────────────────────────────────────────
+  const alertCount = pendingApprovals.length + failCount;
+  const showAlert = alertCount > 0;
+
+  // ── Pipeline counts ──────────────────────────────────────────────────────────
+  const generatedCount = pieces.filter((p) => p.status !== "queued").length;
+  const mediaCount = pieces.filter((p) => p.mediaPath != null).length;
+
+  // ── Last run display ─────────────────────────────────────────────────────────
+  const lastRunLabel = lastEngineRun
+    ? `Last run: ${relativeTime(lastEngineRun.createdAt)}`
+    : "Never run";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <p style={{ margin: 0, fontSize: "12px", color: "#52525b" }}>
+            {todayDate}
+          </p>
+          <h1
             style={{
-              background: "#111111",
-              border: "1px solid #1e1e1e",
-              borderRadius: "8px",
-              padding: "14px 20px",
-              minWidth: "140px",
-              flex: "1",
+              margin: "4px 0 0",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#e4e4e7",
             }}
           >
-            <p
-              style={{
-                margin: 0,
-                fontSize: "11px",
-                color: "#52525b",
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {label}
-            </p>
-            <p
-              style={{
-                margin: "6px 0 0",
-                fontSize: "26px",
-                fontWeight: 700,
-                color: "#e4e4e7",
-              }}
-            >
-              {value}
-            </p>
-          </div>
-        ))}
+            Today
+          </h1>
+        </div>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "5px 12px",
+            borderRadius: "20px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: systemStatus.color,
+            background: systemStatus.bg,
+            border: `1px solid ${systemStatus.color}22`,
+            marginTop: "4px",
+            flexShrink: 0,
+          }}
+        >
+          {systemStatus.label}
+        </span>
       </div>
 
-      {/* Active promotion card */}
+      {/* ── Alert banner ───────────────────────────────────────────────────── */}
+      {showAlert && (
+        <div
+          style={{
+            background: "rgba(245,158,11,0.1)",
+            border: "1px solid rgba(245,158,11,0.25)",
+            borderRadius: "6px",
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+          }}
+        >
+          <span style={{ fontSize: "13px", color: "#fbbf24", fontWeight: 500 }}>
+            ⚠ {alertCount} item{alertCount !== 1 ? "s" : ""} need attention
+          </span>
+          <a
+            href="/promote"
+            style={{
+              fontSize: "12px",
+              color: "#f59e0b",
+              fontWeight: 600,
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
+            Review queue →
+          </a>
+        </div>
+      )}
+
+      {/* ── Engine control card ─────────────────────────────────────────────── */}
       <div
         style={{
           background: "#111111",
@@ -430,24 +590,37 @@ export function TodayView({
           padding: "20px 24px",
         }}
       >
-        {promotion && typeBadge ? (
-          <>
-            <div
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "20px",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Left: promotion info */}
+          <div style={{ flex: 1, minWidth: "220px" }}>
+            <p
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: "16px",
-                flexWrap: "wrap",
+                margin: "0 0 6px",
+                fontSize: "11px",
+                color: "#52525b",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
               }}
             >
-              <div style={{ flex: 1, minWidth: 0 }}>
+              Active Promotion
+            </p>
+            {promotion && typeBadge ? (
+              <>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "8px",
+                    gap: "6px",
+                    marginBottom: "6px",
                     flexWrap: "wrap",
                   }}
                 >
@@ -491,77 +664,55 @@ export function TodayView({
                 >
                   {promotion.description}
                 </p>
-              </div>
-              <button
-                onClick={handleRunEngine}
-                disabled={runStatus === "running"}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "10px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background:
-                    runStatus === "running"
-                      ? "rgba(99,102,241,0.4)"
-                      : "#6366f1",
-                  color: "#ffffff",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: runStatus === "running" ? "not-allowed" : "pointer",
-                  flexShrink: 0,
-                  transition: "background 0.15s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {runStatus === "running" ? (
-                  <Loader2
-                    size={14}
-                    style={{ animation: "spin 1s linear infinite" }}
-                  />
-                ) : (
-                  <Zap size={14} />
-                )}
-                {runStatus === "running" ? "Running…" : "Run Engine Now"}
-              </button>
-            </div>
-
-            {/* Stream feed */}
-            {streamEvents.length > 0 && (
-              <div style={{ marginTop: "16px" }}>
-                <StreamFeed events={streamEvents} />
+              </>
+            ) : (
+              <div>
+                <p
+                  style={{
+                    margin: "0 0 4px",
+                    fontSize: "15px",
+                    color: "#52525b",
+                    fontWeight: 500,
+                  }}
+                >
+                  No active promotion
+                </p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#3f3f46" }}>
+                  Add a promotion and run the engine to get started.
+                </p>
               </div>
             )}
-          </>
-        ) : (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <Zap size={28} style={{ color: "#3f3f46", marginBottom: "8px" }} />
-            <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
-              No active promotion for today.
-            </p>
-            <p
-              style={{ margin: "4px 0 0", fontSize: "12px", color: "#3f3f46" }}
-            >
-              Add a promotion and run the engine to get started.
-            </p>
+          </div>
+
+          {/* Right: run button + last run */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: "8px",
+              flexShrink: 0,
+            }}
+          >
             <button
               onClick={handleRunEngine}
               disabled={runStatus === "running"}
               style={{
-                marginTop: "16px",
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
                 gap: "6px",
-                padding: "10px 16px",
+                padding: "11px 20px",
                 borderRadius: "8px",
                 border: "none",
                 background:
                   runStatus === "running" ? "rgba(99,102,241,0.4)" : "#6366f1",
                 color: "#ffffff",
-                fontSize: "13px",
+                fontSize: "14px",
                 fontWeight: 600,
                 cursor: runStatus === "running" ? "not-allowed" : "pointer",
+                flexShrink: 0,
+                transition: "background 0.15s ease",
+                whiteSpace: "nowrap",
               }}
             >
               {runStatus === "running" ? (
@@ -574,11 +725,144 @@ export function TodayView({
               )}
               {runStatus === "running" ? "Running…" : "Run Engine Now"}
             </button>
+            <span style={{ fontSize: "11px", color: "#52525b" }}>
+              {lastRunLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Stream feed inside engine card */}
+        {streamEvents.length > 0 && (
+          <div style={{ marginTop: "16px" }}>
+            <StreamFeed events={streamEvents} />
           </div>
         )}
       </div>
 
-      {/* Platform cards grid */}
+      {/* ── Promotion pipeline strip ────────────────────────────────────────── */}
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: "10px",
+          padding: "14px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: "0 0 10px",
+            fontSize: "11px",
+            color: "#52525b",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            fontWeight: 500,
+          }}
+        >
+          Promotion Pipeline
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: "6px",
+          }}
+        >
+          <PipelineStage
+            label="Promotion"
+            value={
+              promotion
+                ? promotion.name.length > 18
+                  ? promotion.name.slice(0, 18) + "…"
+                  : promotion.name
+                : "None"
+            }
+            color={promotion ? "#818cf8" : "#3f3f46"}
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Generated"
+            value={`${generatedCount}/6`}
+            color={generatedCount > 0 ? "#60a5fa" : "#3f3f46"}
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Media"
+            value={String(mediaCount)}
+            color={mediaCount > 0 ? "#c084fc" : "#3f3f46"}
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Posted"
+            value={`${postedCount}/6`}
+            color={postedCount > 0 ? "#4ade80" : "#3f3f46"}
+          />
+        </div>
+      </div>
+
+      {/* ── Research pipeline strip ─────────────────────────────────────────── */}
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: "10px",
+          padding: "14px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: "0 0 10px",
+            fontSize: "11px",
+            color: "#52525b",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            fontWeight: 500,
+          }}
+        >
+          Research Pipeline
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "stretch",
+            gap: "6px",
+          }}
+        >
+          <PipelineStage
+            label="Topics"
+            value={
+              stats.contentPiecesToday > 0
+                ? String(stats.contentPiecesToday)
+                : "—"
+            }
+            color={stats.contentPiecesToday > 0 ? "#60a5fa" : "#3f3f46"}
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Blog"
+            value={todayBlogPost?.status ?? "None"}
+            color={todayBlogPost ? "#818cf8" : "#3f3f46"}
+            href="/content"
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Email"
+            value={emailDraft?.status ?? "None"}
+            color={emailDraft ? "#60a5fa" : "#3f3f46"}
+            href="/content"
+          />
+          <PipelineArrow />
+          <PipelineStage
+            label="Opps"
+            value={
+              newOpportunitiesCount > 0 ? `${newOpportunitiesCount} new` : "0"
+            }
+            color={newOpportunitiesCount > 0 ? "#fbbf24" : "#3f3f46"}
+            href="/content"
+          />
+        </div>
+      </div>
+
+      {/* ── Platform cards grid ─────────────────────────────────────────────── */}
       <div>
         <h3
           style={{
@@ -622,7 +906,7 @@ export function TodayView({
         </div>
       </div>
 
-      {/* Action cards grid */}
+      {/* ── Action cards ────────────────────────────────────────────────────── */}
       <div>
         <h3
           style={{
@@ -648,6 +932,10 @@ export function TodayView({
             style={{
               background: "#111111",
               border: "1px solid #1e1e1e",
+              borderTop:
+                pendingApprovals.length > 0
+                  ? "2px solid #f59e0b"
+                  : "2px solid #1e1e1e",
               borderRadius: "8px",
               padding: "16px",
             }}
@@ -771,6 +1059,9 @@ export function TodayView({
             style={{
               background: "#111111",
               border: "1px solid #1e1e1e",
+              borderTop: todayBlogPost
+                ? "2px solid #818cf8"
+                : "2px solid #1e1e1e",
               borderRadius: "8px",
               padding: "16px",
             }}
@@ -856,6 +1147,10 @@ export function TodayView({
             style={{
               background: "#111111",
               border: "1px solid #1e1e1e",
+              borderTop:
+                emailDraft && emailDraft.status !== "sent"
+                  ? "2px solid #60a5fa"
+                  : "2px solid #1e1e1e",
               borderRadius: "8px",
               padding: "16px",
             }}
@@ -963,6 +1258,10 @@ export function TodayView({
             style={{
               background: "#111111",
               border: "1px solid #1e1e1e",
+              borderTop:
+                newOpportunitiesCount > 0
+                  ? "2px solid #fbbf24"
+                  : "2px solid #1e1e1e",
               borderRadius: "8px",
               padding: "16px",
             }}
@@ -1042,6 +1341,10 @@ export function TodayView({
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </div>
