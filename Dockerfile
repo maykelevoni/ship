@@ -49,6 +49,10 @@ COPY --from=builder /app/worker ./worker
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
+# Copy and configure entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Create media directories and set ownership
 RUN mkdir -p media/images media/videos && \
     chown -R nextjs:nodejs /app
@@ -59,6 +63,8 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Run Prisma migrations then start the app
 CMD ["sh", "-c", "npx prisma migrate deploy && pnpm start"]
