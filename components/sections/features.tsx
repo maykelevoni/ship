@@ -12,10 +12,9 @@ export default function Features() {
       <div className="pb-6 pt-28">
         <MaxWidthWrapper>
           <HeaderSection
-            label="Features"
-            title="Discover all features."
-            subtitle="Harum quae dolore inventore repudiandae? orrupti aut temporibus
-          ariatur."
+            label="What's inside"
+            title="Everything your content pipeline needs."
+            subtitle="Research, write, image, video, schedule, and post — six dedicated modules that work together automatically."
           />
 
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -46,8 +45,8 @@ export default function Features() {
                         rounded="xl"
                         className="px-4"
                       >
-                        <Link href="/" className="flex items-center gap-2">
-                          <span>Visit the site</span>
+                        <Link href="/login" className="flex items-center gap-2">
+                          <span>Get started</span>
                           <Icons.arrowUpRight className="size-4" />
                         </Link>
                       </Button>

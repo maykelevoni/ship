@@ -2,51 +2,54 @@ import { FeatureLdg, InfoLdg, TestimonialType } from "types";
 
 export const infos: InfoLdg[] = [
   {
-    title: "Empower your projects",
+    title: "Full pipeline, zero manual work",
     description:
-      "Unlock the full potential of your projects with our open-source SaaS platform. Collaborate seamlessly, innovate effortlessly, and scale limitlessly.",
+      "Define a niche or product once. PostForge handles everything else — finding what's trending, writing platform-native content, generating images, and scheduling posts across every channel without you lifting a finger.",
     image: "/_static/illustrations/work-from-home.jpg",
     list: [
       {
-        title: "Collaborative",
-        description: "Work together with your team members in real-time.",
-        icon: "laptop",
-      },
-      {
-        title: "Innovative",
-        description: "Stay ahead of the curve with access constant updates.",
-        icon: "settings",
-      },
-      {
-        title: "Scalable",
+        title: "Research-first",
         description:
-          "Our platform offers the scalability needed to adapt to your needs.",
+          "Scans YouTube, Reddit, HN, Google Trends, and News APIs to find what your audience is already engaging with.",
         icon: "search",
+      },
+      {
+        title: "Parallel generation",
+        description:
+          "Claude writes a master long-form piece, then repurposes it simultaneously into every platform format — threads, posts, captions, scripts.",
+        icon: "post",
+      },
+      {
+        title: "Gate or automate",
+        description:
+          "Gate mode holds every piece for your review before publishing. Toggle it off for fully hands-free distribution.",
+        icon: "settings",
       },
     ],
   },
   {
-    title: "Seamless Integration",
+    title: "Every platform, one place",
     description:
-      "Integrate our open-source SaaS seamlessly into your existing workflows. Effortlessly connect with your favorite tools and services for a streamlined experience.",
+      "One engine that speaks every platform's language. From 280-character threads to 10-minute YouTube scripts, vertical TikTok videos to long-form blog posts — all scheduled, staggered, and tracked in a single calendar.",
     image: "/_static/illustrations/work-from-home.jpg",
     list: [
       {
-        title: "Flexible",
+        title: "Social + Video",
         description:
-          "Customize your integrations to fit your unique requirements.",
+          "Twitter, LinkedIn, Reddit, Instagram, and TikTok — with Remotion-rendered vertical videos posted via PostBridge.",
+        icon: "media",
+      },
+      {
+        title: "Email + Blog",
+        description:
+          "Newsletter sequences via Brevo and long-form posts published directly to your Ghost CMS instance.",
+        icon: "messages",
+      },
+      {
+        title: "Self-hosted",
+        description:
+          "Runs on a $10/mo Hetzner VPS and a free Neon database. Your content, your infrastructure, no SaaS lock-in.",
         icon: "laptop",
-      },
-      {
-        title: "Efficient",
-        description: "Streamline your processes and reducing manual effort.",
-        icon: "search",
-      },
-      {
-        title: "Reliable",
-        description:
-          "Rely on our robust infrastructure and comprehensive documentation.",
-        icon: "settings",
       },
     ],
   },
@@ -54,97 +57,90 @@ export const infos: InfoLdg[] = [
 
 export const features: FeatureLdg[] = [
   {
-    title: "Feature 1",
+    title: "Research Engine",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "nextjs",
+      "Automatically surfaces trending topics from YouTube, Reddit, Hacker News, Google Trends, and NewsAPI — filtered to your niche.",
+    link: "/login",
+    icon: "search",
   },
   {
-    title: "Feature 2",
+    title: "Claude AI Writing",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "google",
+      "Generates platform-native content with claude-sonnet-4-6: blog posts, Twitter threads, LinkedIn articles, Reddit posts, and email newsletters in one run.",
+    link: "/login",
+    icon: "post",
   },
   {
-    title: "Feature 3",
+    title: "Gemini Image Generation",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "gitHub",
+      "Creates on-brand social images for every post using Google Gemini. No Puppeteer, no headless browser — pure API generation.",
+    link: "/login",
+    icon: "media",
   },
   {
-    title: "Feature 4",
+    title: "Smart Scheduler",
     description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
+      "Staggered daily schedule: 9am Twitter, 10am LinkedIn, 11am Video, 12pm Reddit, 2pm Instagram, 5pm Email. Failed posts retry once after 30 minutes.",
+    link: "/login",
+    icon: "settings",
+  },
+  {
+    title: "Email Sequences",
+    description:
+      "Connects to Brevo for subscriber management and newsletter delivery. Ghost handles subscriber acquisition; Brevo handles all email execution.",
+    link: "/login",
+    icon: "messages",
+  },
+  {
+    title: "Media Studio",
+    description:
+      "Gallery of every generated image and rendered video. Remotion produces 1080×1920 vertical MP4s automatically from your content scripts.",
+    link: "/login",
     icon: "laptop",
-  },
-  {
-    title: "Feature 5",
-    description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "user",
-  },
-  {
-    title: "Feature 6",
-    description:
-      "Amet praesentium deserunt ex commodi tempore fuga voluptatem. Sit, sapiente.",
-    link: "/",
-    icon: "copy",
   },
 ];
 
 export const testimonials: TestimonialType[] = [
   {
-    name: "John Doe",
-    job: "Full Stack Developer",
+    name: "Automated pipeline",
+    job: "Research → Generate → Schedule → Post",
     image: "https://randomuser.me/api/portraits/men/1.jpg",
     review:
-      "The next-saas-stripe-starter repo has truly revolutionized my development workflow. With its comprehensive features and seamless integration with Stripe, I've been able to build and deploy projects faster than ever before. The documentation is clear and concise, making it easy to navigate through the setup process. I highly recommend next-saas-stripe-starter to any developer.",
+      "PostForge takes a single niche keyword and turns it into a week of content across every major platform. The research step alone saves hours — it pulls what's actually trending before writing a single word.",
   },
   {
-    name: "Alice Smith",
-    job: "UI/UX Designer",
+    name: "Self-hosted freedom",
+    job: "Your VPS, your rules",
     image: "https://randomuser.me/api/portraits/women/2.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I've been able to create modern and attractive user interfaces in record time. The starter kit provides a solid foundation for building sleek and intuitive designs, allowing me to focus more on the creative aspects of my work.",
+      "No monthly SaaS fees. Runs on a $10 Hetzner VPS with a free Neon database. Docker Compose up and you're live — all API keys managed through the Settings UI.",
   },
   {
-    name: "David Johnson",
-    job: "DevOps Engineer",
+    name: "Gate mode",
+    job: "Review before publishing",
     image: "https://randomuser.me/api/portraits/men/3.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I was able to streamline the entire process and get payments up and running in no time. ",
+      "Gate mode is the killer feature for me. The engine generates everything on schedule, but nothing goes live until I approve it. Full automation with a human checkpoint.",
   },
   {
-    name: "Michael Wilson",
-    job: "Project Manager",
+    name: "Gemini images",
+    job: "On-brand visuals, zero effort",
     image: "https://randomuser.me/api/portraits/men/5.jpg",
     review:
-      "I'm impressed by the quality of code and clear documentation of next-saas-stripe-starter. Kudos to the team!",
+      "Every post gets a generated image via Gemini API — square format for social, text overlay for quotes. The media studio shows the full gallery so you can review before anything goes out.",
   },
   {
-    name: "Sophia Garcia",
-    job: "Data Analyst",
+    name: "Brevo + Ghost",
+    job: "Newsletter + Blog publishing",
     image: "https://randomuser.me/api/portraits/women/6.jpg",
     review:
-      "next-saas-stripe-starter provided me with the tools I needed to efficiently manage user data. Thank you so much!",
+      "The Ghost integration publishes blog posts automatically. Brevo handles the newsletter sequences. Setup once, it runs every day.",
   },
   {
-    name: "Emily Brown",
-    job: "Marketing Manager",
-    image: "https://randomuser.me/api/portraits/women/4.jpg",
-    review:
-      "next-saas-stripe-starter has been an invaluable asset in my role as a marketing manager. With its seamless integration with Stripe, I've been able to launch targeted marketing campaigns with built-in payment functionality, allowing us to monetize our products and services more effectively.",
-  },
-  {
-    name: "Jason Stan",
-    job: "Web Designer",
+    name: "TikTok video",
+    job: "Remotion-rendered verticals",
     image: "https://randomuser.me/api/portraits/men/9.jpg",
     review:
-      "Thanks to next-saas-stripe-starter, I've been able to create modern and attractive user interfaces in record time. The starter kit provides a solid foundation for building sleek and intuitive designs, allowing me to focus more on the creative aspects of my work.",
+      "1080×1920 vertical videos rendered with Remotion from your content scripts, posted to TikTok, YouTube Shorts, and Instagram Reels. Content that would take a team, done by one process.",
   },
 ];
