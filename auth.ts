@@ -14,6 +14,8 @@ declare module "next-auth" {
   interface Session {
     user: {
       role: UserRole;
+      plan: string;
+      onboardingDone: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -51,6 +53,9 @@ export const {
           session.user.role = token.role;
         }
 
+        session.user.plan = (token.plan as string) ?? "free";
+        session.user.onboardingDone =
+          (token.onboardingDone as boolean) ?? false;
         session.user.name = token.name;
         session.user.image = token.picture;
       }
@@ -69,6 +74,8 @@ export const {
       token.email = dbUser.email;
       token.picture = dbUser.image;
       token.role = dbUser.role;
+      token.plan = dbUser.plan;
+      token.onboardingDone = dbUser.onboardingDone;
 
       return token;
     },
