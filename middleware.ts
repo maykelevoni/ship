@@ -1,24 +1,33 @@
-import NextAuth from "next-auth"
-import authConfig from "@/auth.config"
+import authConfig from "@/auth.config";
+import NextAuth from "next-auth";
 
-const { auth } = NextAuth(authConfig)
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const { pathname } = req.nextUrl
+  const isLoggedIn = !!req.auth;
+  const { pathname } = req.nextUrl;
 
   const isPublic =
-    pathname === "/" ||
+    pathname.startsWith("/landing") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/docs") ||
-    pathname.startsWith("/api/auth")
+    pathname.startsWith("/blog") ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/health");
 
-  if (!isPublic && !isLoggedIn) {
-    return Response.redirect(new URL("/login", req.url))
+  if (!isLoggedIn) {
+    if (pathname === "/") {
+      return Response.redirect(new URL("/landing", req.url));
+    }
+    if (!isPublic) {
+      return Response.redirect(new URL("/login", req.url));
+    }
   }
-})
+});
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|ico)$).*)"],
-}
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|ico)$).*)",
+  ],
+};
