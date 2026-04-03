@@ -14,7 +14,8 @@ export default auth((req) => {
     pathname.startsWith("/docs") ||
     pathname.startsWith("/blog") ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/health");
+    pathname.startsWith("/api/health") ||
+    pathname.startsWith("/api/webhooks/polar");
 
   if (!isLoggedIn) {
     if (pathname === "/") {
