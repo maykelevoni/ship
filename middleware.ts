@@ -25,6 +25,14 @@ export default auth((req) => {
       return Response.redirect(new URL("/login", req.url));
     }
   }
+
+  // If logged in but onboarding not done, redirect to /onboarding
+  if (isLoggedIn && !pathname.startsWith("/onboarding") && !isPublic) {
+    const onboardingDone = req.auth?.user?.onboardingDone;
+    if (!onboardingDone) {
+      return Response.redirect(new URL("/onboarding", req.url));
+    }
+  }
 });
 
 export const config = {

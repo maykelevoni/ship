@@ -175,3 +175,11 @@
 - The `/api/stream` SSE route uses a process-level in-memory event bus (`bus` from `@/lib/events`), not DB queries — there is no Prisma call to add `where: { userId }` to. Multi-user isolation here would require tagging bus events with userId and filtering in the `onEngineEvent` listener; that is a future concern.
 - `findUnique` → `findFirst` is required everywhere a `userId` filter is added alongside `id` for a lookup. Prisma's `findUnique` only accepts fields that form a declared unique index; composing `{ id, userId }` without a `@@unique([id, userId])` directive causes a TypeScript type error. `findFirst` accepts any `where` filter.
 - The `own-products/[id]/publish` route creates a `Promotion` record inline — this also needed `userId` added to its `create` data to satisfy the multi-tenant schema constraint, even though Promotion is not the primary model of the own-products routes.
+
+## Task 011 Notes (Spec: SaaS Multi-Tenancy — Middleware + Settings Plan Badge)
+
+- The onboarding redirect block must come AFTER the unauthenticated redirect block in middleware, not inside the `!isLoggedIn` branch — both guards (`isLoggedIn && !pathname.startsWith('/onboarding') && !isPublic`) must be true before checking `onboardingDone`.
+- `/api/webhooks/polar` was already present in the `isPublic` list from Task 006 — no change needed there.
+- The plan card's `checkoutUrl` uses `process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL` (a `NEXT_PUBLIC_` env var, accessible in client components at build time) with a `"https://polar.sh"` fallback via `??`. Do NOT use a server-only env var here since the settings page is `"use client"`.
+- `planInfo` state is initialized to `null` and the plan card derives `plan` via `planInfo?.plan ?? "free"` — this means the card immediately renders as "FREE" (gray) while the fetch is in-flight, then updates if a different plan is returned. No separate loading state is needed for the plan card since the main `pageLoading` gate already covers the initial render.
+- The `loadPlan` fetch runs in parallel with `loadSettings` (both called inside the same `useEffect`) — no await chain needed.

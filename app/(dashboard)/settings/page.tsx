@@ -16,11 +16,19 @@ export interface SectionProps {
   onSave: (patch: Partial<SettingsData>) => Promise<void>;
 }
 
+type PlanInfo = {
+  plan: string;
+  onboardingDone: boolean;
+  polarCustomerId: string | null;
+  planExpiresAt: string | null;
+};
+
 export default function SettingsPage() {
   const [tab, setTab] = useState<"general" | "api-keys">("general");
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [saving, setSaving] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -33,9 +41,19 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const loadPlan = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/plan");
+      if (res.ok) setPlanInfo(await res.json());
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     loadSettings();
-  }, [loadSettings]);
+    loadPlan();
+  }, [loadSettings, loadPlan]);
 
   async function handleSave(patch: Partial<SettingsData>) {
     setSaving(true);
@@ -70,6 +88,16 @@ export default function SettingsPage() {
 
   const sectionProps = { settings, saving, onSave: handleSave };
 
+  const plan = planInfo?.plan ?? "free";
+  const planColor =
+    plan === "pro" ? "#16a34a" : plan === "starter" ? "#2563eb" : "#52525b";
+  const planDescription =
+    plan === "free"
+      ? "Read-only access. Upgrade to run the engine and post content."
+      : "Full access. Engine runs and posting enabled.";
+  const checkoutUrl =
+    process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL ?? "https://polar.sh";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
@@ -85,6 +113,63 @@ export default function SettingsPage() {
         >
           Settings
         </h1>
+      </div>
+
+      {/* Plan Card */}
+      <div
+        style={{
+          background: "#111",
+          border: "1px solid #1e1e1e",
+          borderRadius: 8,
+          padding: "20px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14, color: "#888" }}>Current plan</span>
+            <span
+              style={{
+                fontSize: 12,
+                padding: "2px 8px",
+                borderRadius: 4,
+                background: planColor,
+                color: "#fff",
+                fontWeight: 600,
+              }}
+            >
+              {plan.toUpperCase()}
+            </span>
+          </div>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#555" }}>
+            {planDescription}
+          </p>
+        </div>
+        {plan === "free" ? (
+          <a
+            href={checkoutUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 6,
+              background: "#6366f1",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Upgrade →
+          </a>
+        ) : (
+          <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 500 }}>
+            Full access enabled
+          </span>
+        )}
       </div>
 
       {/* Tab Bar */}
