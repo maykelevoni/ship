@@ -98,7 +98,11 @@ export async function generatePiecesForBlogPost(
 
   // 4. Generate all platform formats
   logger.info("Generating platform formats…");
-  const formats = await generateAllFormats(pseudoPromotion, post.content);
+  const formats = await generateAllFormats(
+    pseudoPromotion,
+    post.content,
+    userId,
+  );
 
   const savedPieces: Record<string, { id: string; content: string }> = {};
 
@@ -141,6 +145,7 @@ export async function generatePiecesForBlogPost(
       postTitle: post.title,
       postDescription: post.seoDescription ?? undefined,
       date: dateStr,
+      userId,
     }),
     renderImageForPlatform({
       platform: "instagram",
@@ -148,6 +153,7 @@ export async function generatePiecesForBlogPost(
       postTitle: post.title,
       postDescription: post.seoDescription ?? undefined,
       date: dateStr,
+      userId,
     }),
   ]);
 

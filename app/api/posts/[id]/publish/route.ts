@@ -10,7 +10,7 @@ export const POST = auth(async (req, { params }) => {
   }
 
   try {
-    const userId = req.auth.user.id;
+    const userId = req.auth!.user!.id as string;
     const { id } = params as { id: string };
 
     const user = await db.user.findUnique({
@@ -51,44 +51,59 @@ export const POST = auth(async (req, { params }) => {
 
     switch (platform) {
       case "twitter": {
-        const result = await postToPlatform({ platform: "twitter", content });
+        const result = await postToPlatform(
+          { platform: "twitter", content },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }
 
       case "linkedin": {
-        const result = await postToPlatform({
-          platform: "linkedin",
-          content,
-          mediaPath: piece.mediaPath ?? undefined,
-        });
+        const result = await postToPlatform(
+          {
+            platform: "linkedin",
+            content,
+            mediaPath: piece.mediaPath ?? undefined,
+          },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }
 
       case "instagram": {
-        const result = await postToPlatform({
-          platform: "instagram",
-          content,
-          mediaPath: piece.mediaPath ?? undefined,
-        });
+        const result = await postToPlatform(
+          {
+            platform: "instagram",
+            content,
+            mediaPath: piece.mediaPath ?? undefined,
+          },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }
 
       case "reddit": {
-        const result = await postToPlatform({ platform: "reddit", content });
+        const result = await postToPlatform(
+          { platform: "reddit", content },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }
 
       case "video": {
         // Use TikTok as primary for video pieces
-        const result = await postToPlatform({
-          platform: "tiktok",
-          content,
-          mediaPath: piece.mediaPath ?? undefined,
-        });
+        const result = await postToPlatform(
+          {
+            platform: "tiktok",
+            content,
+            mediaPath: piece.mediaPath ?? undefined,
+          },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }
@@ -101,17 +116,20 @@ export const POST = auth(async (req, { params }) => {
           subjectLine.replace(/^SUBJECT:\s*/, "").trim() || "Newsletter";
         const bodyStart = content.indexOf("BODY:");
         const body = bodyStart !== -1 ? content.slice(bodyStart) : content;
-        const result = await sendEmail({ subject, body });
+        const result = await sendEmail({ subject, body }, userId);
         postBridgeId = result.id;
         break;
       }
 
       default: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await postToPlatform({
-          platform: platform as any,
-          content,
-        });
+        const result = await postToPlatform(
+          {
+            platform: platform as any,
+            content,
+          },
+          userId,
+        );
         postBridgeId = result.id;
         break;
       }

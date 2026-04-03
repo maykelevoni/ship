@@ -2,12 +2,10 @@ import { NextRequest } from "next/server";
 import { PostHog } from "posthog-node";
 import Stripe from "stripe";
 
-import { getSetting } from "@/lib/settings";
-
 export async function POST(req: NextRequest) {
   try {
-    const stripeSecretKey = await getSetting("stripe_secret_key");
-    const webhookSecret = await getSetting("stripe_webhook_secret");
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!stripeSecretKey || !webhookSecret) {
       console.warn(

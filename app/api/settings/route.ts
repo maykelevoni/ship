@@ -30,7 +30,7 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const rows = await db.setting.findMany({ where: { userId } });
@@ -60,7 +60,7 @@ export const POST = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const body = await req.json();

@@ -65,7 +65,7 @@ export async function runSocialRepurposing(userId: string): Promise<void> {
   // 5. Generate all platforms in parallel
   const results = await Promise.allSettled(
     PLATFORMS.map((platform) =>
-      generateFromBlog(blogContent, platform, templates[platform]),
+      generateFromBlog(blogContent, platform, userId, templates[platform]),
     ),
   );
 
@@ -127,6 +127,7 @@ export async function runSocialRepurposing(userId: string): Promise<void> {
           attribution: blogPost.title,
         },
         outputPath,
+        userId,
       });
 
       await db.contentPiece.update({

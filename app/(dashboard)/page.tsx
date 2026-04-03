@@ -140,7 +140,7 @@ const getStats = unstable_cache(
 const getGateModeEnabled = unstable_cache(
   async function getGateModeEnabled(): Promise<boolean> {
     try {
-      const setting = await db.setting.findUnique({
+      const setting = await db.setting.findFirst({
         where: { key: "gate_mode" },
       });
       return setting?.value === "true";

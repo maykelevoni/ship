@@ -8,7 +8,7 @@ export const POST = auth(async (req, { params }) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const { id } = params as { id: string };
@@ -25,7 +25,7 @@ export const POST = auth(async (req, { params }) => {
       );
     }
 
-    const gumroadToken = await getSetting("gumroad_access_token");
+    const gumroadToken = await getSetting("gumroad_access_token", userId);
     if (!gumroadToken) {
       return Response.json(
         { error: "Gumroad access token not configured" },

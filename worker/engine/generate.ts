@@ -57,6 +57,7 @@ export async function generateMaster(
   const { text, provider } = await generateText(
     buildMasterPrompt(promotion),
     system,
+    userId,
   );
   return { content: text, provider };
 }
@@ -131,7 +132,7 @@ export async function generateFromBlog(
 ): Promise<GeneratedPiece> {
   const prompt = `Here is the blog post to repurpose:\n\n${blogContent}`;
   const system = buildPlatformSystem(platform, template);
-  const { text, provider } = await generateText(prompt, system);
+  const { text, provider } = await generateText(prompt, system, userId);
   return { content: text, provider };
 }
 
@@ -154,7 +155,7 @@ export async function generateAllFormats(
   const results = await Promise.allSettled(
     platforms.map((platform) => {
       const system = buildPlatformSystem(platform, templates?.[platform]);
-      return generateText(prompt, system);
+      return generateText(prompt, system, userId);
     }),
   );
 

@@ -8,7 +8,7 @@ export const POST = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const today = new Date();
@@ -23,7 +23,7 @@ export const POST = auth(async (req) => {
       data: { selected: false },
     });
 
-    await runBlogGeneration();
+    await runBlogGeneration(userId);
 
     return Response.json({ ok: true });
   } catch (error) {

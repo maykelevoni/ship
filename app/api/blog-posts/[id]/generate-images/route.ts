@@ -7,7 +7,7 @@ export const POST = auth(async (req, ctx) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
   try {
-    const userId = req.auth.user.id;
+    const userId = req.auth!.user!.id as string;
     const { id } = (ctx as { params: { id: string } }).params;
 
     // 1. Get blog post
@@ -70,6 +70,7 @@ export const POST = auth(async (req, ctx) => {
         postTitle: post.title,
         postDescription: post.seoDescription ?? undefined,
         date,
+        userId,
       }),
       renderImageForPlatform({
         platform: "instagram",
@@ -77,6 +78,7 @@ export const POST = auth(async (req, ctx) => {
         postTitle: post.title,
         postDescription: post.seoDescription ?? undefined,
         date,
+        userId,
       }),
     ]);
 

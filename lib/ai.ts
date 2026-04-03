@@ -101,9 +101,12 @@ async function callOpenRouter(
 export async function generateText(
   prompt: string,
   system: string,
+  userId: string = "",
 ): Promise<AIResult> {
   const geminiKey =
-    process.env.GEMINI_API_KEY || (await getSetting("gemini_api_key")) || null;
+    process.env.GEMINI_API_KEY ||
+    (await getSetting("gemini_api_key", userId)) ||
+    null;
 
   // 1. Gemini
   if (geminiKey) {
@@ -118,9 +121,10 @@ export async function generateText(
   }
 
   // 2. OpenRouter
-  const openrouterKey = (await getSetting("openrouter_api_key")) || null;
+  const openrouterKey =
+    (await getSetting("openrouter_api_key", userId)) || null;
   const openrouterModel =
-    (await getSetting("openrouter_model")) || "openai/gpt-4o-mini";
+    (await getSetting("openrouter_model", userId)) || "openai/gpt-4o-mini";
 
   if (openrouterKey) {
     try {

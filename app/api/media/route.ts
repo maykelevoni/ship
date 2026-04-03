@@ -18,7 +18,7 @@ import { db } from "@/lib/db";
 export const POST = auth(async (req) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const body = await req.json();
@@ -82,6 +82,7 @@ export const POST = auth(async (req) => {
           prompt,
           parentFilePath,
           outputPath,
+          userId,
         });
 
         const baseFilePath = `./media/studio/${groupId}-base.png`;
@@ -192,6 +193,7 @@ export const POST = auth(async (req) => {
           parentScript,
           backgroundImageDataUrl,
           outputPath,
+          userId,
         });
 
         const filePath = `./media/studio/${videoRow.id}.mp4`;
@@ -231,7 +233,7 @@ export const POST = auth(async (req) => {
 export const GET = auth(async (req) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
-  const userId = req.auth.user.id;
+  const userId = req.auth!.user!.id as string;
 
   try {
     const { searchParams } = new URL(req.url);

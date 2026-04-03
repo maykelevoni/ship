@@ -15,7 +15,8 @@ export const POST = auth(async (req, context) => {
       context as unknown as { params: Promise<{ id: string }> }
     ).params;
 
-    const post = await runBlogGenerationForTopic(id);
+    const userId = req.auth!.user!.id as string;
+    const post = await runBlogGenerationForTopic(id, userId);
 
     return Response.json({ post });
   } catch (err) {

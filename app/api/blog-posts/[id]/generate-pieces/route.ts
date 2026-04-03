@@ -15,7 +15,8 @@ export const POST = auth(async (req, context) => {
       context as unknown as { params: Promise<{ id: string }> }
     ).params;
 
-    const { count, pieceIds } = await generatePiecesForBlogPost(id);
+    const userId = req.auth!.user!.id as string;
+    const { count, pieceIds } = await generatePiecesForBlogPost(id, userId);
 
     return Response.json({ count, pieceIds });
   } catch (err) {

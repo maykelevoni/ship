@@ -41,10 +41,11 @@ export async function generateStudioImage(params: {
   prompt: string;
   parentFilePath?: string;
   outputPath: string;
+  userId: string;
 }): Promise<{ buffer: Buffer; filePath: string }> {
-  const { prompt, parentFilePath, outputPath } = params;
+  const { prompt, parentFilePath, outputPath, userId } = params;
 
-  const apiKey = await getSetting("gemini_api_key");
+  const apiKey = await getSetting("gemini_api_key", userId);
   if (!apiKey) throw new Error("gemini_api_key not found in Setting table");
 
   const ai = new GoogleGenAI({ apiKey });
@@ -140,13 +141,15 @@ export async function generateStudioVideo(params: {
   parentScript?: string; // JSON string of prior script; Claude will extend it
   backgroundImageDataUrl?: string; // kept for backwards compatibility — not used in new flow
   outputPath: string;
+  userId: string;
 }): Promise<{
   filePath: string;
   script: string;
   audioPath: string;
   captionsJson: string;
 }> {
-  const { prompt, parentScript, backgroundImageDataUrl, outputPath } = params;
+  const { prompt, parentScript, backgroundImageDataUrl, outputPath, userId } =
+    params;
 
   // ---- Script generation (Gemini primary, OpenRouter fallback) ----
   const userMessage = parentScript
@@ -156,6 +159,7 @@ export async function generateStudioVideo(params: {
   const { text: rawScript } = await generateText(
     userMessage,
     VIDEO_SCRIPT_SYSTEM,
+    userId,
   );
 
   // Strip markdown code fences
@@ -185,6 +189,7 @@ export async function generateStudioVideo(params: {
       generateStudioImage({
         prompt,
         outputPath: outputPath.replace(".mp4", `-img${i}.png`),
+        userId,
       }),
     ),
   );
@@ -206,6 +211,7 @@ export async function generateStudioVideo(params: {
     await generateVoiceover({
       text: narrationText,
       outputPath: audioOutputPath,
+      userId,
     });
 
   // ---- Render CaptionedSlideshow ----

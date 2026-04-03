@@ -157,13 +157,16 @@ async function doPostRequest(
   };
 }
 
-export async function postToPlatform(params: {
-  platform: Platform;
-  content: string;
-  mediaPath?: string;
-  scheduledAt?: Date;
-}): Promise<{ id: string; status: string }> {
-  const authHeader = await getAuthHeader();
+export async function postToPlatform(
+  params: {
+    platform: Platform;
+    content: string;
+    mediaPath?: string;
+    scheduledAt?: Date;
+  },
+  userId: string,
+): Promise<{ id: string; status: string }> {
+  const authHeader = await getAuthHeader(userId);
   const socialAccountId = await getSocialAccountId(params.platform, authHeader);
 
   let mediaId: string | undefined;
@@ -180,10 +183,10 @@ export async function postToPlatform(params: {
   );
 }
 
-export async function listSocialAccounts(): Promise<
-  { id: number; platform: string; username: string }[]
-> {
-  const authHeader = await getAuthHeader();
+export async function listSocialAccounts(
+  userId: string,
+): Promise<{ id: number; platform: string; username: string }[]> {
+  const authHeader = await getAuthHeader(userId);
   const res = await fetch(`${BASE_URL}/v1/social-accounts`, {
     headers: { Authorization: authHeader },
   });
