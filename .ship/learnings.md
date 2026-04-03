@@ -7,6 +7,14 @@
 
 ## Gotchas
 
+## Task 004 Notes (Spec: SaaS Multi-Tenancy — API Routes)
+
+- Prisma v5 `update` where clause accepts non-unique fields combined with a unique field (e.g. `{ id, userId }`) — the unique `id` satisfies Prisma's uniqueness requirement; `userId` is ANDed in as a filter, preventing cross-user updates without a separate 404-check step.
+- `EmailDraft.update where: { id, userId }` works even though `userId` is not part of a unique constraint on `EmailDraft`, because `id` is the primary key. The same applies to `BlogPost.update` and `PromotionOpportunity.update`.
+- The `generate-pieces` route (`POST /api/blog-posts/[id]/generate-pieces`) delegates entirely to `generatePiecesForBlogPost(id)` which does not yet accept a `userId` parameter. userId isolation at the route level is limited to the auth check; full worker-level isolation requires the worker function signature update planned in the worker tasks.
+- The `research/refresh` and `research/topics/[id]/generate` routes similarly delegate to worker functions (`runResearch`, `runBlogGenerationForTopic`) that don't yet accept `userId`. Route-level auth is enforced; worker-level userId propagation is deferred to the worker tasks.
+- Plan gate for blog publish and email send: `db.user.findUnique` runs before the resource lookup so free-plan users get a clear 403 immediately, without wasting a DB round-trip on the resource query.
+
 ## Patterns
 
 ## Task 002 Notes
@@ -163,6 +171,7 @@
 - `/api/webhooks/polar` is added via `startsWith`, which would also match `/api/webhooks/polar/anything`. No sub-routes exist today so this is fine; if future sub-routes need auth, narrow to an exact match (`pathname === "/api/webhooks/polar"`).
 
 ## Task 005 Notes (Spec: SaaS Multi-Tenancy — API userId isolation)
+
 - The `/api/stream` SSE route uses a process-level in-memory event bus (`bus` from `@/lib/events`), not DB queries — there is no Prisma call to add `where: { userId }` to. Multi-user isolation here would require tagging bus events with userId and filtering in the `onEngineEvent` listener; that is a future concern.
 - `findUnique` → `findFirst` is required everywhere a `userId` filter is added alongside `id` for a lookup. Prisma's `findUnique` only accepts fields that form a declared unique index; composing `{ id, userId }` without a `@@unique([id, userId])` directive causes a TypeScript type error. `findFirst` accepts any `where` filter.
 - The `own-products/[id]/publish` route creates a `Promotion` record inline — this also needed `userId` added to its `create` data to satisfy the multi-tenant schema constraint, even though Promotion is not the primary model of the own-products routes.
