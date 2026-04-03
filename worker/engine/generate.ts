@@ -40,6 +40,7 @@ URL: ${promotion.url}
 
 export async function generateMaster(
   promotion: Promotion,
+  userId: string,
   template?: Template,
 ): Promise<GeneratedPiece> {
   let system = MASTER_SYSTEM;
@@ -125,6 +126,7 @@ function buildPlatformSystem(platform: string, template?: Template): string {
 export async function generateFromBlog(
   blogContent: string,
   platform: string,
+  userId: string,
   template?: Template,
 ): Promise<GeneratedPiece> {
   const prompt = `Here is the blog post to repurpose:\n\n${blogContent}`;
@@ -136,6 +138,7 @@ export async function generateFromBlog(
 export async function generateAllFormats(
   promotion: Promotion,
   master: string,
+  userId: string,
   templates?: Record<string, Template>,
 ): Promise<Record<string, GeneratedPiece>> {
   const prompt = buildFormatPrompt(master, promotion);

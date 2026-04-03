@@ -34,7 +34,7 @@ function makeLogger() {
 // Main orchestration
 // ---------------------------------------------------------------------------
 
-export async function runEngine(): Promise<void> {
+export async function runEngine(userId: string): Promise<void> {
   const logger = makeLogger();
 
   // 1. Create EngineRun record
@@ -43,6 +43,7 @@ export async function runEngine(): Promise<void> {
 
   const engineRun = await db.engineRun.create({
     data: {
+      userId,
       date: today,
       status: "running",
       log: "",
@@ -57,7 +58,7 @@ export async function runEngine(): Promise<void> {
 
   try {
     // 3. Select promotion via rotation
-    const promotion = await selectPromotion();
+    const promotion = await selectPromotion(userId);
 
     if (!promotion) {
       logger.info("No active promotions — engine run completed with no output");
@@ -77,11 +78,12 @@ export async function runEngine(): Promise<void> {
     // 5. Generate master piece
     // -----------------------------------------------------------------------
     logger.info("Generating master piece…");
-    const masterResult = await generateMaster(promotion);
+    const masterResult = await generateMaster(promotion, userId);
     const master = masterResult.content;
 
     const masterPiece = await db.contentPiece.create({
       data: {
+        userId,
         promotionId: promotion.id,
         date: today,
         platform: "master",
@@ -96,7 +98,7 @@ export async function runEngine(): Promise<void> {
     // 6. Generate all platform formats in parallel
     // -----------------------------------------------------------------------
     logger.info("Generating platform formats…");
-    const formats = await generateAllFormats(promotion, master);
+    const formats = await generateAllFormats(promotion, master, userId);
 
     const platformEntries = Object.entries(formats);
     const savedPieces: Record<string, { id: string; content: string }> = {};
@@ -106,6 +108,7 @@ export async function runEngine(): Promise<void> {
         const { content, provider } = piece;
         const dbPiece = await db.contentPiece.create({
           data: {
+            userId,
             promotionId: promotion.id,
             date: today,
             platform,
@@ -141,6 +144,7 @@ export async function runEngine(): Promise<void> {
           formats["email"];
         const emailPiece = await db.contentPiece.create({
           data: {
+            userId,
             promotionId: promotion.id,
             date: today,
             platform: "email",
@@ -176,14 +180,16 @@ export async function runEngine(): Promise<void> {
       renderImageForPlatform({
         platform: "linkedin",
         promotion,
-        content: linkedinContent,
+        postTitle: linkedinContent,
         date: dateStr,
+        userId,
       }),
       renderImageForPlatform({
         platform: "instagram",
         promotion,
-        content: instagramContent,
+        postTitle: instagramContent,
         date: dateStr,
+        userId,
       }),
     ]);
 
@@ -203,6 +209,7 @@ export async function runEngine(): Promise<void> {
       try {
         await db.mediaAsset.create({
           data: {
+            userId,
             type: "image",
             filePath: linkedinResult.value,
             prompt: `Auto-generated for linkedin — ${promotion.name}`,
@@ -232,6 +239,7 @@ export async function runEngine(): Promise<void> {
       try {
         await db.mediaAsset.create({
           data: {
+            userId,
             type: "image",
             filePath: instagramResult.value,
             prompt: `Auto-generated for instagram — ${promotion.name}`,
@@ -250,7 +258,7 @@ export async function runEngine(): Promise<void> {
 
     // Video script ContentPiece is always saved; MP4 rendering is gated
     const videoRenderingEnabled =
-      (await getSetting("video_rendering_enabled")) === "true";
+      (await getSetting("video_rendering_enabled", userId)) === "true";
     const existingVideoId = savedPieces["video"]?.id;
 
     if (videoRenderingEnabled) {
@@ -269,6 +277,7 @@ export async function runEngine(): Promise<void> {
         } else {
           await db.contentPiece.create({
             data: {
+              userId,
               promotionId: promotion.id,
               date: today,
               platform: "video",
@@ -285,6 +294,7 @@ export async function runEngine(): Promise<void> {
         if (!existingVideoId) {
           await db.contentPiece.create({
             data: {
+              userId,
               promotionId: promotion.id,
               date: today,
               platform: "video",
@@ -300,6 +310,7 @@ export async function runEngine(): Promise<void> {
       if (!existingVideoId) {
         await db.contentPiece.create({
           data: {
+            userId,
             promotionId: promotion.id,
             date: today,
             platform: "video",
@@ -313,7 +324,7 @@ export async function runEngine(): Promise<void> {
     // -----------------------------------------------------------------------
     // 8. Apply gate mode
     // -----------------------------------------------------------------------
-    const gateModeRaw = await getSetting("gate_mode");
+    const gateModeRaw = await getSetting("gate_mode", userId);
     const gateMode = gateModeRaw === "true";
 
     if (!gateMode) {

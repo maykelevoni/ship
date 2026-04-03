@@ -1,5 +1,6 @@
-import { db } from '@/lib/db'
-import { Promotion } from '@prisma/client'
+import { Promotion } from "@prisma/client";
+
+import { db } from "@/lib/db";
 
 /**
  * Select a promotion to feature today using weighted random selection.
@@ -11,99 +12,104 @@ import { Promotion } from '@prisma/client'
  *    restrict candidates to lead_magnet type (fall back to all if none available).
  * 4. Weighted random: each promotion appears `weight` times in the pool.
  */
-export async function selectPromotion(): Promise<Promotion | null> {
-  // 1. Fetch all active promotions
+export async function selectPromotion(
+  userId: string,
+): Promise<Promotion | null> {
+  // 1. Fetch all active promotions for this user
   const activePromotions = await db.promotion.findMany({
-    where: { status: 'active' },
-  })
+    where: { userId, status: "active" },
+  });
 
   if (activePromotions.length === 0) {
-    return null
+    return null;
   }
 
   // 2. Find yesterday's promotion from the last engine run
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  yesterday.setUTCHours(0, 0, 0, 0)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setUTCHours(0, 0, 0, 0);
 
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
   const lastRun = await db.engineRun.findFirst({
     where: {
+      userId,
       date: {
         gte: yesterday,
         lt: today,
       },
       promotionId: { not: null },
     },
-    orderBy: { createdAt: 'desc' },
-  })
+    orderBy: { createdAt: "desc" },
+  });
 
-  const yesterdayPromotionId = lastRun?.promotionId ?? null
+  const yesterdayPromotionId = lastRun?.promotionId ?? null;
 
   // 3. Filter out yesterday's promotion
   let candidates = activePromotions.filter(
     (p) => p.id !== yesterdayPromotionId,
-  )
+  );
 
   // If filtering left us with nothing (only one active promotion), fall back
   if (candidates.length === 0) {
-    candidates = activePromotions
+    candidates = activePromotions;
   }
 
   // 4. Check if lead magnet should be prioritized
   //    Count engine runs in last 5 days and how many featured a lead magnet
-  const fiveDaysAgo = new Date()
-  fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5)
-  fiveDaysAgo.setUTCHours(0, 0, 0, 0)
+  const fiveDaysAgo = new Date();
+  fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+  fiveDaysAgo.setUTCHours(0, 0, 0, 0);
 
   const recentRuns = await db.engineRun.findMany({
     where: {
+      userId,
       date: { gte: fiveDaysAgo },
       promotionId: { not: null },
     },
-    orderBy: { createdAt: 'desc' },
-  })
+    orderBy: { createdAt: "desc" },
+  });
 
   // Gather promotion IDs from recent runs
   const recentPromotionIds = recentRuns
     .map((r) => r.promotionId)
-    .filter((id): id is string => id !== null)
+    .filter((id): id is string => id !== null);
 
   // Look up which of those promotions were lead magnets
-  let leadMagnetCountInLast5 = 0
+  let leadMagnetCountInLast5 = 0;
   if (recentPromotionIds.length > 0) {
     const recentLeadMagnets = await db.promotion.count({
       where: {
+        userId,
         id: { in: recentPromotionIds },
-        type: 'lead_magnet',
+        type: "lead_magnet",
       },
-    })
-    leadMagnetCountInLast5 = recentLeadMagnets
+    });
+    leadMagnetCountInLast5 = recentLeadMagnets;
   }
 
   // Prioritize lead magnets if fewer than 1 was promoted in the last 5 days
   if (leadMagnetCountInLast5 < 1) {
     const leadMagnetCandidates = candidates.filter(
-      (p) => p.type === 'lead_magnet',
-    )
+      (p) => p.type === "lead_magnet",
+    );
     if (leadMagnetCandidates.length > 0) {
-      candidates = leadMagnetCandidates
+      candidates = leadMagnetCandidates;
     }
     // else fall back to the full candidates list
   }
 
   // 5. Weighted random selection
   //    Build pool where each promotion appears `weight` times
-  const pool: Promotion[] = []
+  const pool: Promotion[] = [];
   for (const promotion of candidates) {
-    const weight = Math.max(1, promotion.weight)
+    const weight = Math.max(1, promotion.weight);
     for (let i = 0; i < weight; i++) {
-      pool.push(promotion)
+      pool.push(promotion);
     }
   }
 
-  const selected = pool[Math.floor(Math.random() * pool.length)]
-  return selected
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+  return selected;
 }

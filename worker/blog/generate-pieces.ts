@@ -36,12 +36,13 @@ function makeLogger() {
 
 export async function generatePiecesForBlogPost(
   blogPostId: string,
+  userId: string,
 ): Promise<{ count: number; pieceIds: string[] }> {
   const logger = makeLogger();
 
   // 1. Fetch the BlogPost (include topic relation)
-  const post = await db.blogPost.findUnique({
-    where: { id: blogPostId },
+  const post = await db.blogPost.findFirst({
+    where: { id: blogPostId, userId },
     include: { topic: true },
   });
 
@@ -56,6 +57,7 @@ export async function generatePiecesForBlogPost(
   // 2. Build a pseudo-Promotion to reuse existing generators
   const pseudoPromotion: Promotion = {
     id: post.id,
+    userId,
     name: post.title,
     description: post.seoDescription ?? post.title,
     url: post.ghostUrl ?? "",
@@ -83,6 +85,7 @@ export async function generatePiecesForBlogPost(
   logger.info("Saving master piece…");
   const masterPiece = await db.contentPiece.create({
     data: {
+      userId,
       blogPostId: post.id,
       date: today,
       platform: "master",
@@ -104,6 +107,7 @@ export async function generatePiecesForBlogPost(
       const { content, provider } = piece;
       const dbPiece = await db.contentPiece.create({
         data: {
+          userId,
           blogPostId: post.id,
           date: today,
           platform,
@@ -177,7 +181,7 @@ export async function generatePiecesForBlogPost(
 
   // 6. Handle video — check setting, attempt render, always save script piece
   const videoRenderingEnabled =
-    (await getSetting("video_rendering_enabled")) === "true";
+    (await getSetting("video_rendering_enabled", userId)) === "true";
   const existingVideoId = savedPieces["video"]?.id;
 
   if (videoRenderingEnabled) {
@@ -195,6 +199,7 @@ export async function generatePiecesForBlogPost(
       } else {
         const videoPiece = await db.contentPiece.create({
           data: {
+            userId,
             blogPostId: post.id,
             date: today,
             platform: "video",
@@ -212,6 +217,7 @@ export async function generatePiecesForBlogPost(
       if (!existingVideoId) {
         const videoPiece = await db.contentPiece.create({
           data: {
+            userId,
             blogPostId: post.id,
             date: today,
             platform: "video",
@@ -227,6 +233,7 @@ export async function generatePiecesForBlogPost(
     if (!existingVideoId) {
       const videoPiece = await db.contentPiece.create({
         data: {
+          userId,
           blogPostId: post.id,
           date: today,
           platform: "video",
