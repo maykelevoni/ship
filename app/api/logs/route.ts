@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
@@ -6,18 +7,24 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const { searchParams } = new URL(req.url);
 
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const page = Math.max(
+      1,
+      parseInt(searchParams.get("page") ?? "1", 10) || 1,
+    );
     const limit = Math.min(
       100,
-      Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20)
+      Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10) || 20),
     );
     const skip = (page - 1) * limit;
 
     const [runs, total] = await Promise.all([
       db.engineRun.findMany({
+        where: { userId },
         skip,
         take: limit,
         orderBy: { createdAt: "desc" },
@@ -31,7 +38,7 @@ export const GET = auth(async (req) => {
           log: true,
         },
       }),
-      db.engineRun.count(),
+      db.engineRun.count({ where: { userId } }),
     ]);
 
     const formatted = runs.map((run) => ({

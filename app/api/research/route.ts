@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
@@ -7,6 +8,7 @@ export const GET = auth(async (req) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -14,6 +16,7 @@ export const GET = auth(async (req) => {
 
     const topics = await db.researchTopic.findMany({
       where: {
+        userId,
         date: {
           gte: today,
           lt: tomorrow,

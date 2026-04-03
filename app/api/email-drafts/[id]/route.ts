@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req, context) => {
@@ -7,10 +8,13 @@ export const GET = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
+    const userId = req.auth.user.id;
+    const { id } = await (
+      context as unknown as { params: Promise<{ id: string }> }
+    ).params;
 
-    const draft = await db.emailDraft.findUnique({
-      where: { id },
+    const draft = await db.emailDraft.findFirst({
+      where: { id, userId },
       include: {
         blogPost: {
           select: { title: true, ghostUrl: true },
@@ -34,17 +38,24 @@ export const PATCH = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
+    const userId = req.auth.user.id;
+    const { id } = await (
+      context as unknown as { params: Promise<{ id: string }> }
+    ).params;
 
     const body = await req.json();
-    const { subject, body: emailBody, suggestedPromos } = body as {
+    const {
+      subject,
+      body: emailBody,
+      suggestedPromos,
+    } = body as {
       subject?: string;
       body?: string;
       suggestedPromos?: string;
     };
 
     const updated = await db.emailDraft.update({
-      where: { id },
+      where: { id, userId },
       data: {
         ...(subject !== undefined && { subject }),
         ...(emailBody !== undefined && { body: emailBody }),

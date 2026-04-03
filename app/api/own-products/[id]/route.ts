@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req, { params }) => {
@@ -6,11 +7,13 @@ export const GET = auth(async (req, { params }) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const { id } = params as { id: string };
 
-    const product = await db.ownProduct.findUnique({
-      where: { id },
+    const product = await db.ownProduct.findFirst({
+      where: { id, userId },
     });
 
     if (!product) {
@@ -28,16 +31,26 @@ export const PATCH = auth(async (req, { params }) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const { id } = params as { id: string };
 
-    const existing = await db.ownProduct.findUnique({ where: { id } });
+    const existing = await db.ownProduct.findFirst({ where: { id, userId } });
     if (!existing) {
       return Response.json({ error: "OwnProduct not found" }, { status: 404 });
     }
 
     const body = await req.json();
-    const { title, description, outline, status, price, checkoutUrl, promotionId } = body as {
+    const {
+      title,
+      description,
+      outline,
+      status,
+      price,
+      checkoutUrl,
+      promotionId,
+    } = body as {
       title?: string;
       description?: string;
       outline?: string;

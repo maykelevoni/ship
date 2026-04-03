@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
@@ -6,8 +7,11 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const products = await db.ownProduct.findMany({
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -21,6 +25,8 @@ export const POST = auth(async (req) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
+
+  const userId = req.auth.user.id;
 
   try {
     const body = await req.json();
@@ -37,6 +43,7 @@ export const POST = auth(async (req) => {
 
     const product = await db.ownProduct.create({
       data: {
+        userId,
         title: title.trim(),
         status: "outline",
         outline: "[]",

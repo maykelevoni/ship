@@ -42,8 +42,11 @@ export const POST = auth(async (req) => {
       );
     }
 
+    const userId = req.auth.user.id;
+
     const promotion = await db.promotion.create({
       data: {
+        userId,
         type: "affiliate",
         name,
         description: description ?? name,

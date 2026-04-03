@@ -1,7 +1,14 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
-const VALID_STATUSES = ["generated", "approved", "rejected", "posted", "failed"];
+const VALID_STATUSES = [
+  "generated",
+  "approved",
+  "rejected",
+  "posted",
+  "failed",
+];
 
 export const GET = auth(async (req, { params }) => {
   if (!req.auth) {
@@ -9,10 +16,11 @@ export const GET = auth(async (req, { params }) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const { id } = params as { id: string };
 
-    const piece = await db.contentPiece.findUnique({
-      where: { id },
+    const piece = await db.contentPiece.findFirst({
+      where: { id, userId },
       include: {
         promotion: { select: { name: true } },
         blogPost: { select: { title: true, ghostUrl: true } },
@@ -20,7 +28,10 @@ export const GET = auth(async (req, { params }) => {
     });
 
     if (!piece) {
-      return Response.json({ error: "ContentPiece not found" }, { status: 404 });
+      return Response.json(
+        { error: "ContentPiece not found" },
+        { status: 404 },
+      );
     }
 
     return Response.json({
@@ -40,11 +51,15 @@ export const PATCH = auth(async (req, { params }) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const { id } = params as { id: string };
 
-    const existing = await db.contentPiece.findUnique({ where: { id } });
+    const existing = await db.contentPiece.findFirst({ where: { id, userId } });
     if (!existing) {
-      return Response.json({ error: "ContentPiece not found" }, { status: 404 });
+      return Response.json(
+        { error: "ContentPiece not found" },
+        { status: 404 },
+      );
     }
 
     const body = await req.json();
@@ -57,7 +72,7 @@ export const PATCH = auth(async (req, { params }) => {
     if (status !== undefined && !VALID_STATUSES.includes(status)) {
       return Response.json(
         { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,7 +92,8 @@ export const PATCH = auth(async (req, { params }) => {
     }
 
     if (scheduledAt !== undefined) {
-      updateData.scheduledAt = scheduledAt === null ? null : new Date(scheduledAt);
+      updateData.scheduledAt =
+        scheduledAt === null ? null : new Date(scheduledAt);
     }
 
     const updated = await db.contentPiece.update({

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -11,11 +12,13 @@ import { db } from "@/lib/db";
 export const DELETE = auth(async (req, context) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
+  const userId = req.auth.user.id;
+
   try {
     const { id } = (await context?.params) as { id: string };
 
     // 1. Find the asset
-    const asset = await db.mediaAsset.findUnique({ where: { id } });
+    const asset = await db.mediaAsset.findFirst({ where: { id, userId } });
     if (!asset) {
       return Response.json({ error: "Not found" }, { status: 404 });
     }

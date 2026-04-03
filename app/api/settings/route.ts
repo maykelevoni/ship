@@ -30,8 +30,10 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
-    const rows = await db.setting.findMany();
+    const rows = await db.setting.findMany({ where: { userId } });
     const stored = Object.fromEntries(rows.map((s) => [s.key, s.value]));
 
     // Merge stored values with defaults — always return all known keys
@@ -58,6 +60,8 @@ export const POST = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const body = await req.json();
 
@@ -70,9 +74,9 @@ export const POST = auth(async (req) => {
     await Promise.all(
       entries.map(([key, value]) =>
         db.setting.upsert({
-          where: { key },
+          where: { userId_key: { userId, key } },
           update: { value: String(value) },
-          create: { key, value: String(value) },
+          create: { userId, key, value: String(value) },
         }),
       ),
     );

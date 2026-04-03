@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
 import {
   generateStudioImage,
+  generateStudioVideo,
   resizeForPlatforms,
 } from "@/worker/media/studio";
-import { generateStudioVideo } from "@/worker/media/studio";
+
+import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // POST /api/media
@@ -16,6 +17,8 @@ import { generateStudioVideo } from "@/worker/media/studio";
 
 export const POST = auth(async (req) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
+
+  const userId = req.auth.user.id;
 
   try {
     const body = await req.json();
@@ -36,7 +39,7 @@ export const POST = auth(async (req) => {
     if (!type || !prompt) {
       return Response.json(
         { error: "type and prompt are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,6 +50,7 @@ export const POST = auth(async (req) => {
       // 1. Create pending base row
       const baseRow = await db.mediaAsset.create({
         data: {
+          userId,
           type: "image",
           prompt,
           groupId,
@@ -72,7 +76,7 @@ export const POST = auth(async (req) => {
           process.cwd(),
           "media",
           "studio",
-          `${groupId}-base.png`
+          `${groupId}-base.png`,
         );
         const { buffer } = await generateStudioImage({
           prompt,
@@ -106,6 +110,7 @@ export const POST = auth(async (req) => {
           resizeResults.map((r) =>
             db.mediaAsset.create({
               data: {
+                userId,
                 type: "image",
                 prompt,
                 groupId,
@@ -116,8 +121,8 @@ export const POST = auth(async (req) => {
                 width: r.width,
                 height: r.height,
               },
-            })
-          )
+            }),
+          ),
         );
 
         return Response.json({ assets: [updatedBase, ...resizeRows] });
@@ -136,6 +141,7 @@ export const POST = auth(async (req) => {
       // 1. Create pending video row
       const videoRow = await db.mediaAsset.create({
         data: {
+          userId,
           type: "video",
           prompt,
           groupId,
@@ -179,7 +185,7 @@ export const POST = auth(async (req) => {
           process.cwd(),
           "media",
           "studio",
-          `${videoRow.id}.mp4`
+          `${videoRow.id}.mp4`,
         );
         await generateStudioVideo({
           prompt,
@@ -208,7 +214,7 @@ export const POST = auth(async (req) => {
     } else {
       return Response.json(
         { error: "type must be 'image' or 'video'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
   } catch (err) {
@@ -225,6 +231,8 @@ export const POST = auth(async (req) => {
 export const GET = auth(async (req) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
+  const userId = req.auth.user.id;
+
   try {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") as "image" | "video" | null;
@@ -232,7 +240,7 @@ export const GET = auth(async (req) => {
     const limit = limitParam ? parseInt(limitParam, 10) : 50;
 
     const assets = await db.mediaAsset.findMany({
-      where: { type: type ?? undefined },
+      where: { userId, type: type ?? undefined },
       orderBy: { createdAt: "desc" },
       take: limit,
     });

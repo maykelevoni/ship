@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 
@@ -7,10 +8,12 @@ export const POST = auth(async (req, { params }) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const { id } = params as { id: string };
 
-    const product = await db.ownProduct.findUnique({ where: { id } });
+    const product = await db.ownProduct.findFirst({ where: { id, userId } });
     if (!product) {
       return Response.json({ error: "OwnProduct not found" }, { status: 404 });
     }
@@ -45,7 +48,7 @@ export const POST = auth(async (req, { params }) => {
       body: formBody.toString(),
     });
 
-    const gumroadData = await gumroadRes.json() as {
+    const gumroadData = (await gumroadRes.json()) as {
       success: boolean;
       product?: { short_url: string; id: string };
       message?: string;
@@ -63,6 +66,7 @@ export const POST = auth(async (req, { params }) => {
     // Create Promotion record
     const promotion = await db.promotion.create({
       data: {
+        userId,
         type: "product",
         name: product.title,
         description: product.description || product.title,

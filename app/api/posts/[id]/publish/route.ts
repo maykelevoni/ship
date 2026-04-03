@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { postToPlatform } from "@/worker/posting/post-bridge";
 import { sendEmail } from "@/worker/posting/brevo";
+import { postToPlatform } from "@/worker/posting/post-bridge";
+
+import { db } from "@/lib/db";
 
 export const POST = auth(async (req, { params }) => {
   if (!req.auth) {
@@ -9,16 +10,34 @@ export const POST = auth(async (req, { params }) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const { id } = params as { id: string };
 
-    const piece = await db.contentPiece.findUnique({ where: { id } });
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
+    if (user?.plan === "free") {
+      return Response.json(
+        { error: "Upgrade required to publish posts", upgrade: true },
+        { status: 403 },
+      );
+    }
+
+    const piece = await db.contentPiece.findFirst({ where: { id, userId } });
     if (!piece) {
-      return Response.json({ error: "ContentPiece not found" }, { status: 404 });
+      return Response.json(
+        { error: "ContentPiece not found" },
+        { status: 404 },
+      );
     }
 
     // Already posted — return early
     if (piece.status === "posted") {
-      return Response.json({ message: "Already posted", postBridgeId: piece.postBridgeId });
+      return Response.json({
+        message: "Already posted",
+        postBridgeId: piece.postBridgeId,
+      });
     }
 
     // Ensure piece is approved before dispatch
@@ -78,7 +97,8 @@ export const POST = auth(async (req, { params }) => {
         // Content format: "SUBJECT: <subject>\nBODY: <body>"
         const lines = content.split("\n");
         const subjectLine = lines.find((l) => l.startsWith("SUBJECT:")) ?? "";
-        const subject = subjectLine.replace(/^SUBJECT:\s*/, "").trim() || "Newsletter";
+        const subject =
+          subjectLine.replace(/^SUBJECT:\s*/, "").trim() || "Newsletter";
         const bodyStart = content.indexOf("BODY:");
         const body = bodyStart !== -1 ? content.slice(bodyStart) : content;
         const result = await sendEmail({ subject, body });
@@ -88,7 +108,10 @@ export const POST = auth(async (req, { params }) => {
 
       default: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result = await postToPlatform({ platform: platform as any, content });
+        const result = await postToPlatform({
+          platform: platform as any,
+          content,
+        });
         postBridgeId = result.id;
         break;
       }

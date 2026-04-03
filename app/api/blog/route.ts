@@ -1,10 +1,13 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
+
+  const userId = req.auth.user.id;
 
   try {
     const today = new Date();
@@ -14,6 +17,7 @@ export const GET = auth(async (req) => {
 
     const post = await db.blogPost.findFirst({
       where: {
+        userId,
         date: {
           gte: today,
           lt: tomorrow,

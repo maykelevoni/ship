@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const VALID_ACTIONS = ["approve", "reject", "edit"] as const;
@@ -10,6 +11,7 @@ export const PATCH = auth(async (req, { params }) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const { id } = params as { id: string };
 
     if (!id) {
@@ -22,21 +24,27 @@ export const PATCH = auth(async (req, { params }) => {
     if (!action || !VALID_ACTIONS.includes(action)) {
       return Response.json(
         { error: "action must be one of: approve, reject, edit" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (action === "edit" && (typeof content !== "string" || content.trim() === "")) {
+    if (
+      action === "edit" &&
+      (typeof content !== "string" || content.trim() === "")
+    ) {
       return Response.json(
         { error: "content is required for edit action" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Verify the piece exists
-    const existing = await db.contentPiece.findUnique({ where: { id } });
+    // Verify the piece exists and belongs to this user
+    const existing = await db.contentPiece.findFirst({ where: { id, userId } });
     if (!existing) {
-      return Response.json({ error: "ContentPiece not found" }, { status: 404 });
+      return Response.json(
+        { error: "ContentPiece not found" },
+        { status: 404 },
+      );
     }
 
     let updateData: Record<string, unknown>;
@@ -49,7 +57,11 @@ export const PATCH = auth(async (req, { params }) => {
         updateData = { status: "rejected" };
         break;
       case "edit":
-        updateData = { content: content!.trim(), status: "approved", approved: true };
+        updateData = {
+          content: content!.trim(),
+          status: "approved",
+          approved: true,
+        };
         break;
     }
 

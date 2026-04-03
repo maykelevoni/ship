@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+
 import { generateText } from "@/lib/claude";
+import { db } from "@/lib/db";
 
 interface Chapter {
   title: string;
@@ -13,10 +14,12 @@ export const POST = auth(async (req, { params }) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const { id } = params as { id: string };
 
-    const product = await db.ownProduct.findUnique({ where: { id } });
+    const product = await db.ownProduct.findFirst({ where: { id, userId } });
     if (!product) {
       return Response.json({ error: "OwnProduct not found" }, { status: 404 });
     }
@@ -43,7 +46,8 @@ export const POST = auth(async (req, { params }) => {
       .map((p) => `Title: ${p.title}\n${p.content.slice(0, 800)}`)
       .join("\n\n");
 
-    const system = "You are a professional writer creating educational ebook content.";
+    const system =
+      "You are a professional writer creating educational ebook content.";
     const prompt = `Write the full content for this chapter of the ebook '${product.title}':\n\nChapter: ${chapter.title}\nDescription: ${chapter.description}\n${blogPosts.length > 0 ? `\nContext from blog posts:\n${blogPostContent}\n` : ""}
 Write 500-800 words. Use clear headers, bullet points where appropriate. Be practical and actionable.`;
 

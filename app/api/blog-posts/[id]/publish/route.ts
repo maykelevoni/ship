@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -9,7 +10,11 @@ import { db } from "@/lib/db";
 
 function base64UrlEncode(input: Buffer | string): string {
   const buf = typeof input === "string" ? Buffer.from(input) : input;
-  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  return buf
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }
 
 function createGhostJwt(id: string, secret: string): string {
@@ -45,10 +50,25 @@ export const POST = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
+    const userId = req.auth.user.id;
+    const { id } = await (
+      context as unknown as { params: Promise<{ id: string }> }
+    ).params;
+
+    // Plan gate — free users cannot publish
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
+    if (user?.plan === "free") {
+      return Response.json(
+        { error: "Upgrade required to publish", upgrade: true },
+        { status: 403 },
+      );
+    }
 
     // Load the BlogPost record
-    const post = await db.blogPost.findUnique({ where: { id } });
+    const post = await db.blogPost.findFirst({ where: { id, userId } });
     if (!post) {
       return new Response("Not found", { status: 404 });
     }
@@ -60,9 +80,11 @@ export const POST = auth(async (req, context) => {
 
     // Load Ghost settings
     const settingRows = await db.setting.findMany({
-      where: { key: { in: ["ghost_url", "ghost_admin_api_key"] } },
+      where: { userId, key: { in: ["ghost_url", "ghost_admin_api_key"] } },
     });
-    const settings = Object.fromEntries(settingRows.map((s) => [s.key, s.value]));
+    const settings = Object.fromEntries(
+      settingRows.map((s) => [s.key, s.value]),
+    );
 
     const ghostUrl = settings["ghost_url"];
     const ghostAdminApiKey = settings["ghost_admin_api_key"];
@@ -101,7 +123,7 @@ export const POST = auth(async (req, context) => {
 
     // Update local record
     await db.blogPost.update({
-      where: { id },
+      where: { id, userId },
       data: { status: "published", ghostUrl: publishedGhostUrl },
     });
 

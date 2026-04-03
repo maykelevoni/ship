@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const VALID_PLATFORMS = [
@@ -17,8 +18,11 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const templates = await db.template.findMany({
+      where: { userId },
       orderBy: [{ platform: "asc" }, { name: "asc" }],
     });
     return Response.json(templates);
@@ -31,6 +35,8 @@ export const POST = auth(async (req) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
+
+  const userId = req.auth.user.id;
 
   try {
     const body = await req.json();
@@ -63,15 +69,18 @@ export const POST = auth(async (req) => {
           error:
             "platform must be one of: twitter | linkedin | instagram | facebook | reddit | email | tiktok | youtube",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate optional numeric fields
-    if (charLimit !== undefined && (!Number.isInteger(charLimit) || charLimit <= 0)) {
+    if (
+      charLimit !== undefined &&
+      (!Number.isInteger(charLimit) || charLimit <= 0)
+    ) {
       return Response.json(
         { error: "charLimit must be a positive integer" },
-        { status: 400 }
+        { status: 400 },
       );
     }
     for (const [field, val] of [
@@ -80,16 +89,20 @@ export const POST = auth(async (req) => {
       ["videoWidth", videoWidth],
       ["videoHeight", videoHeight],
     ] as [string, unknown][]) {
-      if (val !== undefined && (!Number.isInteger(val) || (val as number) <= 0)) {
+      if (
+        val !== undefined &&
+        (!Number.isInteger(val) || (val as number) <= 0)
+      ) {
         return Response.json(
           { error: `${field} must be a positive integer` },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
 
     const template = await db.template.create({
       data: {
+        userId,
         name: name.trim(),
         platform,
         charLimit: charLimit ?? null,

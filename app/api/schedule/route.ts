@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const VALID_PLATFORMS = [
@@ -19,8 +20,11 @@ export const GET = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const entries = await db.scheduleEntry.findMany({
+      where: { userId },
       include: { template: true },
       orderBy: { time: "asc" },
     });
@@ -35,6 +39,8 @@ export const POST = auth(async (req) => {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const body = await req.json();
 
@@ -44,7 +50,7 @@ export const POST = auth(async (req) => {
     if (!time || typeof time !== "string" || !TIME_REGEX.test(time)) {
       return Response.json(
         { error: "time is required and must be in HH:MM format (00:00–23:59)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,22 +63,28 @@ export const POST = auth(async (req) => {
           error:
             "platform must be one of: twitter | linkedin | instagram | facebook | reddit | email | tiktok | youtube",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!templateId || typeof templateId !== "string") {
-      return Response.json({ error: "templateId is required" }, { status: 400 });
+      return Response.json(
+        { error: "templateId is required" },
+        { status: 400 },
+      );
     }
 
-    // Verify the template exists
-    const template = await db.template.findUnique({ where: { id: templateId } });
+    // Verify the template exists and belongs to this user
+    const template = await db.template.findFirst({
+      where: { id: templateId, userId },
+    });
     if (!template) {
       return Response.json({ error: "Template not found" }, { status: 404 });
     }
 
     const entry = await db.scheduleEntry.create({
       data: {
+        userId,
         time,
         platform,
         templateId,

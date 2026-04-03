@@ -1,22 +1,25 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
 import { runBlogGeneration } from "@/worker/blog/index";
+
+import { db } from "@/lib/db";
 
 export const POST = auth(async (req) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
 
+  const userId = req.auth.user.id;
+
   try {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
     await db.blogPost.deleteMany({
-      where: { date: { gte: today } },
+      where: { userId, date: { gte: today } },
     });
 
     await db.researchTopic.updateMany({
-      where: { date: { gte: today }, selected: true },
+      where: { userId, date: { gte: today }, selected: true },
       data: { selected: false },
     });
 

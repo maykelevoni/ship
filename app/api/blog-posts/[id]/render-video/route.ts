@@ -1,17 +1,19 @@
 import path from "path";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
 import { renderVideo } from "@/worker/media/video";
+
+import { db } from "@/lib/db";
 
 export const POST = auth(async (req, ctx) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
   try {
+    const userId = req.auth.user.id;
     const { id } = (ctx as { params: { id: string } }).params;
 
     // 1. Get blog post
-    const post = await db.blogPost.findUnique({
-      where: { id },
+    const post = await db.blogPost.findFirst({
+      where: { id, userId },
       include: {
         contentPieces: { orderBy: { platform: "asc" } },
       },
@@ -27,6 +29,7 @@ export const POST = auth(async (req, ctx) => {
 
     const datePieces = await db.contentPiece.findMany({
       where: {
+        userId,
         date: { gte: dayStart, lt: dayEnd },
         platform: { not: "master" },
       },
@@ -42,19 +45,22 @@ export const POST = auth(async (req, ctx) => {
     if (!videoPiece) {
       return Response.json(
         { error: "No video script found for this post. Run the engine first." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // 4. Parse the video script JSON (strip markdown code fences if present)
     let script: { hook: string; points: string[]; reveal: string; cta: string };
     try {
-      const raw = (videoPiece.content ?? "").replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "").trim();
+      const raw = (videoPiece.content ?? "")
+        .replace(/^```[\w]*\n?/, "")
+        .replace(/\n?```$/, "")
+        .trim();
       script = JSON.parse(raw);
     } catch {
       return Response.json(
         { error: "Video script is not valid JSON" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -63,7 +69,7 @@ export const POST = auth(async (req, ctx) => {
     if (!promotionId) {
       return Response.json(
         { error: "No promotion linked for video rendering" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -75,7 +81,7 @@ export const POST = auth(async (req, ctx) => {
     if (!promotion) {
       return Response.json(
         { error: "No promotion linked for video rendering" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -84,7 +90,12 @@ export const POST = auth(async (req, ctx) => {
     const date = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 
     // 8. Build output path
-    const outputPath = path.join(process.cwd(), "media", "videos", `${date}.mp4`);
+    const outputPath = path.join(
+      process.cwd(),
+      "media",
+      "videos",
+      `${date}.mp4`,
+    );
     const mediaPath = `./media/videos/${date}.mp4`;
 
     // 9. Render the video

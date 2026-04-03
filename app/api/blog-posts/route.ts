@@ -1,11 +1,14 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
   try {
+    const userId = req.auth.user.id;
     const posts = await db.blogPost.findMany({
+      where: { userId },
       include: {
         topic: { select: { title: true, source: true, score: true } },
         _count: { select: { contentPieces: true } },
@@ -27,7 +30,7 @@ export const GET = auth(async (req) => {
         topic: p.topic,
         piecesCount: p._count.contentPieces,
         createdAt: p.createdAt,
-      }))
+      })),
     );
   } catch {
     return new Response("Internal server error", { status: 500 });

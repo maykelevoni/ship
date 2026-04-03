@@ -1,10 +1,13 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
+
+  const userId = req.auth.user.id;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -14,7 +17,7 @@ export const GET = auth(async (req) => {
     if (!from || !to) {
       return Response.json(
         { error: "from and to query params are required (ISO date)" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,7 +27,7 @@ export const GET = auth(async (req) => {
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       return Response.json(
         { error: "from and to must be valid ISO date strings" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -33,12 +36,21 @@ export const GET = auth(async (req) => {
 
     const pieces = await db.contentPiece.findMany({
       where: {
+        userId,
         date: {
           gte: fromDate,
           lte: toDate,
         },
         platform: {
-          in: ["master", "twitter", "linkedin", "reddit", "instagram", "email", "video"],
+          in: [
+            "master",
+            "twitter",
+            "linkedin",
+            "reddit",
+            "instagram",
+            "email",
+            "video",
+          ],
         },
       },
       include: {

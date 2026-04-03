@@ -1,14 +1,16 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req, ctx) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
   try {
+    const userId = req.auth.user.id;
     const { id } = (ctx as { params: { id: string } }).params;
 
-    const post = await db.blogPost.findUnique({
-      where: { id },
+    const post = await db.blogPost.findFirst({
+      where: { id, userId },
       include: {
         topic: true,
         contentPieces: { orderBy: { platform: "asc" } },
@@ -26,6 +28,7 @@ export const GET = auth(async (req, ctx) => {
 
     const datePieces = await db.contentPiece.findMany({
       where: {
+        userId,
         date: { gte: dayStart, lt: dayEnd },
         platform: { not: "master" },
       },
@@ -35,7 +38,7 @@ export const GET = auth(async (req, ctx) => {
     const byId = new Map(post.contentPieces.map((p) => [p.id, p]));
     for (const p of datePieces) byId.set(p.id, p);
     const pieces = Array.from(byId.values()).sort((a, b) =>
-      a.platform.localeCompare(b.platform)
+      a.platform.localeCompare(b.platform),
     );
 
     // Fetch geoScore from the first piece that has a promotionId

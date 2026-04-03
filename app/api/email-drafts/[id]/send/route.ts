@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
@@ -9,10 +10,25 @@ export const POST = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
+    const userId = req.auth.user.id;
+    const { id } = await (
+      context as unknown as { params: Promise<{ id: string }> }
+    ).params;
+
+    // Plan gate — free users cannot send emails
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { plan: true },
+    });
+    if (user?.plan === "free") {
+      return Response.json(
+        { error: "Upgrade required to send emails", upgrade: true },
+        { status: 403 },
+      );
+    }
 
     // Find the draft
-    const draft = await db.emailDraft.findUnique({ where: { id } });
+    const draft = await db.emailDraft.findFirst({ where: { id, userId } });
     if (!draft) {
       return new Response("Email draft not found", { status: 404 });
     }
@@ -25,12 +41,20 @@ export const POST = auth(async (req, context) => {
     // Load Brevo settings from db
     const settingRows = await db.setting.findMany({
       where: {
+        userId,
         key: {
-          in: ["brevo_api_key", "brevo_sender_email", "brevo_sender_name", "brevo_to_email"],
+          in: [
+            "brevo_api_key",
+            "brevo_sender_email",
+            "brevo_sender_name",
+            "brevo_to_email",
+          ],
         },
       },
     });
-    const settings = Object.fromEntries(settingRows.map((s) => [s.key, s.value]));
+    const settings = Object.fromEntries(
+      settingRows.map((s) => [s.key, s.value]),
+    );
 
     const brevoApiKey = settings["brevo_api_key"];
     const senderEmail = settings["brevo_sender_email"];
@@ -40,7 +64,7 @@ export const POST = auth(async (req, context) => {
     if (!brevoApiKey || !senderEmail || !toEmail) {
       return new Response(
         "Missing Brevo configuration: brevo_api_key, brevo_sender_email, and brevo_to_email are required",
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,14 +86,17 @@ export const POST = auth(async (req, context) => {
 
     if (!brevoRes.ok) {
       const text = await brevoRes.text();
-      return new Response(`Brevo email send failed (${brevoRes.status}): ${text}`, {
-        status: 502,
-      });
+      return new Response(
+        `Brevo email send failed (${brevoRes.status}): ${text}`,
+        {
+          status: 502,
+        },
+      );
     }
 
     // Mark draft as sent
     await db.emailDraft.update({
-      where: { id },
+      where: { id, userId },
       data: { status: "sent", sentAt: new Date() },
     });
 

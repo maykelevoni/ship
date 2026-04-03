@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 export const GET = auth(async (req) => {
@@ -7,7 +8,9 @@ export const GET = auth(async (req) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const opportunities = await db.promotionOpportunity.findMany({
+      where: { userId },
       orderBy: [{ date: "desc" }, { createdAt: "asc" }],
     });
 

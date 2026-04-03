@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const QUEUE_STATUSES = ["queued", "generating", "generated"];
@@ -9,11 +10,15 @@ export const GET = auth(async (req) => {
   }
 
   try {
+    const userId = req.auth.user.id;
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get("limit") ?? "50", 10)),
+    );
 
-    const where = { status: { in: QUEUE_STATUSES } };
+    const where = { userId, status: { in: QUEUE_STATUSES } };
 
     const [pieces, total] = await Promise.all([
       db.contentPiece.findMany({

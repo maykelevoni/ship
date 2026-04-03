@@ -1,16 +1,18 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
 import { renderImageForPlatform } from "@/worker/media/image";
+
+import { db } from "@/lib/db";
 
 export const POST = auth(async (req, ctx) => {
   if (!req.auth) return new Response("Not authenticated", { status: 401 });
 
   try {
+    const userId = req.auth.user.id;
     const { id } = (ctx as { params: { id: string } }).params;
 
     // 1. Get blog post
-    const post = await db.blogPost.findUnique({
-      where: { id },
+    const post = await db.blogPost.findFirst({
+      where: { id, userId },
       include: {
         contentPieces: { orderBy: { platform: "asc" } },
       },
@@ -28,6 +30,7 @@ export const POST = auth(async (req, ctx) => {
 
       pieces = await db.contentPiece.findMany({
         where: {
+          userId,
           date: { gte: dayStart, lt: dayEnd },
           platform: { not: "master" },
         },
@@ -40,7 +43,7 @@ export const POST = auth(async (req, ctx) => {
     if (!promotionId) {
       return Response.json(
         { error: "No promotion linked to this post" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +54,7 @@ export const POST = auth(async (req, ctx) => {
     if (!promotion) {
       return Response.json(
         { error: "No promotion linked to this post" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,8 +64,20 @@ export const POST = auth(async (req, ctx) => {
 
     // 6. Generate both images — visual scene is based on the post topic
     const [linkedinPath, instagramPath] = await Promise.all([
-      renderImageForPlatform({ platform: "linkedin", promotion, postTitle: post.title, postDescription: post.seoDescription ?? undefined, date }),
-      renderImageForPlatform({ platform: "instagram", promotion, postTitle: post.title, postDescription: post.seoDescription ?? undefined, date }),
+      renderImageForPlatform({
+        platform: "linkedin",
+        promotion,
+        postTitle: post.title,
+        postDescription: post.seoDescription ?? undefined,
+        date,
+      }),
+      renderImageForPlatform({
+        platform: "instagram",
+        promotion,
+        postTitle: post.title,
+        postDescription: post.seoDescription ?? undefined,
+        date,
+      }),
     ]);
 
     // Relative paths for DB storage
@@ -70,7 +85,8 @@ export const POST = auth(async (req, ctx) => {
     const imageQuotePath = `./media/images/${date}-instagram.png`;
 
     // 7. Upsert image_card ContentPiece
-    let imageCardPiece = pieces.find((p) => p.platform === "image_card") ?? null;
+    let imageCardPiece =
+      pieces.find((p) => p.platform === "image_card") ?? null;
     if (!imageCardPiece) {
       // Try date fallback if pieces were from blogPostId query and came up empty for image_card
       const dayStart = new Date(post.date);
@@ -79,6 +95,7 @@ export const POST = auth(async (req, ctx) => {
       dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
       imageCardPiece = await db.contentPiece.findFirst({
         where: {
+          userId,
           platform: "image_card",
           date: { gte: dayStart, lt: dayEnd },
         },
@@ -95,6 +112,7 @@ export const POST = auth(async (req, ctx) => {
     } else {
       const created = await db.contentPiece.create({
         data: {
+          userId,
           platform: "image_card",
           content: "generated",
           status: "generated",
@@ -108,7 +126,8 @@ export const POST = auth(async (req, ctx) => {
     }
 
     // 8. Upsert image_quote ContentPiece
-    let imageQuotePiece = pieces.find((p) => p.platform === "image_quote") ?? null;
+    let imageQuotePiece =
+      pieces.find((p) => p.platform === "image_quote") ?? null;
     if (!imageQuotePiece) {
       const dayStart = new Date(post.date);
       dayStart.setUTCHours(0, 0, 0, 0);
@@ -116,6 +135,7 @@ export const POST = auth(async (req, ctx) => {
       dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
       imageQuotePiece = await db.contentPiece.findFirst({
         where: {
+          userId,
           platform: "image_quote",
           date: { gte: dayStart, lt: dayEnd },
         },
@@ -132,6 +152,7 @@ export const POST = auth(async (req, ctx) => {
     } else {
       const created = await db.contentPiece.create({
         data: {
+          userId,
           platform: "image_quote",
           content: "generated",
           status: "generated",

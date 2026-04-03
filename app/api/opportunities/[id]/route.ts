@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+
 import { db } from "@/lib/db";
 
 const VALID_STATUSES = ["new", "acted", "dismissed"] as const;
@@ -10,7 +11,10 @@ export const PATCH = auth(async (req, context) => {
   }
 
   try {
-    const { id } = await (context as unknown as { params: Promise<{ id: string }> }).params;
+    const userId = req.auth.user.id;
+    const { id } = await (
+      context as unknown as { params: Promise<{ id: string }> }
+    ).params;
 
     const body = await req.json();
     const { status } = body as { status: OpportunityStatus };
@@ -18,12 +22,12 @@ export const PATCH = auth(async (req, context) => {
     if (!VALID_STATUSES.includes(status)) {
       return new Response(
         `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const updated = await db.promotionOpportunity.update({
-      where: { id },
+      where: { id, userId },
       data: { status },
     });
 
