@@ -59,8 +59,26 @@ model User {
   updatedAt     DateTime  @default(now()) @map(name: "updated_at")
   role          UserRole  @default(USER)
 
+  plan             String    @default("free")
+  onboardingDone   Boolean   @default(false)
+  polarCustomerId  String?
+  planExpiresAt    DateTime?
+
   accounts Account[]
   sessions Session[]
+
+  promotions             Promotion[]
+  contentPieces          ContentPiece[]
+  researchTopics         ResearchTopic[]
+  blogPosts              BlogPost[]
+  emailDrafts            EmailDraft[]
+  promotionOpportunities PromotionOpportunity[]
+  templates              Template[]
+  scheduleEntries        ScheduleEntry[]
+  engineRuns             EngineRun[]
+  ownProducts            OwnProduct[]
+  mediaAssets            MediaAsset[]
+  settings               Setting[]
 
   @@map(name: "users")
 }
@@ -76,6 +94,8 @@ model VerificationToken {
 
 model Promotion {
   id             String         @id @default(cuid())
+  userId         String         @default("")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   type           String         // product | service | affiliate | lead_magnet | content
   name           String
   description    String
@@ -92,10 +112,14 @@ model Promotion {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   contentPieces  ContentPiece[]
+
+  @@index([userId])
 }
 
 model ContentPiece {
   id           String     @id @default(cuid())
+  userId       String     @default("")
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   promotionId  String?
   promotion    Promotion? @relation(fields: [promotionId], references: [id])
   blogPostId   String?
@@ -114,10 +138,14 @@ model ContentPiece {
   templateId   String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+
+  @@index([userId])
 }
 
 model ResearchTopic {
   id        String   @id @default(cuid())
+  userId    String   @default("")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime
   source    String   // "youtube" | "reddit" | "newsapi"
   title     String
@@ -128,10 +156,14 @@ model ResearchTopic {
   selected  Boolean  @default(false)
   createdAt DateTime @default(now())
   blogPosts BlogPost[]
+
+  @@index([userId])
 }
 
 model BlogPost {
   id             String         @id @default(cuid())
+  userId         String         @default("")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   date           DateTime
   topicId        String?
   topic          ResearchTopic? @relation(fields: [topicId], references: [id])
@@ -146,10 +178,14 @@ model BlogPost {
   emailDraft     EmailDraft?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
 }
 
 model EmailDraft {
   id              String   @id @default(cuid())
+  userId          String   @default("")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   blogPostId      String   @unique
   blogPost        BlogPost @relation(fields: [blogPostId], references: [id])
   subject         String
@@ -159,10 +195,14 @@ model EmailDraft {
   sentAt          DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model PromotionOpportunity {
   id          String   @id @default(cuid())
+  userId      String   @default("")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date        DateTime
   type        String   // "affiliate" | "ghost_offer" | "digital_product" | "product_gap"
   title       String
@@ -171,10 +211,14 @@ model PromotionOpportunity {
   status      String   @default("new")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Template {
   id              String          @id @default(cuid())
+  userId          String          @default("")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   name            String
   platform        String          // twitter | linkedin | instagram | facebook | reddit | email | tiktok | youtube
   charLimit       Int?
@@ -190,10 +234,14 @@ model Template {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   scheduleEntries ScheduleEntry[]
+
+  @@index([userId])
 }
 
 model ScheduleEntry {
   id         String   @id @default(cuid())
+  userId     String   @default("")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   time       String   // "HH:MM" 24h
   platform   String
   templateId String
@@ -202,10 +250,14 @@ model ScheduleEntry {
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model EngineRun {
   id            String   @id @default(cuid())
+  userId        String   @default("")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date          DateTime
   promotionId   String?
   promotionName String?
@@ -213,16 +265,28 @@ model EngineRun {
   log           String
   contentCount  Int      @default(0)
   createdAt     DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Setting {
-  key       String   @id
+  id        String   @id @default(cuid())
+  userId    String   @default("")
+  key       String
   value     String
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@map(name: "settings")
 }
 
 model OwnProduct {
   id            String   @id @default(cuid())
+  userId        String   @default("")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   opportunityId String?
   title         String
   description   String   @default("")
@@ -234,10 +298,14 @@ model OwnProduct {
   promotionId   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model MediaAsset {
   id         String       @id @default(cuid())
+  userId     String       @default("")
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   type       String       // 'image' | 'video'
   prompt     String       @db.Text
   groupId    String       // all platform resizes from same generation share this
@@ -254,4 +322,6 @@ model MediaAsset {
   height     Int?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+
+  @@index([userId])
 }
