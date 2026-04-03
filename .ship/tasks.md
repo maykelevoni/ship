@@ -1,13 +1,18 @@
-# Feature Tasks: Media Studio
-Generated: 2026-03-29
-Total: 8 tasks
+# Feature Tasks: SaaS Multi-Tenancy
+
+Generated: 2026-04-02
+Total: 11 tasks
 
 ## Checklist
-- [ ] 001: DB Migration — MediaAsset table
-- [ ] 002: Worker — studio image generation (generateStudioImage + resizeForPlatforms)
-- [ ] 003: Worker — studio video generation (generateStudioVideo + renderVideo patch)
-- [ ] 004: API — POST /api/media + GET /api/media
-- [ ] 005: API — DELETE /api/media/[id]
-- [ ] 006: Frontend — Media Studio page workspace panel
-- [ ] 007: Frontend — Gallery panel + sidebar Media link
-- [ ] 008: Content Kit cleanup — preview + Open Media Studio link
+
+- [ ] 001: Prisma Schema — userId on all models + User billing fields
+- [ ] 002: lib/settings.ts userId param + auth.ts plan/onboardingDone in session
+- [ ] 003: API Routes — Promotions, Posts, Queue, Engine (userId filter + plan gate)
+- [ ] 004: API Routes — Research, BlogPosts, EmailDrafts, Opportunities
+- [ ] 005: API Routes — Templates, Schedule, Settings, OwnProducts, Media, Others
+- [ ] 006: New routes — user/plan, user/onboarding, webhooks/polar
+- [ ] 007: Worker — Research, Blog, Social, Email, Opportunities, Posting (userId param)
+- [ ] 008: Worker — Engine functions (userId param)
+- [ ] 009: Worker — Orchestrator multi-user loop (worker/index.ts)
+- [ ] 010: Onboarding Wizard UI (4-step, /onboarding)
+- [ ] 011: Middleware onboarding redirect + Settings plan badge
