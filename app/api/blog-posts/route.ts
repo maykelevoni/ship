@@ -29,6 +29,7 @@ export const GET = auth(async (req) => {
         ghostUrl: p.ghostUrl,
         topic: p.topic,
         piecesCount: p._count.contentPieces,
+        geoScore: p.geoScore,
         createdAt: p.createdAt,
       })),
     );

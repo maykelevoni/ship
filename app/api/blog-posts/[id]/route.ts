@@ -41,17 +41,6 @@ export const GET = auth(async (req, ctx) => {
       a.platform.localeCompare(b.platform),
     );
 
-    // Fetch geoScore from the first piece that has a promotionId
-    let geoScore: number | null = null;
-    const promotionId = pieces.find((p) => p.promotionId)?.promotionId ?? null;
-    if (promotionId) {
-      const promotion = await db.promotion.findUnique({
-        where: { id: promotionId },
-        select: { geoScore: true },
-      });
-      geoScore = promotion?.geoScore ?? null;
-    }
-
     return Response.json({
       id: post.id,
       date: post.date,
@@ -78,7 +67,9 @@ export const GET = auth(async (req, ctx) => {
             status: post.emailDraft.status,
           }
         : null,
-      geoScore,
+      geoScore: post.geoScore,
+      geoIssues: post.geoIssues ? JSON.parse(post.geoIssues) : null,
+      geoAuditedAt: post.geoAuditedAt?.toISOString() ?? null,
     });
   } catch {
     return new Response("Internal server error", { status: 500 });
