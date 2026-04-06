@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Edit2, Archive, Pause, Play, Zap, AlertCircle } from "lucide-react";
+import { Edit2, Archive, Pause, Play, AlertCircle } from "lucide-react";
 import posthog from "posthog-js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,8 +23,6 @@ export interface Promotion {
   description: string;
   url: string;
   weight: number;
-  geoScore: number | null;
-  lastAuditedAt?: string | null;
 }
 
 interface PromotionCardProps {
@@ -96,63 +94,6 @@ function WeightDots({ weight }: { weight: number }) {
           }}
         />
       ))}
-    </div>
-  );
-}
-
-function GeoScoreBar({ score }: { score: number | null }) {
-  if (score === null) return null;
-
-  const color =
-    score >= 70 ? "#4ade80" : score >= 40 ? "#fbbf24" : "#f87171";
-  const bg =
-    score >= 70
-      ? "rgba(74,222,128,0.15)"
-      : score >= 40
-        ? "rgba(251,191,36,0.15)"
-        : "rgba(248,113,113,0.15)";
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        flex: 1,
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          height: "4px",
-          background: "#1e1e1e",
-          borderRadius: "2px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${score}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "2px",
-            transition: "width 0.4s ease",
-          }}
-        />
-      </div>
-      <span
-        style={{
-          fontSize: "11px",
-          fontWeight: 700,
-          color,
-          background: bg,
-          padding: "2px 6px",
-          borderRadius: "4px",
-          flexShrink: 0,
-        }}
-      >
-        {score}
-      </span>
     </div>
   );
 }
@@ -263,8 +204,6 @@ export function PromotionCard({
   onArchive,
   onWeightChange,
 }: PromotionCardProps) {
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [localGeoScore, setLocalGeoScore] = useState(promotion.geoScore);
   const [localWeight, setLocalWeight] = useState(promotion.weight);
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -283,25 +222,6 @@ export function PromotionCard({
     [promotion.id, onWeightChange],
   );
 
-  async function handleRunAudit() {
-    setAuditLoading(true);
-    try {
-      const res = await fetch(`/api/promotions/${promotion.id}/geo-audit`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (typeof data.geoScore === "number") {
-          setLocalGeoScore(data.geoScore);
-        }
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setAuditLoading(false);
-    }
-  }
-
   function handleToggleStatus() {
     const next: PromotionStatus =
       promotion.status === "active" ? "paused" : "active";
@@ -312,14 +232,6 @@ export function PromotionCard({
     setShowArchiveDialog(false);
     onArchive(promotion.id);
   }
-
-  const lastAudited = promotion.lastAuditedAt
-    ? new Date(promotion.lastAuditedAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
 
   return (
     <>
@@ -448,112 +360,6 @@ export function PromotionCard({
           >
             {promotion.url}
           </a>
-        </div>
-
-        {/* GEO row */}
-        <div
-          style={{
-            background: "#0a0a0a",
-            border: "1px solid #1a1a1a",
-            borderRadius: "8px",
-            padding: "10px 12px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "10px",
-                fontWeight: 600,
-                color: "#52525b",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                flexShrink: 0,
-              }}
-            >
-              GEO
-            </span>
-
-            {localGeoScore !== null ? (
-              <>
-                <GeoScoreBar score={localGeoScore} />
-                <button
-                  onClick={handleRunAudit}
-                  disabled={auditLoading}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "3px 8px",
-                    borderRadius: "5px",
-                    border: "1px solid #2a2a2a",
-                    background: "transparent",
-                    color: "#a1a1aa",
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    cursor: auditLoading ? "not-allowed" : "pointer",
-                    opacity: auditLoading ? 0.5 : 1,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Zap size={10} />
-                  {auditLoading ? "Auditing…" : "Re-audit"}
-                </button>
-              </>
-            ) : (
-              <>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#52525b",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Not audited
-                </span>
-                <button
-                  onClick={handleRunAudit}
-                  disabled={auditLoading}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "3px 10px",
-                    borderRadius: "5px",
-                    border: "none",
-                    background: auditLoading
-                      ? "rgba(99,102,241,0.4)"
-                      : "#6366f1",
-                    color: "#ffffff",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    cursor: auditLoading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <Zap size={10} />
-                  {auditLoading ? "Running…" : "Run Audit"}
-                </button>
-              </>
-            )}
-          </div>
-
-          {lastAudited && (
-            <p
-              style={{
-                margin: "6px 0 0",
-                fontSize: "10px",
-                color: "#3f3f46",
-              }}
-            >
-              Last audited {lastAudited}
-            </p>
-          )}
         </div>
 
         {/* Weight slider */}

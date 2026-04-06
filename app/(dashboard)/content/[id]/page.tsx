@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { Globe } from "lucide-react";
 import {
   Check,
   ChevronDown,
@@ -54,6 +55,8 @@ interface BlogPostDetail {
   pieces: ContentPiece[];
   emailDraft: EmailDraftDetail | null;
   geoScore?: number | null;
+  geoIssues?: { issues: string[]; recommendations: string[] } | null;
+  geoAuditedAt?: string | null;
 }
 
 // ─── Media URL helper ─────────────────────────────────────────────────────────
@@ -243,6 +246,7 @@ function BlogPostDetailView({
   const [emailFeedback, setEmailFeedback] = useState<"sent" | "error" | null>(
     null,
   );
+  const [auditing, setAuditing] = useState(false);
 
   const piecesByPlatform = (platform: string) =>
     post.pieces.filter((p) => p.platform === platform);
@@ -284,6 +288,20 @@ function BlogPostDetailView({
     setSendingEmail(false);
   }
 
+  async function handleReRunGeoAudit() {
+    setAuditing(true);
+    try {
+      await fetch(`/api/blog-posts/${post.id}/geo-audit`, { method: "POST" });
+      // Give audit time to complete, then refresh
+      setTimeout(() => {
+        onRefresh();
+        setAuditing(false);
+      }, 5000);
+    } catch {
+      setAuditing(false);
+    }
+  }
+
   const sectionStyle: React.CSSProperties = {
     background: "#0a0a0a",
     border: "1px solid #1a1a1a",
@@ -320,60 +338,162 @@ function BlogPostDetailView({
     fontFamily: "inherit",
   };
 
-  const geoColor =
-    post.geoScore != null
-      ? post.geoScore >= 7
+  const geoScore = post.geoScore ?? null;
+  const geoIssues = post.geoIssues ?? null;
+  const geoAuditedAt = post.geoAuditedAt ?? null;
+
+  const geoScoreColor =
+    geoScore != null
+      ? geoScore >= 70
         ? "#4ade80"
-        : post.geoScore >= 4
-          ? "#fbbf24"
+        : geoScore >= 40
+          ? "#f59e0b"
           : "#f87171"
       : null;
 
-  const geoBg =
-    post.geoScore != null
-      ? post.geoScore >= 7
-        ? "rgba(74,222,128,0.15)"
-        : post.geoScore >= 4
-          ? "rgba(251,191,36,0.15)"
-          : "rgba(248,113,113,0.15)"
+  const geoScoreBg =
+    geoScore != null
+      ? geoScore >= 70
+        ? "#0a1f0a"
+        : geoScore >= 40
+          ? "#1f1400"
+          : "#1f0a0a"
       : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {/* ── GEO Score ── */}
-      {post.geoScore != null && geoColor && geoBg && (
+      {/* ── GEO Audit Panel ── */}
+      <div style={sectionStyle}>
+        <div style={sectionHeaderStyle}>
+          <Globe size={12} style={{ color: "#6366f1", flexShrink: 0 }} />
+          <span style={sectionLabelStyle}>GEO Optimization</span>
+        </div>
         <div
           style={{
+            padding: "14px",
             display: "flex",
-            alignItems: "center",
-            gap: "10px",
+            flexDirection: "column",
+            gap: "12px",
           }}
         >
-          <span
+          {/* Score row */}
+          <div
             style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              color: "#52525b",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              flexWrap: "wrap",
             }}
           >
-            GEO
-          </span>
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              color: geoColor,
-              background: geoBg,
-              padding: "2px 8px",
-              borderRadius: "5px",
-            }}
-          >
-            {post.geoScore}/10
-          </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              {geoScore != null ? (
+                <>
+                  <span
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      color: geoScoreColor,
+                      background: geoScoreBg,
+                      padding: "4px 14px",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    {geoScore}
+                  </span>
+                  <span style={{ fontSize: "12px", color: "#52525b" }}>
+                    Last audited: {geoAuditedAt ? fmtDate(geoAuditedAt) : "—"}
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: "12px", color: "#52525b" }}>
+                  Not yet audited
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleReRunGeoAudit}
+              disabled={auditing}
+              style={{
+                padding: "4px 12px",
+                borderRadius: "5px",
+                border: "1px solid #2a2a2a",
+                background: "transparent",
+                color: auditing ? "#52525b" : "#a1a1aa",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: auditing ? "not-allowed" : "pointer",
+              }}
+            >
+              {auditing ? "Running…" : "Re-run GEO Audit"}
+            </button>
+          </div>
+
+          {/* Issues */}
+          {geoIssues?.issues && geoIssues.issues.length > 0 && (
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#71717a",
+                  marginBottom: "4px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Issues
+              </div>
+              <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                {geoIssues.issues.map((issue, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      fontSize: "12px",
+                      color: "#a1a1aa",
+                      lineHeight: 1.6,
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {issue}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {geoIssues?.recommendations && geoIssues.recommendations.length > 0 && (
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#818cf8",
+                  marginBottom: "4px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Recommendations
+              </div>
+              <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                {geoIssues.recommendations.map((rec, i) => (
+                  <li
+                    key={i}
+                    style={{
+                      fontSize: "12px",
+                      color: "#a1a1aa",
+                      lineHeight: 1.6,
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {rec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Blog Post ── */}
       <div style={sectionStyle}>

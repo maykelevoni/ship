@@ -38,6 +38,7 @@ interface BlogPostListItem {
   ghostUrl: string | null;
   topic: ResearchTopic | null;
   piecesCount: number;
+  geoScore?: number | null;
 }
 
 interface ContentPiece {
@@ -856,6 +857,23 @@ function BlogPostRow({ post }: { post: BlogPostListItem }) {
         {post.piecesCount > 0 && (
           <span style={{ fontSize: "11px", color: "#3f3f46", flexShrink: 0 }}>
             {post.piecesCount} pieces
+          </span>
+        )}
+
+        {/* GEO score badge */}
+        {post.geoScore != null && (
+          <span
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: post.geoScore >= 70 ? "#4ade80" : post.geoScore >= 40 ? "#f59e0b" : "#f87171",
+              background: post.geoScore >= 70 ? "#0a1f0a" : post.geoScore >= 40 ? "#1f1400" : "#1f0a0a",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              flexShrink: 0,
+            }}
+          >
+            GEO {post.geoScore}
           </span>
         )}
 
