@@ -10,6 +10,28 @@ import {
 import { db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function parseGeminiError(err: unknown): string {
+  if (err instanceof Error) {
+    try {
+      const parsed = JSON.parse(err.message);
+      if (parsed?.error) {
+        const code = parsed.error.code;
+        if (code === 429) return "Gemini API quota exceeded — check your plan at ai.google.dev";
+        if (code === 403 || code === 401) return "Invalid Gemini API key — update it in Settings";
+        if (parsed.error.message) return parsed.error.message;
+      }
+    } catch {
+      /* not JSON */
+    }
+    return err.message;
+  }
+  return String(err);
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/media
 // Body: { type: 'image' | 'video', prompt: string, parentId?: string,
 //         useAiBackground?: boolean, backgroundAssetId?: string }
@@ -128,7 +150,7 @@ export const POST = auth(async (req) => {
 
         return Response.json({ assets: [updatedBase, ...resizeRows] });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = parseGeminiError(err);
         await db.mediaAsset.update({
           where: { id: baseRow.id },
           data: { status: "failed", errorMsg: message },
@@ -206,7 +228,7 @@ export const POST = auth(async (req) => {
 
         return Response.json({ assets: [updatedRow] });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = parseGeminiError(err);
         await db.mediaAsset.update({
           where: { id: videoRow.id },
           data: { status: "failed", errorMsg: message },
@@ -220,7 +242,7 @@ export const POST = auth(async (req) => {
       );
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = parseGeminiError(err);
     return Response.json({ error: message }, { status: 500 });
   }
 });
@@ -249,7 +271,7 @@ export const GET = auth(async (req) => {
 
     return Response.json({ assets });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = parseGeminiError(err);
     return Response.json({ error: message }, { status: 500 });
   }
 });

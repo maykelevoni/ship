@@ -48,6 +48,7 @@ export default function MediaStudioPage() {
   // Status
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [keyStatus, setKeyStatus] = useState<"loading" | "ok" | "missing">("loading");
 
   // Results
   const [currentAssets, setCurrentAssets] = useState<MediaAsset[]>([]);
@@ -104,6 +105,12 @@ export default function MediaStudioPage() {
     fetchRecentImages();
     fetchRecentVideos();
     fetchGallery();
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        setKeyStatus(data.gemini_api_key ? "ok" : "missing");
+      })
+      .catch(() => setKeyStatus("missing"));
   }, []);
 
   // ── Generate ─────────────────────────────────────────────────────────────────
@@ -218,6 +225,39 @@ export default function MediaStudioPage() {
           margin: "0 auto",
         }}
       >
+        {/* ── API key banner ────────────────────────────────────────────────── */}
+        {keyStatus === "missing" && (
+          <div
+            style={{
+              background: "#1a0a00",
+              border: "1px solid #f59e0b",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+            }}
+          >
+            <span style={{ fontSize: "13px", color: "#f59e0b" }}>
+              Gemini API key not configured. Go to Settings → API Keys to add your key.
+            </span>
+            <a href="/settings" style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#f59e0b",
+              textDecoration: "none",
+              padding: "4px 10px",
+              border: "1px solid #f59e0b",
+              borderRadius: "5px",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}>
+              Settings →
+            </a>
+          </div>
+        )}
+
         {/* ── Workspace panel ───────────────────────────────────────────────── */}
         <div
           style={{
@@ -494,9 +534,18 @@ export default function MediaStudioPage() {
             )}
 
             {/* Generate button */}
+            {keyStatus === "missing" && (
+              <div style={{
+                fontSize: "12px",
+                color: "#f59e0b",
+                padding: "8px 0 0",
+              }}>
+                Configure your Gemini API key in Settings to enable generation.
+              </div>
+            )}
             <button
               onClick={handleGenerate}
-              disabled={generating || !prompt.trim()}
+              disabled={generating || !prompt.trim() || keyStatus !== "ok"}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -507,12 +556,12 @@ export default function MediaStudioPage() {
                 borderRadius: "8px",
                 border: "none",
                 background:
-                  generating || !prompt.trim() ? "#1a1a1a" : "#6366f1",
-                color: generating || !prompt.trim() ? "#52525b" : "#fff",
+                  generating || !prompt.trim() || keyStatus !== "ok" ? "#1a1a1a" : "#6366f1",
+                color: generating || !prompt.trim() || keyStatus !== "ok" ? "#52525b" : "#fff",
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor:
-                  generating || !prompt.trim() ? "not-allowed" : "pointer",
+                  generating || !prompt.trim() || keyStatus !== "ok" ? "not-allowed" : "pointer",
                 transition: "background 0.15s",
               }}
             >
