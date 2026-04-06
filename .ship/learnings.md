@@ -5,6 +5,11 @@
 
 ## Bugs & Fixes
 
+### sharp win32 crash — image/media routes return 500 on Windows runtime
+- **Cause**: `sharp` is installed with Linux binaries (WSL2 context) but the Next.js server runs in Windows Node.js runtime → `@img/sharp-win32-x64` not present → 500 on all routes that import `worker/media/studio.ts`, `worker/media/image.ts`, `worker/blog/generate-pieces`.
+- **Fix**: Added `supportedArchitectures.os[]=win32` + `supportedArchitectures.cpu[]=x64` to `.npmrc` alongside Linux entries. Run `pnpm install` after stopping the Windows server, or run `pnpm dev` from WSL2 terminal (uses Linux Node.js + Linux sharp — no mismatch).
+- **Affected routes**: `GET|POST /api/media`, `POST /api/blog-posts/[id]/generate-images`, `POST /api/blog-posts/[id]/generate-pieces`
+
 ## Gotchas
 
 ## Task 004 Notes (Spec: SaaS Multi-Tenancy — API Routes)
