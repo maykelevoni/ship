@@ -258,7 +258,7 @@ export async function runEngine(userId: string): Promise<void> {
 
     // Video script ContentPiece is always saved; MP4 rendering is gated
     const videoRenderingEnabled =
-      (await getSetting("video_rendering_enabled", userId)) === "true";
+      (await getSetting("video_generation_enabled", userId)) === "true";
     const existingVideoId = savedPieces["video"]?.id;
 
     if (videoRenderingEnabled) {
