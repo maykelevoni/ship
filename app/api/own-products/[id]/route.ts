@@ -48,7 +48,8 @@ export const PATCH = auth(async (req, { params }) => {
       outline,
       status,
       price,
-      checkoutUrl,
+      systemeProductId,
+      systemeCheckoutUrl,
       promotionId,
     } = body as {
       title?: string;
@@ -56,7 +57,8 @@ export const PATCH = auth(async (req, { params }) => {
       outline?: string;
       status?: string;
       price?: number;
-      checkoutUrl?: string;
+      systemeProductId?: string;
+      systemeCheckoutUrl?: string;
       promotionId?: string;
     };
 
@@ -68,7 +70,8 @@ export const PATCH = auth(async (req, { params }) => {
         ...(outline !== undefined && { outline }),
         ...(status !== undefined && { status }),
         ...(price !== undefined && { price }),
-        ...(checkoutUrl !== undefined && { checkoutUrl }),
+        ...(systemeProductId !== undefined && { systemeProductId }),
+        ...(systemeCheckoutUrl !== undefined && { systemeCheckoutUrl }),
         ...(promotionId !== undefined && { promotionId }),
       },
     });

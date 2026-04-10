@@ -20,7 +20,8 @@ interface OwnProduct {
   outline: string;
   status: string;
   price: number;
-  checkoutUrl: string | null;
+  systemeProductId: string | null;
+  systemeCheckoutUrl: string | null;
   promotionId: string | null;
   createdAt: string;
 }
@@ -74,6 +75,8 @@ export default function ProductStudioPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editPrice, setEditPrice] = useState("");
+  const [editSystemeProductId, setEditSystemeProductId] = useState("");
+  const [editSystemeCheckoutUrl, setEditSystemeCheckoutUrl] = useState("");
 
   // Outline actions
   const [generatingOutline, setGeneratingOutline] = useState(false);
@@ -99,6 +102,8 @@ export default function ProductStudioPage() {
       setEditTitle(p.title);
       setEditDescription(p.description);
       setEditPrice(String(p.price));
+      setEditSystemeProductId(p.systemeProductId ?? "");
+      setEditSystemeCheckoutUrl(p.systemeCheckoutUrl ?? "");
       try {
         setChapters(JSON.parse(p.outline || "[]"));
       } catch {
@@ -160,6 +165,18 @@ export default function ProductStudioPage() {
     if (isNaN(price) || price === product?.price) return;
     await patch({ price });
     setProduct((p) => p ? { ...p, price } : p);
+  }
+
+  async function saveSystemeProductId() {
+    if (editSystemeProductId === product?.systemeProductId) return;
+    await patch({ systemeProductId: editSystemeProductId || null });
+    setProduct((p) => p ? { ...p, systemeProductId: editSystemeProductId || null } : p);
+  }
+
+  async function saveSystemeCheckoutUrl() {
+    if (editSystemeCheckoutUrl === product?.systemeCheckoutUrl) return;
+    await patch({ systemeCheckoutUrl: editSystemeCheckoutUrl || null });
+    setProduct((p) => p ? { ...p, systemeCheckoutUrl: editSystemeCheckoutUrl || null } : p);
   }
 
   async function saveChapters(updated: Chapter[]) {
@@ -230,7 +247,7 @@ export default function ProductStudioPage() {
         setPublishError(json.error ?? "Publish failed");
         return;
       }
-      setProduct((p) => p ? { ...p, status: "published", checkoutUrl: json.checkoutUrl, promotionId: json.promotionId } : p);
+      setProduct((p) => p ? { ...p, status: "published", systemeCheckoutUrl: json.systemeCheckoutUrl, promotionId: json.promotionId } : p);
       if (product) fetchRelatedPosts(product.title);
     } catch {
       setPublishError("Publish failed. Please try again.");
@@ -242,9 +259,9 @@ export default function ProductStudioPage() {
   // ── Add recommendation to post ────────────────────────────────────────────
 
   async function addRecommendation(postId: string) {
-    if (!product?.checkoutUrl) return;
+    if (!product?.systemeCheckoutUrl) return;
     try {
-      const appendText = `\n\n---\n**Recommended:** [${product.title}](${product.checkoutUrl})`;
+      const appendText = `\n\n---\n**Recommended:** [${product.title}](${product.systemeCheckoutUrl})`;
       const postRes = await fetch(`/api/posts/${postId}`);
       if (!postRes.ok) return;
       const postData = await postRes.json();
@@ -362,6 +379,47 @@ export default function ProductStudioPage() {
             resize: "vertical",
           }}
         />
+
+        {/* Systeme.io fields */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <h3 style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#71717a" }}>
+            Systeme.io (optional)
+          </h3>
+          <input
+            type="text"
+            value={editSystemeProductId}
+            onChange={(e) => setEditSystemeProductId(e.target.value)}
+            onBlur={saveSystemeProductId}
+            placeholder="12345"
+            style={{
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #1a1a1a",
+              background: "#0a0a0a",
+              color: "#a1a1aa",
+              fontSize: "14px",
+              outline: "none",
+            }}
+          />
+          <div style={{ fontSize: "12px", color: "#52525b" }}>Systeme.io Product ID</div>
+          <input
+            type="text"
+            value={editSystemeCheckoutUrl}
+            onChange={(e) => setEditSystemeCheckoutUrl(e.target.value)}
+            onBlur={saveSystemeCheckoutUrl}
+            placeholder="https://yourname.systeme.io/checkout/..."
+            style={{
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #1a1a1a",
+              background: "#0a0a0a",
+              color: "#a1a1aa",
+              fontSize: "14px",
+              outline: "none",
+            }}
+          />
+          <div style={{ fontSize: "12px", color: "#52525b" }}>Systeme.io Checkout URL</div>
+        </div>
       </div>
 
       {/* Chapters section */}
@@ -659,11 +717,11 @@ export default function ProductStudioPage() {
           </>
         )}
 
-        {product.status === "published" && product.checkoutUrl && (
+        {product.status === "published" && product.systemeCheckoutUrl && (
           <>
             <span style={{ fontSize: "13px", color: "#4ade80" }}>✓ Published</span>
             <a
-              href={product.checkoutUrl}
+              href={product.systemeCheckoutUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -681,7 +739,7 @@ export default function ProductStudioPage() {
               }}
             >
               <ExternalLink size={14} />
-              View on Gumroad
+              View on Systeme.io
             </a>
           </>
         )}

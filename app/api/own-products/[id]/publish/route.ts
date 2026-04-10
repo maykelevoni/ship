@@ -83,12 +83,12 @@ export const POST = auth(async (req, { params }) => {
       data: {
         status: "published",
         platform: "gumroad",
-        checkoutUrl,
+        systemeCheckoutUrl: checkoutUrl,
         promotionId: promotion.id,
       },
     });
 
-    return Response.json({ checkoutUrl, promotionId: promotion.id });
+    return Response.json({ systemeCheckoutUrl: checkoutUrl, promotionId: promotion.id });
   } catch (error) {
     console.error("[publish]", error);
     return new Response("Internal server error", { status: 500 });
