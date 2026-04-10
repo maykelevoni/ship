@@ -25,6 +25,10 @@ export interface SettingsData {
   amazon_paapi_secret: string | null;
   clickbank_api_key: string | null;
   clickbank_account: string | null;
+  systeme_domain: string | null;
+  systeme_default_funnel_url: string | null;
+  systeme_api_key: string | null;
+  video_generation_enabled: string | null;
 }
 
 export interface SectionProps {

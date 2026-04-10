@@ -16,6 +16,11 @@ export function IntegrationsSection({
   saving,
   onSave,
 }: SectionProps) {
+  // Systeme.io
+  const [systemeDomain, setSystemeDomain] = useState(settings.systeme_domain ?? "");
+  const [systemeFunnelUrl, setSystemeFunnelUrl] = useState(settings.systeme_default_funnel_url ?? "");
+  const [systemeApiKey, setSystemeApiKey] = useState(settings.systeme_api_key ?? "");
+
   // Ghost
   const [ghostUrl, setGhostUrl] = useState(settings.ghost_url ?? "");
   const [ghostAdminKey, setGhostAdminKey] = useState(
@@ -39,6 +44,8 @@ export function IntegrationsSection({
   const [clickbankKey, setClickbankKey] = useState(settings.clickbank_api_key ?? "");
   const [clickbankAccount, setClickbankAccount] = useState(settings.clickbank_account ?? "");
 
+  const [systemeLoading, setSystemeLoading] = useState(false);
+  const [systemeFeedback, setSystemeFeedback] = useState<"saved" | "error" | null>(null);
   const [ghostLoading, setGhostLoading] = useState(false);
   const [ghostFeedback, setGhostFeedback] = useState<"saved" | "error" | null>(
     null,
@@ -79,6 +86,18 @@ export function IntegrationsSection({
     );
   }
 
+  function saveSysteme() {
+    handleSaveWithFeedback(
+      {
+        systeme_domain: systemeDomain,
+        systeme_default_funnel_url: systemeFunnelUrl,
+        systeme_api_key: systemeApiKey,
+      },
+      setSystemeLoading,
+      setSystemeFeedback,
+    );
+  }
+
   function saveElevenLabs() {
     handleSaveWithFeedback(
       {
@@ -115,6 +134,41 @@ export function IntegrationsSection({
 
   return (
     <>
+      {/* Systeme.io */}
+      <SectionCard
+        title="Systeme.io"
+        description="Connect Systeme.io to auto-track funnel links in all generated content."
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <FieldRow label="Domain">
+            <TextInput
+              value={systemeDomain}
+              onChange={setSystemeDomain}
+              placeholder="yourname.systeme.io"
+            />
+          </FieldRow>
+          <FieldRow label="Default Funnel URL">
+            <TextInput
+              value={systemeFunnelUrl}
+              onChange={setSystemeFunnelUrl}
+              placeholder="https://yourname.systeme.io/your-funnel"
+            />
+          </FieldRow>
+          <FieldRow label="API Key">
+            <PasswordInput
+              value={systemeApiKey}
+              onChange={setSystemeApiKey}
+              placeholder="api key from Systeme.io dashboard"
+            />
+          </FieldRow>
+          <SaveButton
+            onClick={saveSysteme}
+            loading={systemeLoading || saving}
+            feedback={systemeFeedback}
+          />
+        </div>
+      </SectionCard>
+
       {/* Ghost CMS */}
       <SectionCard
         title="Ghost CMS"

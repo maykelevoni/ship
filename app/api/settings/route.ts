@@ -30,6 +30,10 @@ const SETTINGS_DEFAULTS: Record<string, string | null> = {
   amazon_paapi_secret: "",
   clickbank_api_key: "",
   clickbank_account: "",
+  systeme_domain: null,
+  systeme_default_funnel_url: null,
+  systeme_api_key: null,
+  video_generation_enabled: "false",
 };
 
 export const GET = auth(async (req) => {
