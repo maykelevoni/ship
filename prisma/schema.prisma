@@ -91,22 +91,25 @@ model VerificationToken {
 }
 
 model Promotion {
-  id             String         @id @default(cuid())
-  userId         String         @default("")
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type           String         // product | service | affiliate | lead_magnet | content
-  name           String
-  description    String
-  url            String
-  affiliateLink  String?
-  price          String?
-  benefits       String?        // JSON stringified array
-  targetAudience String?
-  status         String         @default("active") // active | paused | archived
-  weight         Int            @default(5)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  contentPieces  ContentPiece[]
+  id                String         @id @default(cuid())
+  userId            String         @default("")
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String         // product | service | affiliate | lead_magnet | content
+  name              String
+  description       String
+  url               String
+  affiliateLink     String?
+  price             String?
+  benefits          String?        // JSON stringified array
+  targetAudience    String?
+  status            String         @default("active") // active | paused | archived
+  weight            Int            @default(5)
+  systemeFunnelUrl  String?        // Systeme.io funnel/landing page URL
+  systemeProductId  String?        // Systeme.io product ID
+  systemeCheckoutUrl String?       // Systeme.io checkout URL
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  contentPieces     ContentPiece[]
 
   @@index([userId])
 }
@@ -186,6 +189,7 @@ model EmailDraft {
   subject         String
   body            String   @db.Text
   suggestedPromos String?
+  exportedAt      DateTime?  // When content was exported to Systeme.io
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -277,23 +281,25 @@ model Setting {
 }
 
 model OwnProduct {
-  id            String   @id @default(cuid())
-  userId        String   @default("")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  opportunityId String?
-  title         String
-  description   String   @default("")
-  outline       String   @db.Text
-  status        String   @default("outline")
-  platform      String?
-  price         Float    @default(9.99)
-  affiliateUrl  String?   // affiliate link (Amazon tagged URL or ClickBank HopLink)
-  asin          String?   // Amazon ASIN
-  source        String?   // "amazon" | "clickbank" | null
-  commissionPct Float?    // commission percentage
-  promotionId   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String   @default("")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunityId     String?
+  title             String
+  description       String   @default("")
+  outline           String   @db.Text
+  status            String   @default("outline")
+  platform          String?
+  price             Float    @default(9.99)
+  affiliateUrl      String?   // affiliate link (Amazon tagged URL or ClickBank HopLink)
+  asin              String?   // Amazon ASIN
+  source            String?   // "amazon" | "clickbank" | null
+  commissionPct     Float?    // commission percentage
+  promotionId       String?
+  systemeProductId  String?   // Systeme.io product ID
+  systemeCheckoutUrl String?  // Systeme.io checkout URL
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([userId])
 }
