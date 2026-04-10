@@ -22,6 +22,9 @@ interface ApiPromotion {
   commission?: string | null;
   leadMagnetWhat?: string | null;
   leadMagnetAudience?: string | null;
+  systemeFunnelUrl?: string | null;
+  systemeProductId?: string | null;
+  systemeCheckoutUrl?: string | null;
 }
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
@@ -132,6 +135,9 @@ export default function EditPromotionPage({
         commission: promotion.commission ?? "",
         leadMagnetWhat: promotion.leadMagnetWhat ?? "",
         leadMagnetAudience: promotion.leadMagnetAudience ?? "",
+        systemeFunnelUrl: promotion.systemeFunnelUrl ?? "",
+        systemeProductId: promotion.systemeProductId ?? "",
+        systemeCheckoutUrl: promotion.systemeCheckoutUrl ?? "",
       }
     : undefined;
 

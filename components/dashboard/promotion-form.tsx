@@ -42,6 +42,10 @@ export interface PromotionFormData {
   // lead_magnet only
   leadMagnetWhat: string;
   leadMagnetAudience: string;
+  // Systeme.io (optional)
+  systemeFunnelUrl: string;
+  systemeProductId: string;
+  systemeCheckoutUrl: string;
 }
 
 interface PromotionFormProps {
@@ -134,6 +138,9 @@ function buildDefault(initial?: Partial<PromotionFormData>): PromotionFormData {
     commission: initial?.commission ?? "",
     leadMagnetWhat: initial?.leadMagnetWhat ?? "",
     leadMagnetAudience: initial?.leadMagnetAudience ?? "",
+    systemeFunnelUrl: initial?.systemeFunnelUrl ?? "",
+    systemeProductId: initial?.systemeProductId ?? "",
+    systemeCheckoutUrl: initial?.systemeCheckoutUrl ?? "",
   };
 }
 
@@ -610,6 +617,82 @@ function StepDetails({
         />
       </FieldGroup>
 
+      {/* Systeme.io (optional) */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          padding: "16px",
+          background: "rgba(99,102,241,0.04)",
+          border: "1px solid rgba(99,102,241,0.15)",
+          borderRadius: "10px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "4px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "#818cf8",
+              letterSpacing: "0.5px",
+              textTransform: "uppercase",
+            }}
+          >
+            Systeme.io
+          </span>
+          <span
+            style={{
+              fontSize: "11px",
+              color: "#52525b",
+              fontWeight: 400,
+            }}
+          >
+            (optional)
+          </span>
+        </div>
+        <div
+          style={{
+            height: "1px",
+            background: "rgba(99,102,241,0.15)",
+            margin: "0 0 8px 0",
+          }}
+        />
+        <FieldGroup
+          label="Funnel URL"
+          hint="Traffic destination — UTM tracking added automatically"
+        >
+          <StyledInput
+            value={form.systemeFunnelUrl}
+            onChange={(v) => onChange("systemeFunnelUrl", v)}
+            placeholder="https://yourname.systeme.io/your-funnel"
+            type="url"
+          />
+        </FieldGroup>
+        <FieldGroup label="Product ID">
+          <StyledInput
+            value={form.systemeProductId}
+            onChange={(v) => onChange("systemeProductId", v)}
+            placeholder="12345"
+          />
+        </FieldGroup>
+        <FieldGroup label="Checkout URL">
+          <StyledInput
+            value={form.systemeCheckoutUrl}
+            onChange={(v) => onChange("systemeCheckoutUrl", v)}
+            placeholder="https://yourname.systeme.io/checkout/..."
+            type="url"
+          />
+        </FieldGroup>
+      </div>
+
       {/* Weight */}
       <FieldGroup
         label="How often to promote? (Weight)"
@@ -760,6 +843,13 @@ function StepReview({
           </>
         )}
         <ReviewRow label="Notes" value={form.notes} />
+        {(form.systemeFunnelUrl || form.systemeProductId || form.systemeCheckoutUrl) && (
+          <>
+            <ReviewRow label="Systeme.io Funnel URL" value={form.systemeFunnelUrl} />
+            <ReviewRow label="Systeme.io Product ID" value={form.systemeProductId} />
+            <ReviewRow label="Systeme.io Checkout URL" value={form.systemeCheckoutUrl} />
+          </>
+        )}
         <ReviewRow label="Weight" value={`${form.weight} / 10`} />
       </div>
     </div>
@@ -868,6 +958,11 @@ export function PromotionForm({ initialData, mode }: PromotionFormProps) {
       payload.leadMagnetWhat = form.leadMagnetWhat.trim() || undefined;
       payload.targetAudience = form.leadMagnetAudience.trim() || undefined;
     }
+
+    // Systeme.io fields (optional)
+    payload.systemeFunnelUrl = form.systemeFunnelUrl.trim() || undefined;
+    payload.systemeProductId = form.systemeProductId.trim() || undefined;
+    payload.systemeCheckoutUrl = form.systemeCheckoutUrl.trim() || undefined;
 
     try {
       const url =

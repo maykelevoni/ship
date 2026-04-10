@@ -62,6 +62,9 @@ export const PATCH = auth(
         "targetAudience",
         "status",
         "weight",
+        "systemeFunnelUrl",
+        "systemeProductId",
+        "systemeCheckoutUrl",
       ] as const;
 
       const data: Record<string, unknown> = {};

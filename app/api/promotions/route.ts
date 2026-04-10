@@ -74,6 +74,9 @@ export const POST = auth(async (req) => {
       benefits,
       targetAudience,
       weight,
+      systemeFunnelUrl,
+      systemeProductId,
+      systemeCheckoutUrl,
     } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
@@ -115,6 +118,9 @@ export const POST = auth(async (req) => {
         targetAudience: targetAudience ?? null,
         weight: typeof weight === "number" ? weight : 5,
         status: "active",
+        systemeFunnelUrl: systemeFunnelUrl ?? null,
+        systemeProductId: systemeProductId ?? null,
+        systemeCheckoutUrl: systemeCheckoutUrl ?? null,
       },
     });
 
