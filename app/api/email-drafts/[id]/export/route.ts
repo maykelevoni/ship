@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
-export const POST = auth(async (req, { params }) => {
+export const POST = auth(async (req, ctx) => {
   if (!req.auth) {
     return new Response("Not authenticated", { status: 401 });
   }
 
   const userId = req.auth.user!.id as string;
-  const { id } = await params;
+  const { id } = (ctx as { params: { id: string } }).params;
 
   const draft = await db.emailDraft.findUnique({
     where: { id },

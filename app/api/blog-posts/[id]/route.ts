@@ -64,7 +64,7 @@ export const GET = auth(async (req, ctx) => {
             id: post.emailDraft.id,
             subject: post.emailDraft.subject,
             body: post.emailDraft.body,
-            status: post.emailDraft.status,
+            exportedAt: post.emailDraft.exportedAt,
           }
         : null,
     });

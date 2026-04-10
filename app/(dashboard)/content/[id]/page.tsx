@@ -39,6 +39,7 @@ interface EmailDraftDetail {
   id: string;
   subject: string;
   body: string;
+  exportedAt: string | null;
 }
 
 interface BlogPostDetail {
@@ -239,6 +240,8 @@ function BlogPostDetailView({
   const [emailFeedback, setEmailFeedback] = useState<"saved" | "error" | null>(
     null,
   );
+  const [exportingEmail, setExportingEmail] = useState(false);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
 
   const piecesByPlatform = (platform: string) =>
     post.pieces.filter((p) => p.platform === platform);
@@ -261,6 +264,32 @@ function BlogPostDetailView({
       setEmailFeedback("error");
     }
     setSavingEmail(false);
+  }
+
+  async function handleExportEmail() {
+    if (!post.emailDraft) return;
+    setExportingEmail(true);
+    setExportFeedback(null);
+    try {
+      const res = await fetch(
+        `/api/email-drafts/${post.emailDraft.id}/export`,
+        {
+          method: "POST",
+        },
+      );
+      if (!res.ok) throw new Error("Export failed");
+      const { subject, body } = await res.json();
+      await navigator.clipboard.writeText(
+        `${subject}\n\n${body}`,
+      );
+      setExportFeedback("Copied!");
+      setTimeout(() => setExportFeedback(null), 2000);
+      onRefresh(); // Refresh to get updated exportedAt
+    } catch {
+      setExportFeedback("Export failed");
+      setTimeout(() => setExportFeedback(null), 2000);
+    }
+    setExportingEmail(false);
   }
 
   const sectionStyle: React.CSSProperties = {
@@ -911,10 +940,51 @@ function BlogPostDetailView({
               >
                 {savingEmail ? "Saving…" : "Save"}
               </button>
-              {/* Export button added in next task */}
+              <button
+                onClick={handleExportEmail}
+                disabled={exportingEmail}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: "7px",
+                  border: "1px solid #2a2a2a",
+                  background: "transparent",
+                  color: exportFeedback === "Copied!" ? "#4ade80" : "#a1a1aa",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: exportingEmail ? "not-allowed" : "pointer",
+                  opacity: exportingEmail ? 0.6 : 1,
+                }}
+              >
+                {exportingEmail
+                  ? "Exporting…"
+                  : exportFeedback === "Copied!"
+                    ? "Copied!"
+                    : "Copy for Systeme.io"}
+              </button>
               {emailFeedback === "error" && (
                 <span style={{ fontSize: "12px", color: "#f87171" }}>
                   Save failed.
+                </span>
+              )}
+              {post.emailDraft.exportedAt && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#52525b",
+                    marginLeft: "auto",
+                  }}
+                >
+                  Last exported:{" "}
+                  {new Date(post.emailDraft.exportedAt).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    },
+                  )}
                 </span>
               )}
             </div>
