@@ -24,7 +24,7 @@
 ## API Keys — All Stored in Setting Table (DB), Not .env
 
 Keys are stored as key-value pairs in the `Setting` table. Read them with `getSetting(key)` from `lib/settings.ts`. The `.env` only holds infra-level secrets (DATABASE_URL, AUTH_SECRET, ANTHROPIC_API_KEY for worker bootstrap).
-Settings keys: `anthropic_api_key`, `gemini_api_key`, `openrouter_api_key`, `openrouter_model`, `postbridge_api_key`, `enabled_platforms`, `brevo_api_key`, `brevo_sender_email`, `brevo_sender_name`, `brevo_to_email`, `brevo_smtp_key`, `timezone`, `gate_mode`, `daily_run_hour`, `youtube_api_key`, `newsapi_key`, `ghost_url`, `ghost_admin_api_key`, `research_subreddits`, `research_youtube_region`, `research_news_categories`, `blog_author_name`, `elevenlabs_api_key`, `elevenlabs_voice_id`, `stripe_secret_key`, `stripe_webhook_secret`, `ai_fallback_enabled`
+Settings keys: `anthropic_api_key`, `gemini_api_key`, `openrouter_api_key`, `openrouter_model`, `postbridge_api_key`, `enabled_platforms`, `systeme_domain`, `systeme_default_funnel_url`, `systeme_api_key`, `video_generation_enabled`, `timezone`, `gate_mode`, `daily_run_hour`, `youtube_api_key`, `newsapi_key`, `ghost_url`, `ghost_admin_api_key`, `research_subreddits`, `research_youtube_region`, `research_news_categories`, `blog_author_name`, `elevenlabs_api_key`, `elevenlabs_voice_id`, `clickbank_api_key`, `clickbank_account`, `ai_fallback_enabled`
 
 ## Critical Notes
 
