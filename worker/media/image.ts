@@ -10,10 +10,10 @@
 
 import fs from "fs";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
 import type { Promotion } from "@prisma/client";
 import sharp from "sharp";
 
+import { generateImage } from "../../lib/image-gen";
 import { getSetting } from "../../lib/settings";
 import type { ImageStyle } from "./image-prompts";
 
@@ -28,11 +28,6 @@ async function generateBackgroundScene(params: {
 }): Promise<Buffer> {
   const { topic, description, userId } = params;
 
-  const apiKey = await getSetting("gemini_api_key", userId);
-  if (!apiKey) throw new Error("gemini_api_key not found in Setting table");
-
-  const ai = new GoogleGenAI({ apiKey });
-
   const prompt = `Create a stunning, photorealistic, cinematic background image for a social media post.
 
 Topic: "${topic}"${description ? `\nContext: ${description}` : ""}
@@ -45,20 +40,7 @@ Visual requirements:
 - NO text, NO typography, NO words, NO overlays of any kind
 - Pure visual scene only — text will be added separately`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-image-preview",
-    contents: prompt,
-    config: { responseModalities: ["IMAGE"] },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((part: any) => part.inlineData);
-
-  if (!imagePart?.inlineData?.data) {
-    throw new Error("Gemini response did not contain an image part");
-  }
-
-  return Buffer.from(imagePart.inlineData.data, "base64");
+  return generateImage({ prompt, userId });
 }
 
 // ---------------------------------------------------------------------------

@@ -3,14 +3,16 @@
 import {
   CheckCircle,
   Eye,
-  Instagram,
-  Linkedin,
   Mail,
-  MessageSquare,
-  Twitter,
   Video,
   XCircle,
 } from "lucide-react";
+import {
+  Instagram,
+  LinkedIn,
+  Reddit,
+  XDark,
+} from "developer-icons";
 
 export interface ContentPieceData {
   id: string;
@@ -37,12 +39,12 @@ const PLATFORM_META: Record<
 > = {
   twitter: {
     label: "Twitter / X",
-    icon: <Twitter size={16} />,
+    icon: <XDark size={16} />,
     scheduledTime: "9:00 AM",
   },
   linkedin: {
     label: "LinkedIn",
-    icon: <Linkedin size={16} />,
+    icon: <LinkedIn size={16} />,
     scheduledTime: "10:00 AM",
   },
   video: {
@@ -52,7 +54,7 @@ const PLATFORM_META: Record<
   },
   reddit: {
     label: "Reddit",
-    icon: <MessageSquare size={16} />,
+    icon: <Reddit size={16} />,
     scheduledTime: "12:00 PM",
   },
   instagram: {

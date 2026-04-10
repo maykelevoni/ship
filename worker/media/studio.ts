@@ -15,9 +15,9 @@
 
 import fs from "fs";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
 import sharp from "sharp";
 
+import { generateImage } from "../../lib/image-gen";
 import { generateText } from "../../lib/ai";
 import { getSetting } from "../../lib/settings";
 import { generateVoiceover } from "./audio";
@@ -45,46 +45,16 @@ export async function generateStudioImage(params: {
 }): Promise<{ buffer: Buffer; filePath: string }> {
   const { prompt, parentFilePath, outputPath, userId } = params;
 
-  const apiKey = await getSetting("gemini_api_key", userId);
-  if (!apiKey) throw new Error("gemini_api_key not found in Setting table");
-
-  const ai = new GoogleGenAI({ apiKey });
-
   // Ensure output directory exists
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
-  // Build contents array — optionally include parent image as inlineData
-  const contents: Array<{
-    text?: string;
-    inlineData?: { mimeType: string; data: string };
-  }> = [];
-
+  // Read parent image buffer if provided
+  let parentBuffer: Buffer | undefined;
   if (parentFilePath) {
-    const parentBuffer = fs.readFileSync(parentFilePath);
-    contents.push({
-      inlineData: {
-        mimeType: "image/png",
-        data: parentBuffer.toString("base64"),
-      },
-    });
+    parentBuffer = fs.readFileSync(parentFilePath);
   }
 
-  contents.push({ text: prompt });
-
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-image-preview",
-    contents: contents.length === 1 ? (contents[0].text ?? prompt) : contents,
-    config: { responseModalities: ["IMAGE"] },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((part: any) => part.inlineData);
-
-  if (!imagePart?.inlineData?.data) {
-    throw new Error("Gemini response did not contain an image part");
-  }
-
-  const buffer = Buffer.from(imagePart.inlineData.data, "base64");
+  const buffer = await generateImage({ prompt, userId, parentBuffer });
 
   fs.writeFileSync(outputPath, buffer);
 

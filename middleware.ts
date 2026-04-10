@@ -17,6 +17,9 @@ export default auth((req) => {
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/api/webhooks/polar");
 
+  // Never redirect API routes to HTML pages — let them handle auth themselves
+  if (pathname.startsWith("/api/")) return;
+
   if (!isLoggedIn) {
     if (pathname === "/") {
       return Response.redirect(new URL("/landing", req.url));
@@ -26,13 +29,9 @@ export default auth((req) => {
     }
   }
 
-  // If logged in but onboarding not done, redirect to /onboarding
-  if (isLoggedIn && !pathname.startsWith("/onboarding") && !isPublic) {
-    const onboardingDone = req.auth?.user?.onboardingDone;
-    if (!onboardingDone) {
-      return Response.redirect(new URL("/onboarding", req.url));
-    }
-  }
+  // Onboarding guard is handled in app/(dashboard)/layout.tsx using the full
+  // auth() which reads onboardingDone fresh from DB — the lite middleware config
+  // has no JWT callback so the cookie value lags behind DB writes.
 });
 
 export const config = {

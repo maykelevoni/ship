@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { runGeoAudit } from "@/worker/engine/geo-audit";
 
 import { db } from "@/lib/db";
 
@@ -11,10 +10,6 @@ const VALID_TYPES = [
   "content",
 ] as const;
 const VALID_STATUSES = ["active", "paused", "archived", "all"] as const;
-
-async function triggerGeoAudit(id: string, url: string): Promise<void> {
-  await runGeoAudit(id, url);
-}
 
 export const GET = auth(async (req) => {
   if (!req.auth) {
@@ -116,19 +111,12 @@ export const POST = auth(async (req) => {
         url: url.trim(),
         affiliateLink: affiliateLink ?? null,
         price: price ?? null,
-        benefits: benefits ?? null,
+        benefits: Array.isArray(benefits) ? JSON.stringify(benefits) : (benefits ?? null),
         targetAudience: targetAudience ?? null,
         weight: typeof weight === "number" ? weight : 5,
         status: "active",
       },
     });
-
-    // Fire-and-forget geo audit for product/service types
-    if (type === "product" || type === "service") {
-      triggerGeoAudit(promotion.id, promotion.url).catch(() => {
-        // intentionally swallowed — background task
-      });
-    }
 
     return Response.json(promotion, { status: 201 });
   } catch (error) {

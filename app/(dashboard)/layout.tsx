@@ -10,9 +10,9 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
-  // Auth bypassed for local testing
-  // const user = await getCurrentUser();
-  // if (!user) redirect("/login");
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  if (!user.onboardingDone) redirect("/onboarding");
 
   return (
     <div style={{ display: "flex", height: "100vh", background: "#0a0a0a" }}>

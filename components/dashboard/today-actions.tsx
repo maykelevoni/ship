@@ -289,10 +289,7 @@ export function TodayActions({
           style={{
             background: "#111111",
             border: "1px solid #1e1e1e",
-            borderTop:
-              emailDraft && emailDraft.status !== "sent"
-                ? "2px solid #60a5fa"
-                : "2px solid #1e1e1e",
+            borderTop: emailDraft ? "2px solid #60a5fa" : "2px solid #1e1e1e",
             borderRadius: "8px",
             padding: "16px",
           }}
@@ -319,78 +316,23 @@ export function TodayActions({
             </span>
           </div>
           {emailDraft ? (
-            emailDraft.status === "sent" ? (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            <>
+              <p
+                style={{
+                  margin: "0 0 10px",
+                  fontSize: "14px",
+                  color: "#e4e4e7",
+                  fontWeight: 600,
+                  lineHeight: "1.4",
+                }}
               >
-                <CheckCircle
-                  size={16}
-                  style={{ color: "#4ade80", flexShrink: 0 }}
-                />
-                <span style={{ fontSize: "14px", color: "#71717a" }}>
-                  Email already sent
-                </span>
-              </div>
-            ) : (
-              <>
-                <p
-                  style={{
-                    margin: "0 0 10px",
-                    fontSize: "14px",
-                    color: "#e4e4e7",
-                    fontWeight: 600,
-                    lineHeight: "1.4",
-                  }}
-                >
-                  {emailDraft.subject}
-                </p>
-                {emailSentMessage && (
-                  <p
-                    style={{
-                      margin: "0 0 8px",
-                      fontSize: "12px",
-                      color: emailSentMessage.includes("success")
-                        ? "#4ade80"
-                        : "#f87171",
-                    }}
-                  >
-                    {emailSentMessage}
-                  </p>
-                )}
-                <button
-                  onClick={() => handleSendEmail(emailDraft.id)}
-                  disabled={sendingEmail}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "7px 14px",
-                    borderRadius: "6px",
-                    border: "none",
-                    background: sendingEmail
-                      ? "rgba(99,102,241,0.4)"
-                      : "#6366f1",
-                    color: "#ffffff",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    cursor: sendingEmail ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {sendingEmail ? (
-                    <Loader2
-                      size={12}
-                      style={{ animation: "spin 1s linear infinite" }}
-                    />
-                  ) : (
-                    <Mail size={12} />
-                  )}
-                  {sendingEmail ? "Sending…" : "Send Now"}
-                </button>
-              </>
-            )
+                {emailDraft.subject}
+              </p>
+              {/* Export button added in next task */}
+            </>
           ) : (
             <p style={{ margin: 0, fontSize: "14px", color: "#52525b" }}>
-              No unsent email draft today
+              No email draft today
             </p>
           )}
         </div>

@@ -64,6 +64,8 @@ export default function SettingsPage() {
         body: JSON.stringify(patch),
       });
       if (!res.ok) throw new Error("Save failed");
+      // Reload settings from DB so state reflects what was persisted
+      await loadSettings();
     } finally {
       setSaving(false);
     }

@@ -67,7 +67,10 @@ export const PATCH = auth(
       const data: Record<string, unknown> = {};
       for (const field of allowedFields) {
         if (field in body) {
-          data[field] = body[field];
+          const val = body[field];
+          data[field] = field === "benefits" && Array.isArray(val)
+            ? JSON.stringify(val)
+            : val;
         }
       }
 

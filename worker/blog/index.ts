@@ -11,10 +11,11 @@
 
 import fs from "fs";
 import path from "path";
-import { GoogleGenAI } from "@google/genai";
 
 import { db } from "../../lib/db";
+import { generateImage } from "../../lib/image-gen";
 import { getSetting } from "../../lib/settings";
+import { runGeoAudit } from "../engine/geo-audit";
 import { generateBlogPost } from "./generate";
 import { publishToGhost } from "./ghost";
 
@@ -51,35 +52,8 @@ async function generateBlogImage(
   outputPath: string,
   userId: string,
 ): Promise<void> {
-  const apiKey = await getSetting("gemini_api_key", userId);
-  if (!apiKey) {
-    throw new Error("gemini_api_key not found in Setting table");
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-image-preview",
-    contents: prompt,
-    config: {
-      responseModalities: ["IMAGE"],
-      imageConfig: { aspectRatio: "16:9" },
-    },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find(
-    (part: { inlineData?: unknown }) => part.inlineData,
-  );
-
-  const inlineData = (
-    imagePart as { inlineData?: { data?: string } } | undefined
-  )?.inlineData;
-  if (!inlineData?.data) {
-    throw new Error("Gemini response did not contain an image part");
-  }
-
-  fs.writeFileSync(outputPath, Buffer.from(inlineData.data, "base64"));
+  const buffer = await generateImage({ prompt, userId });
+  fs.writeFileSync(outputPath, buffer);
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +187,12 @@ export async function runBlogGeneration(userId: string): Promise<void> {
     `BlogPost saved to DB (id: ${blogPost.id}, status: ${blogPost.status})`,
   );
 
-  // 8. Mark topic as selected
+  // 8. Run GEO audit on the generated content (fire-and-forget)
+  runGeoAudit(blogPost.id, postContent.title, postContent.content).catch(
+    (err) => logger.error("GEO audit failed", err),
+  );
+
+  // 9. Mark topic as selected
   await db.researchTopic.update({
     where: { id: topic.id },
     data: { selected: true },
@@ -308,6 +287,11 @@ export async function runBlogGenerationForTopic(
   });
 
   logger.info(`BlogPost saved to DB (id: ${blogPost.id})`);
+
+  // 4b. Run GEO audit on the generated content (fire-and-forget)
+  runGeoAudit(blogPost.id, postContent.title, postContent.content).catch(
+    (err) => logger.error("GEO audit failed", err),
+  );
 
   // 5. Mark only the target topic as selected (other topics untouched)
   await db.researchTopic.update({

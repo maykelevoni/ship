@@ -2,12 +2,11 @@ import authConfig from "@/auth.config";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { UserRole } from "@prisma/client";
 import NextAuth, { type DefaultSession } from "next-auth";
-import Email from "next-auth/providers/email";
+import Credentials from "next-auth/providers/credentials";
 
-import { env } from "@/env.mjs";
 import { prisma } from "@/lib/db";
-import { sendVerificationRequest } from "@/lib/email";
 import { getUserById } from "@/lib/user";
+import { verifyPassword } from "@/lib/password";
 
 // More info: https://authjs.dev/getting-started/typescript#module-augmentation
 declare module "next-auth" {
@@ -32,10 +31,29 @@ export const {
   },
   providers: [
     ...authConfig.providers,
-    Email({
-      from: env.EMAIL_FROM,
-      server: "smtp://localhost:25", // required by Auth.js v5; not used — sendVerificationRequest uses Brevo API
-      sendVerificationRequest,
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string },
+        });
+
+        if (!user?.password) return null;
+
+        const valid = await verifyPassword(
+          credentials.password as string,
+          user.password,
+        );
+
+        if (!valid) return null;
+
+        return user;
+      },
     }),
   ],
   callbacks: {

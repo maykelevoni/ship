@@ -485,9 +485,10 @@ function StepPlatforms({
       });
       if (!onboardingRes.ok) throw new Error("Failed to complete onboarding.");
 
-      // 3. Redirect to dashboard
+      // 3. Redirect to dashboard — hard navigation forces fresh JWT so middleware
+      //    reads onboardingDone: true from the new session token
       onFinish();
-      router.push("/");
+      window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {

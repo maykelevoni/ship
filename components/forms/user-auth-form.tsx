@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -32,32 +32,43 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isGoogleLoading, setIsGoogleLoading] = React.useState<boolean>(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
 
     try {
-      const csrfRes = await fetch("/api/auth/csrf");
-      const { csrfToken } = await csrfRes.json();
+      if (type === "register") {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.email.toLowerCase(), password: data.password }),
+        });
+
+        const body = await res.json();
+        if (!res.ok) {
+          toast.error(body.error ?? "Registration failed.");
+          return;
+        }
+      }
+
       const callbackUrl = searchParams?.get("from") || "/";
-
-      const res = await fetch("/api/auth/signin/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-Auth-Return-Redirect": "1",
-        },
-        body: new URLSearchParams({ email: data.email.toLowerCase(), csrfToken, callbackUrl }),
+      const result = await signIn("credentials", {
+        email: data.email.toLowerCase(),
+        password: data.password,
+        redirect: false,
+        callbackUrl,
       });
 
-      if (!res.ok) throw new Error("sign-in failed");
-      toast.success("Check your email", {
-        description: "We sent you a login link. Be sure to check your spam too.",
-      });
+      if (result?.error) {
+        toast.error("Invalid email or password.");
+        return;
+      }
+
+      router.push(callbackUrl);
+      router.refresh();
     } catch (_err) {
-      toast.error("Something went wrong.", {
-        description: "Your sign in request failed. Please try again.",
-      });
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +79,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-2">
           <div className="grid gap-1">
-            <Label className="sr-only" htmlFor="email">
-              Email
-            </Label>
+            <Label className="sr-only" htmlFor="email">Email</Label>
             <Input
               id="email"
               placeholder="name@example.com"
@@ -82,21 +91,30 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
               {...register("email")}
             />
             {errors?.email && (
-              <p className="px-1 text-xs text-red-600">
-                {errors.email.message}
-              </p>
+              <p className="px-1 text-xs text-red-600">{errors.email.message}</p>
+            )}
+          </div>
+          <div className="grid gap-1">
+            <Label className="sr-only" htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              placeholder="••••••••"
+              type="password"
+              autoComplete={type === "register" ? "new-password" : "current-password"}
+              disabled={isLoading || isGoogleLoading}
+              {...register("password")}
+            />
+            {errors?.password && (
+              <p className="px-1 text-xs text-red-600">{errors.password.message}</p>
             )}
           </div>
           <button
-            type="button"
+            type="submit"
             className={cn(buttonVariants())}
             disabled={isLoading}
-            onClick={handleSubmit(onSubmit)}
           >
-            {isLoading && (
-              <Icons.spinner className="mr-2 size-4 animate-spin" />
-            )}
-            {type === "register" ? "Sign Up with Email" : "Sign In with Email"}
+            {isLoading && <Icons.spinner className="mr-2 size-4 animate-spin" />}
+            {type === "register" ? "Create Account" : "Sign In"}
           </button>
         </div>
       </form>
@@ -105,9 +123,7 @@ export function UserAuthForm({ className, type, ...props }: UserAuthFormProps) {
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
+          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
         </div>
       </div>
       <button

@@ -124,7 +124,7 @@ export async function generateText(
   const openrouterKey =
     (await getSetting("openrouter_api_key", userId)) || null;
   const openrouterModel =
-    (await getSetting("openrouter_model", userId)) || "openai/gpt-4o-mini";
+    (await getSetting("openrouter_model", userId)) || "deepseek/deepseek-v3";
 
   if (openrouterKey) {
     try {

@@ -11,10 +11,10 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
     settings.openrouter_api_key ?? "",
   );
   const [openrouterModel, setOpenrouterModel] = useState(
-    settings.openrouter_model ?? "openai/gpt-4o-mini",
+    settings.openrouter_model ?? "deepseek/deepseek-v3",
   );
-  const [anthropicKey, setAnthropicKey] = useState(
-    settings.anthropic_api_key ?? "",
+  const [replicateKey, setReplicateKey] = useState(
+    settings.replicate_api_key ?? "",
   );
   const [postbridgeKey, setPostbridgeKey] = useState(
     settings.postbridge_api_key ?? "",
@@ -54,10 +54,10 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
   function saveAI() {
     handleSaveWithFeedback(
       {
-        anthropic_api_key: anthropicKey,
         gemini_api_key: geminiKey,
         openrouter_api_key: openrouterKey,
         openrouter_model: openrouterModel,
+        replicate_api_key: replicateKey,
       },
       setAiLoading,
       setAiFeedback,
@@ -88,7 +88,7 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
       {/* AI Providers */}
       <SectionCard
         title="AI Providers"
-        description="Gemini is primary. OpenRouter is the fallback when Gemini fails."
+        description="Gemini is primary. OpenRouter and Replicate are the fallbacks."
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Gemini API Key">
@@ -110,7 +110,7 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
               type="text"
               value={openrouterModel}
               onChange={(e) => setOpenrouterModel(e.target.value)}
-              placeholder="openai/gpt-4o-mini"
+              placeholder="deepseek/deepseek-v3"
               style={{
                 background: "#141414",
                 border: "1px solid #27272a",
@@ -123,11 +123,11 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
               }}
             />
           </FieldRow>
-          <FieldRow label="Anthropic API Key">
+          <FieldRow label="Replicate API Key">
             <PasswordInput
-              value={anthropicKey}
-              onChange={setAnthropicKey}
-              placeholder="sk-ant-..."
+              value={replicateKey}
+              onChange={setReplicateKey}
+              placeholder="r8_..."
             />
           </FieldRow>
           <SaveButton

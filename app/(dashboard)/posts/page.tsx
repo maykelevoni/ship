@@ -33,8 +33,6 @@ interface SocialPost {
 interface EmailDraft {
   id: string;
   subject: string;
-  status: string;
-  sentAt: string | null;
   createdAt: string;
   blogPost: { title: string; ghostUrl: string | null } | null;
 }
@@ -149,13 +147,6 @@ function getSocialStatusBadge(
   }
 }
 
-function getEmailStatusBadge(status: string): { style: React.CSSProperties; label: string } {
-  if (status === "sent") {
-    return { style: { background: "rgba(34,197,94,0.15)", color: "#22c55e" }, label: "Sent" };
-  }
-  return { style: { background: "rgba(251,191,36,0.15)", color: "#fbbf24" }, label: "Pending" };
-}
-
 // ─── Skeleton ──────────────────────────────────────────────────────────────────
 
 function SkeletonRows() {
@@ -188,7 +179,8 @@ function attentionCount(
     return blogPosts.filter((p) => p.status === "draft").length;
   }
   if (tab === "email") {
-    return emailDrafts.filter((d) => d.status === "pending").length;
+    // All email drafts are now drafts (no send status)
+    return emailDrafts.length;
   }
   const posts = socialData[tab] ?? [];
   return posts.filter((p) => p.status === "generated" || p.status === "failed").length;
@@ -215,8 +207,6 @@ export default function ContentHubPage() {
   const [publishing, setPublishing] = useState<Set<string>>(new Set());
   const [publishedIds, setPublishedIds] = useState<Set<string>>(new Set());
   const [approving, setApproving] = useState<Set<string>>(new Set());
-  const [sending, setSending] = useState<Set<string>>(new Set());
-  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
   // Inline schedule picker state: id → { open, value }
   const [schedulePickers, setSchedulePickers] = useState<
@@ -396,30 +386,7 @@ export default function ContentHubPage() {
   }
 
   // ── Email actions ────────────────────────────────────────────────────────────
-
-  async function handleSend(id: string) {
-    setSending((prev) => new Set(prev).add(id));
-    setItemErrors((prev) => { const n = { ...prev }; delete n[id]; return n; });
-    try {
-      const res = await fetch(`/api/email-drafts/${id}/send`, { method: "POST" });
-      if (res.ok) {
-        setEmailDrafts((prev) =>
-          prev.map((d) => (d.id === id ? { ...d, status: "sent", sentAt: new Date().toISOString() } : d))
-        );
-        setSentIds((prev) => new Set(prev).add(id));
-      } else {
-        setItemErrors((prev) => ({ ...prev, [id]: "Send failed." }));
-      }
-    } catch {
-      setItemErrors((prev) => ({ ...prev, [id]: "Send failed." }));
-    } finally {
-      setSending((prev) => {
-        const n = new Set(prev);
-        n.delete(id);
-        return n;
-      });
-    }
-  }
+  // Export button added in next task
 
   // ── Shared row styles ─────────────────────────────────────────────────────────
 
@@ -945,11 +912,6 @@ export default function ContentHubPage() {
               <EmptyState label="Email" />
             ) : (
               emailDrafts.map((draft, idx) => {
-                const { style: badgeStyle, label: badgeLabel } = getEmailStatusBadge(draft.status);
-                const isSending = sending.has(draft.id);
-                const isSent = sentIds.has(draft.id) || draft.status === "sent";
-                const errMsg = itemErrors[draft.id];
-
                 return (
                   <div
                     key={draft.id}
@@ -993,43 +955,9 @@ export default function ContentHubPage() {
                       {draft.blogPost?.title ?? "—"}
                     </div>
 
-                    {/* Status */}
-                    <div style={{ width: "90px", flexShrink: 0 }}>
-                      <span style={{ ...pillStyle, ...badgeStyle }}>{badgeLabel}</span>
-                    </div>
-
-                    {/* Sent date */}
-                    <div
-                      style={{
-                        width: "80px",
-                        flexShrink: 0,
-                        fontSize: "12px",
-                        color: "#52525b",
-                      }}
-                    >
-                      {draft.sentAt ? formatDate(draft.sentAt) : "—"}
-                    </div>
-
-                    {/* Actions */}
+                    {/* Export button added in next task */}
                     <div style={{ width: "100px", flexShrink: 0 }}>
-                      {draft.status === "pending" && (
-                        <>
-                          <button
-                            disabled={isSending || isSent}
-                            onClick={() => handleSend(draft.id)}
-                            style={actionBtn("green", isSending || isSent)}
-                          >
-                            {isSending ? "Sending…" : isSent ? "Sent ✓" : "Send"}
-                          </button>
-                          {errMsg && (
-                            <span
-                              style={{ fontSize: "11px", color: "#f87171", display: "block", marginTop: "2px" }}
-                            >
-                              {errMsg}
-                            </span>
-                          )}
-                        </>
-                      )}
+                      {/* Export button placeholder */}
                     </div>
                   </div>
                 );

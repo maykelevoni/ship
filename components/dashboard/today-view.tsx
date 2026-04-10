@@ -48,7 +48,6 @@ export interface TodayBlogPost {
 export interface TodayEmailDraft {
   id: string;
   subject: string;
-  status: string;
 }
 
 interface TodayViewProps {
@@ -242,7 +241,7 @@ export function TodayView({
         postedCount={postedCount}
         totalPieces={pieces.length}
         todayBlogPostStatus={todayBlogPost?.status ?? null}
-        emailDraftStatus={initialEmailDraft?.status ?? null}
+        emailDraftExists={initialEmailDraft !== null}
         newOpportunitiesCount={newOpportunitiesCount}
         contentPiecesToday={stats.contentPiecesToday}
         alertCount={alertCount}

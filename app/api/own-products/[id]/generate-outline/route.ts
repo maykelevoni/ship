@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 
-import { generateText } from "@/lib/claude";
+import { generateText } from "@/lib/ai";
 import { db } from "@/lib/db";
 
 export const POST = auth(async (req, { params }) => {

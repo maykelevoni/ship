@@ -202,7 +202,7 @@ interface TodayHeaderProps {
   totalPieces: number;
   // research pipeline data
   todayBlogPostStatus: string | null;
-  emailDraftStatus: string | null;
+  emailDraftExists: boolean;
   newOpportunitiesCount: number;
   contentPiecesToday: number;
   // alert
@@ -223,7 +223,7 @@ export function TodayHeader({
   postedCount,
   totalPieces,
   todayBlogPostStatus,
-  emailDraftStatus,
+  emailDraftExists,
   newOpportunitiesCount,
   contentPiecesToday,
   alertCount,
@@ -602,8 +602,8 @@ export function TodayHeader({
           <PipelineArrow />
           <PipelineStage
             label="Email"
-            value={emailDraftStatus ?? "None"}
-            color={emailDraftStatus ? "#60a5fa" : "#3f3f46"}
+            value={emailDraftExists ? "Draft" : "None"}
+            color={emailDraftExists ? "#60a5fa" : "#3f3f46"}
             href="/content"
           />
           <PipelineArrow />

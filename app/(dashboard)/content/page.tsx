@@ -52,7 +52,6 @@ interface EmailDraftDetail {
   id: string;
   subject: string;
   body: string;
-  status: string;
 }
 
 interface BlogPostDetail {
@@ -206,10 +205,8 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
   const [blogExpanded, setBlogExpanded] = useState(false);
   const [emailSubject, setEmailSubject] = useState(post.emailDraft?.subject ?? "");
   const [emailBody, setEmailBody] = useState(post.emailDraft?.body ?? "");
-  const [emailStatus, setEmailStatus] = useState(post.emailDraft?.status ?? "");
   const [savingEmail, setSavingEmail] = useState(false);
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailFeedback, setEmailFeedback] = useState<"sent" | "error" | null>(null);
+  const [emailFeedback, setEmailFeedback] = useState<"saved" | "error" | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [imagesError, setImagesError] = useState<string | null>(null);
   const [renderingVideo, setRenderingVideo] = useState(false);
@@ -231,20 +228,11 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject: emailSubject, body: emailBody }),
       });
-    } catch { /* silently fail */ }
+      setEmailFeedback("saved");
+    } catch {
+      setEmailFeedback("error");
+    }
     setSavingEmail(false);
-  }
-
-  async function handleSendEmail() {
-    if (!post.emailDraft) return;
-    setSendingEmail(true);
-    setEmailFeedback(null);
-    try {
-      const res = await fetch(`/api/email-drafts/${post.emailDraft.id}/send`, { method: "POST" });
-      if (res.ok) { setEmailFeedback("sent"); setEmailStatus("sent"); }
-      else setEmailFeedback("error");
-    } catch { setEmailFeedback("error"); }
-    setSendingEmail(false);
   }
 
   async function handleGenerateImages() {
@@ -666,9 +654,6 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
           <div style={sectionHeaderStyle}>
             <Mail size={12} style={{ color: "#6366f1", flexShrink: 0 }} />
             <span style={sectionLabelStyle}>Email Draft</span>
-            {emailStatus === "sent" && (
-              <span style={{ marginLeft: "auto", fontSize: "11px", color: "#4ade80", fontWeight: 600 }}>Sent</span>
-            )}
           </div>
           <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
             <div>
@@ -696,15 +681,9 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
               >
                 {savingEmail ? "Saving…" : "Save"}
               </button>
-              <button
-                onClick={handleSendEmail}
-                disabled={emailStatus === "sent" || sendingEmail}
-                style={{ padding: "6px 14px", borderRadius: "7px", border: "none", background: emailStatus === "sent" ? "#1a1a1a" : "#6366f1", color: emailStatus === "sent" ? "#52525b" : "#fff", fontSize: "12px", fontWeight: 600, cursor: emailStatus === "sent" || sendingEmail ? "not-allowed" : "pointer" }}
-              >
-                {sendingEmail ? "Sending…" : emailStatus === "sent" ? "Sent" : "Send"}
-              </button>
+              {/* Export button added in next task */}
               {emailFeedback === "error" && (
-                <span style={{ fontSize: "12px", color: "#f87171" }}>Send failed.</span>
+                <span style={{ fontSize: "12px", color: "#f87171" }}>Save failed.</span>
               )}
             </div>
           </div>

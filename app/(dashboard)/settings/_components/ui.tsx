@@ -16,10 +16,12 @@ export function SectionCard({
   children,
   title,
   description,
+  icon,
 }: {
   children: React.ReactNode;
   title: string;
   description?: string;
+  icon?: React.ReactNode;
 }) {
   return (
     <div
@@ -36,16 +38,23 @@ export function SectionCard({
           borderBottom: "1px solid #1a1a1a",
         }}
       >
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "15px",
-            fontWeight: 600,
-            color: "#e4e4e7",
-          }}
-        >
-          {title}
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {icon && (
+            <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+              {icon}
+            </span>
+          )}
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "15px",
+              fontWeight: 600,
+              color: "#e4e4e7",
+            }}
+          >
+            {title}
+          </h2>
+        </div>
         {description && (
           <p
             style={{

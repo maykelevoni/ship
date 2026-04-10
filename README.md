@@ -450,6 +450,12 @@ pnpm format
 
 ---
 
+## Deployment
+
+See **[docs/production-deployment.md](./docs/production-deployment.md)** for the full guide to self-hosting PostForge on a Hetzner VPS with HTTPS and 24/7 uptime — including Docker setup, Caddy SSL, Google OAuth, and update workflow.
+
+---
+
 ## Contributing
 
 Contributions are welcome. Please follow these steps:

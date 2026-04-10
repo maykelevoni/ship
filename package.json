@@ -14,7 +14,6 @@
     "email": "email dev --dir emails --port 3333"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.30.0",
     "@auth/prisma-adapter": "^2.4.1",
     "@google/genai": "^1.0.0",
     "@hookform/resolvers": "^3.9.0",
@@ -67,6 +66,7 @@
     "concurrently": "^8.2.2",
     "contentlayer2": "^0.5.0",
     "date-fns": "^3.6.0",
+    "developer-icons": "^6.0.5",
     "google-trends-api": "^4.9.2",
     "lucide-react": "^0.414.0",
     "ms": "^2.1.3",

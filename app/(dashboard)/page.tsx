@@ -187,9 +187,8 @@ async function getTodayEmailDraft() {
     return await db.emailDraft.findFirst({
       where: {
         createdAt: { gte: today, lt: tomorrow },
-        status: { not: "sent" },
       },
-      select: { id: true, subject: true, status: true },
+      select: { id: true, subject: true },
     });
   } catch {
     return null;
