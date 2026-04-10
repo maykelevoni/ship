@@ -2,6 +2,8 @@ import type { Promotion, Template } from "@prisma/client";
 
 import { generateText } from "../../lib/ai";
 import type { AIProvider } from "../../lib/ai";
+import { getSetting } from "../../lib/settings";
+import { buildUtmUrl, slugify } from "../../lib/utm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,7 +30,7 @@ function buildMasterPrompt(promotion: Promotion): string {
       })()
     : "N/A";
 
-  return `
+  let prompt = `
 Name: ${promotion.name}
 Type: ${promotion.type}
 Description: ${promotion.description}
@@ -36,6 +38,18 @@ Benefits: ${benefits}
 Target Audience: ${promotion.targetAudience ?? "General audience"}
 URL: ${promotion.url}
 `.trim();
+
+  // Inject funnel CTA with UTM tracking when systemeFunnelUrl is set
+  if (promotion.systemeFunnelUrl) {
+    const funnelUrl = buildUtmUrl(promotion.systemeFunnelUrl, {
+      medium: 'email',
+      campaign: slugify(promotion.name),
+      content: 'email',
+    });
+    prompt += `\n\nInclude a CTA linking to this URL (do not modify it): ${funnelUrl}`;
+  }
+
+  return prompt;
 }
 
 export async function generateMaster(
@@ -97,8 +111,20 @@ const BASE_SYSTEMS: Record<string, string> = {
   video: VIDEO_SYSTEM,
 };
 
-function buildFormatPrompt(master: string, promotion: Promotion): string {
-  return `Here is the master email newsletter piece to repurpose:\n\n${master}\n\nPromotion URL: ${promotion.url}`;
+function buildFormatPrompt(master: string, promotion: Promotion, platform: string): string {
+  let prompt = `Here is the master email newsletter piece to repurpose:\n\n${master}\n\nPromotion URL: ${promotion.url}`;
+
+  // Inject platform-specific UTM URL when systemeFunnelUrl is set
+  if (promotion.systemeFunnelUrl) {
+    const utmUrl = buildUtmUrl(promotion.systemeFunnelUrl, {
+      medium: platform,
+      campaign: slugify(promotion.name),
+      content: 'social',
+    });
+    prompt += `\n\nInclude this tracked link as the CTA (do not modify it): ${utmUrl}`;
+  }
+
+  return prompt;
 }
 
 function formatEmail(master: string, promotion: Promotion): GeneratedPiece {
@@ -142,19 +168,21 @@ export async function generateAllFormats(
   userId: string,
   templates?: Record<string, Template>,
 ): Promise<Record<string, GeneratedPiece>> {
-  const prompt = buildFormatPrompt(master, promotion);
+  // Gate video generation behind the video_generation_enabled setting
+  const videoEnabled = await getSetting('video_generation_enabled', userId) === 'true';
 
   const platforms = [
     "twitter",
     "linkedin",
     "reddit",
     "instagram",
-    "video",
+    ...(videoEnabled ? ["video"] : []),
   ] as const;
 
   const results = await Promise.allSettled(
     platforms.map((platform) => {
       const system = buildPlatformSystem(platform, templates?.[platform]);
+      const prompt = buildFormatPrompt(master, promotion, platform);
       return generateText(prompt, system, userId);
     }),
   );
@@ -173,12 +201,19 @@ export async function generateAllFormats(
     };
   }
 
-  return {
+  // Build response object with conditional video platform
+  const response: Record<string, GeneratedPiece> = {
     twitter: settle(results[0], "twitter"),
     linkedin: settle(results[1], "linkedin"),
     reddit: settle(results[2], "reddit"),
     instagram: settle(results[3], "instagram"),
     email: formatEmail(master, promotion),
-    video: settle(results[4], "video"),
   };
+
+  // Only include video if it was generated
+  if (videoEnabled) {
+    response.video = settle(results[4], "video");
+  }
+
+  return response;
 }
