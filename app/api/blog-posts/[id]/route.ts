@@ -67,9 +67,6 @@ export const GET = auth(async (req, ctx) => {
             status: post.emailDraft.status,
           }
         : null,
-      geoScore: post.geoScore,
-      geoIssues: post.geoIssues ? JSON.parse(post.geoIssues) : null,
-      geoAuditedAt: post.geoAuditedAt?.toISOString() ?? null,
     });
   } catch {
     return new Response("Internal server error", { status: 500 });

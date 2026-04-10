@@ -24,7 +24,6 @@ export interface ActivePromotion {
   name: string;
   type: PromotionType;
   description: string;
-  geoScore: number | null;
 }
 
 export interface TodayStats {

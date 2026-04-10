@@ -70,7 +70,6 @@ async function getActivePromotion() {
             name: true,
             type: true,
             description: true,
-            geoScore: true,
           },
         },
       },
@@ -89,7 +88,6 @@ async function getActivePromotion() {
         | "lead_magnet"
         | "content",
       description: piece.promotion.description,
-      geoScore: piece.promotion.geoScore,
     };
   } catch {
     return null;

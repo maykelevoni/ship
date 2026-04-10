@@ -38,7 +38,6 @@ interface BlogPostListItem {
   ghostUrl: string | null;
   topic: ResearchTopic | null;
   piecesCount: number;
-  geoScore?: number | null;
 }
 
 interface ContentPiece {
@@ -67,7 +66,6 @@ interface BlogPostDetail {
   topic: ResearchTopic | null;
   pieces: ContentPiece[];
   emailDraft: EmailDraftDetail | null;
-  geoScore?: number | null;
 }
 
 // ─── Media URL helper ─────────────────────────────────────────────────────────
@@ -325,61 +323,8 @@ function BlogPostDetailView({ post, onRefresh }: { post: BlogPostDetail; onRefre
     fontFamily: "inherit",
   };
 
-  const geoColor =
-    post.geoScore != null
-      ? post.geoScore >= 7
-        ? "#4ade80"
-        : post.geoScore >= 4
-          ? "#fbbf24"
-          : "#f87171"
-      : null;
-
-  const geoBg =
-    post.geoScore != null
-      ? post.geoScore >= 7
-        ? "rgba(74,222,128,0.15)"
-        : post.geoScore >= 4
-          ? "rgba(251,191,36,0.15)"
-          : "rgba(248,113,113,0.15)"
-      : null;
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px" }}>
-
-      {/* ── GEO Score ── */}
-      {post.geoScore != null && geoColor && geoBg && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              color: "#52525b",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            GEO
-          </span>
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              color: geoColor,
-              background: geoBg,
-              padding: "2px 8px",
-              borderRadius: "5px",
-            }}
-          >
-            {post.geoScore}/10
-          </span>
-        </div>
-      )}
 
       {/* ── Blog Post ── */}
       <div style={sectionStyle}>
@@ -857,23 +802,6 @@ function BlogPostRow({ post }: { post: BlogPostListItem }) {
         {post.piecesCount > 0 && (
           <span style={{ fontSize: "11px", color: "#3f3f46", flexShrink: 0 }}>
             {post.piecesCount} pieces
-          </span>
-        )}
-
-        {/* GEO score badge */}
-        {post.geoScore != null && (
-          <span
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              color: post.geoScore >= 70 ? "#4ade80" : post.geoScore >= 40 ? "#f59e0b" : "#f87171",
-              background: post.geoScore >= 70 ? "#0a1f0a" : post.geoScore >= 40 ? "#1f1400" : "#1f0a0a",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              flexShrink: 0,
-            }}
-          >
-            GEO {post.geoScore}
           </span>
         )}
 

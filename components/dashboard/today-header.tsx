@@ -17,36 +17,6 @@ function relativeTime(iso: string): string {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function GeoScoreChip({ score }: { score: number | null }) {
-  if (score === null) return null;
-
-  const color = score >= 70 ? "#4ade80" : score >= 40 ? "#fbbf24" : "#f87171";
-  const bg =
-    score >= 70
-      ? "rgba(74,222,128,0.12)"
-      : score >= 40
-        ? "rgba(251,191,36,0.12)"
-        : "rgba(248,113,113,0.12)";
-
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "4px",
-        padding: "3px 8px",
-        borderRadius: "5px",
-        fontSize: "11px",
-        fontWeight: 700,
-        color,
-        background: bg,
-      }}
-    >
-      GEO {score}
-    </span>
-  );
-}
-
 export function StreamFeed({ events }: { events: string[] }) {
   if (events.length === 0) return null;
 
@@ -430,7 +400,6 @@ export function TodayHeader({
                   >
                     {typeBadge.label.toUpperCase()}
                   </span>
-                  <GeoScoreChip score={activePromotion.geoScore} />
                 </div>
                 <h2
                   style={{
