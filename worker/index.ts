@@ -17,6 +17,7 @@ import { generateEmailDraft } from "./email/draft";
 import { runEngine } from "./engine/run";
 import { analyzeOpportunities } from "./opportunities/analyze";
 import { postPlatform, postScheduledPieces } from "./posting/scheduler";
+import { runAffiliateResearch } from "./research/affiliate";
 import { runResearch } from "./research/index";
 import { runSocialRepurposing } from "./social/index";
 
@@ -32,7 +33,6 @@ async function runForAllUsers(
   jobName: string,
 ): Promise<void> {
   const users = await db.user.findMany({
-    where: { plan: { not: "free" } },
     select: { id: true },
   });
   for (const user of users) {
@@ -42,7 +42,6 @@ async function runForAllUsers(
 
 async function loadSchedule(): Promise<void> {
   const users = await db.user.findMany({
-    where: { plan: { not: "free" } },
     select: { id: true },
   });
   for (const user of users) {
@@ -76,9 +75,8 @@ async function loadSchedule(): Promise<void> {
 }
 
 async function start(): Promise<void> {
-  // Seed defaults for any paid user who doesn't have templates yet
+  // Seed defaults for any user who doesn't have templates yet
   const users = await db.user.findMany({
-    where: { plan: { not: "free" } },
     select: { id: true },
   });
   for (const user of users) {
@@ -89,6 +87,17 @@ async function start(): Promise<void> {
   // are read inside each job function via getSetting(key, userId).
   const globalTz = "UTC";
   const cronOptions = { timezone: globalTz };
+
+  // 05:30 UTC — Affiliate research (before research so products are ready)
+  cron.schedule(
+    "30 5 * * *",
+    () => {
+      runForAllUsers(runAffiliateResearch, "Affiliate research").catch(
+        onJobError("Affiliate research"),
+      );
+    },
+    cronOptions,
+  );
 
   // 06:00 UTC — Research pull
   cron.schedule(
