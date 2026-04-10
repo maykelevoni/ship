@@ -1,17 +1,11 @@
 // Shared types for settings section components
 
 export interface SettingsData {
-  anthropic_api_key: string | null;
   gemini_api_key: string | null;
   openrouter_api_key: string | null;
   openrouter_model: string | null;
   postbridge_api_key: string | null;
   enabled_platforms: string | null;
-  brevo_api_key: string | null;
-  brevo_sender_email: string | null;
-  brevo_sender_name: string | null;
-  brevo_to_email: string | null;
-  brevo_smtp_key: string | null;
   timezone: string | null;
   gate_mode: string | null;
   daily_run_hour: string | null;
@@ -25,8 +19,12 @@ export interface SettingsData {
   blog_author_name: string | null;
   elevenlabs_api_key: string | null;
   elevenlabs_voice_id: string | null;
-  stripe_secret_key: string | null;
-  stripe_webhook_secret: string | null;
+  replicate_api_key: string | null;
+  amazon_affiliate_tag: string | null;
+  amazon_paapi_key: string | null;
+  amazon_paapi_secret: string | null;
+  clickbank_api_key: string | null;
+  clickbank_account: string | null;
 }
 
 export interface SectionProps {

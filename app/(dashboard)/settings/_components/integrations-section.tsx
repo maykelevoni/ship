@@ -22,21 +22,6 @@ export function IntegrationsSection({
     settings.ghost_admin_api_key ?? "",
   );
 
-  // Brevo
-  const [brevoKey, setBrevoKey] = useState(settings.brevo_api_key ?? "");
-  const [brevoSenderEmail, setBrevoSenderEmail] = useState(
-    settings.brevo_sender_email ?? "",
-  );
-  const [brevoSenderName, setBrevoSenderName] = useState(
-    settings.brevo_sender_name ?? "",
-  );
-  const [brevoToEmail, setBrevoToEmail] = useState(
-    settings.brevo_to_email ?? "",
-  );
-  const [brevoSmtpKey, setBrevoSmtpKey] = useState(
-    settings.brevo_smtp_key ?? "",
-  );
-
   // ElevenLabs
   const [elevenlabsKey, setElevenlabsKey] = useState(
     settings.elevenlabs_api_key ?? "",
@@ -45,30 +30,28 @@ export function IntegrationsSection({
     settings.elevenlabs_voice_id ?? "21m00Tcm4TlvDq8ikWAM",
   );
 
-  // Stripe
-  const [stripeSecretKey, setStripeSecretKey] = useState(
-    settings.stripe_secret_key ?? "",
-  );
-  const [stripeWebhookSecret, setStripeWebhookSecret] = useState(
-    settings.stripe_webhook_secret ?? "",
-  );
+  // Amazon Associates
+  const [amazonTag, setAmazonTag] = useState(settings.amazon_affiliate_tag ?? "");
+  const [amazonPaapiKey, setAmazonPaapiKey] = useState(settings.amazon_paapi_key ?? "");
+  const [amazonPaapiSecret, setAmazonPaapiSecret] = useState(settings.amazon_paapi_secret ?? "");
+
+  // ClickBank
+  const [clickbankKey, setClickbankKey] = useState(settings.clickbank_api_key ?? "");
+  const [clickbankAccount, setClickbankAccount] = useState(settings.clickbank_account ?? "");
 
   const [ghostLoading, setGhostLoading] = useState(false);
   const [ghostFeedback, setGhostFeedback] = useState<"saved" | "error" | null>(
-    null,
-  );
-  const [brevoLoading, setBrevoLoading] = useState(false);
-  const [brevoFeedback, setBrevoFeedback] = useState<"saved" | "error" | null>(
     null,
   );
   const [elevenlabsLoading, setElevenlabsLoading] = useState(false);
   const [elevenlabsFeedback, setElevenlabsFeedback] = useState<
     "saved" | "error" | null
   >(null);
-  const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeFeedback, setStripeFeedback] = useState<
-    "saved" | "error" | null
-  >(null);
+
+  const [amazonLoading, setAmazonLoading] = useState(false);
+  const [amazonFeedback, setAmazonFeedback] = useState<"saved" | "error" | null>(null);
+  const [clickbankLoading, setClickbankLoading] = useState(false);
+  const [clickbankFeedback, setClickbankFeedback] = useState<"saved" | "error" | null>(null);
 
   async function handleSaveWithFeedback(
     patch: Parameters<typeof onSave>[0],
@@ -96,20 +79,6 @@ export function IntegrationsSection({
     );
   }
 
-  function saveBrevo() {
-    handleSaveWithFeedback(
-      {
-        brevo_api_key: brevoKey,
-        brevo_sender_email: brevoSenderEmail,
-        brevo_sender_name: brevoSenderName,
-        brevo_to_email: brevoToEmail,
-        brevo_smtp_key: brevoSmtpKey,
-      },
-      setBrevoLoading,
-      setBrevoFeedback,
-    );
-  }
-
   function saveElevenLabs() {
     handleSaveWithFeedback(
       {
@@ -121,14 +90,26 @@ export function IntegrationsSection({
     );
   }
 
-  function saveStripe() {
+  function saveAmazon() {
     handleSaveWithFeedback(
       {
-        stripe_secret_key: stripeSecretKey,
-        stripe_webhook_secret: stripeWebhookSecret,
+        amazon_affiliate_tag: amazonTag,
+        amazon_paapi_key: amazonPaapiKey,
+        amazon_paapi_secret: amazonPaapiSecret,
       },
-      setStripeLoading,
-      setStripeFeedback,
+      setAmazonLoading,
+      setAmazonFeedback,
+    );
+  }
+
+  function saveClickBank() {
+    handleSaveWithFeedback(
+      {
+        clickbank_api_key: clickbankKey,
+        clickbank_account: clickbankAccount,
+      },
+      setClickbankLoading,
+      setClickbankFeedback,
     );
   }
 
@@ -158,55 +139,6 @@ export function IntegrationsSection({
             onClick={saveGhost}
             loading={ghostLoading || saving}
             feedback={ghostFeedback}
-          />
-        </div>
-      </SectionCard>
-
-      {/* Email (Brevo) */}
-      <SectionCard
-        title="Email (Brevo)"
-        description="Configure Brevo for newsletter delivery."
-      >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="Brevo API Key">
-            <PasswordInput
-              value={brevoKey}
-              onChange={setBrevoKey}
-              placeholder="xkeysib-..."
-            />
-          </FieldRow>
-          <FieldRow label="Sender Email">
-            <TextInput
-              value={brevoSenderEmail}
-              onChange={setBrevoSenderEmail}
-              placeholder="hello@yourdomain.com"
-            />
-          </FieldRow>
-          <FieldRow label="Sender Name">
-            <TextInput
-              value={brevoSenderName}
-              onChange={setBrevoSenderName}
-              placeholder="Your Name"
-            />
-          </FieldRow>
-          <FieldRow label="Recipient Email">
-            <TextInput
-              value={brevoToEmail}
-              onChange={setBrevoToEmail}
-              placeholder="newsletter@yourdomain.com"
-            />
-          </FieldRow>
-          <FieldRow label="SMTP Key">
-            <PasswordInput
-              value={brevoSmtpKey}
-              onChange={setBrevoSmtpKey}
-              placeholder="xsmtp-..."
-            />
-          </FieldRow>
-          <SaveButton
-            onClick={saveBrevo}
-            loading={brevoLoading || saving}
-            feedback={brevoFeedback}
           />
         </div>
       </SectionCard>
@@ -255,30 +187,65 @@ export function IntegrationsSection({
         </div>
       </SectionCard>
 
-      {/* Stripe */}
+      {/* Amazon Associates */}
       <SectionCard
-        title="Stripe"
-        description="Payment processing and webhook verification."
+        title="Amazon Associates"
+        description="Find and promote physical products via Amazon affiliate links."
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <FieldRow label="Secret Key">
-            <PasswordInput
-              value={stripeSecretKey}
-              onChange={setStripeSecretKey}
-              placeholder="sk_live_..."
+          <FieldRow label="Associate Tag">
+            <TextInput
+              value={amazonTag}
+              onChange={setAmazonTag}
+              placeholder="yourtag-20"
             />
           </FieldRow>
-          <FieldRow label="Webhook Secret">
+          <FieldRow label="PAAPI Key">
             <PasswordInput
-              value={stripeWebhookSecret}
-              onChange={setStripeWebhookSecret}
-              placeholder="whsec_..."
+              value={amazonPaapiKey}
+              onChange={setAmazonPaapiKey}
+              placeholder="AKIA..."
+            />
+          </FieldRow>
+          <FieldRow label="PAAPI Secret">
+            <PasswordInput
+              value={amazonPaapiSecret}
+              onChange={setAmazonPaapiSecret}
+              placeholder="secret key"
             />
           </FieldRow>
           <SaveButton
-            onClick={saveStripe}
-            loading={stripeLoading || saving}
-            feedback={stripeFeedback}
+            onClick={saveAmazon}
+            loading={amazonLoading || saving}
+            feedback={amazonFeedback}
+          />
+        </div>
+      </SectionCard>
+
+      {/* ClickBank */}
+      <SectionCard
+        title="ClickBank"
+        description="Find and promote digital products (courses, ebooks, software)."
+      >
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <FieldRow label="Account Nickname">
+            <TextInput
+              value={clickbankAccount}
+              onChange={setClickbankAccount}
+              placeholder="youraccount"
+            />
+          </FieldRow>
+          <FieldRow label="API Key">
+            <PasswordInput
+              value={clickbankKey}
+              onChange={setClickbankKey}
+              placeholder="CB API key"
+            />
+          </FieldRow>
+          <SaveButton
+            onClick={saveClickBank}
+            loading={clickbankLoading || saving}
+            feedback={clickbankFeedback}
           />
         </div>
       </SectionCard>

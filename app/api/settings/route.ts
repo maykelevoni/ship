@@ -4,10 +4,9 @@ import { db } from "@/lib/db";
 
 /** All settings keys with their default values (null means no default — return null if not set). */
 const SETTINGS_DEFAULTS: Record<string, string | null> = {
-  anthropic_api_key: null,
   gemini_api_key: null,
   openrouter_api_key: null,
-  openrouter_model: "openai/gpt-4o-mini",
+  openrouter_model: "deepseek/deepseek-v3",
   postbridge_api_key: null,
   enabled_platforms:
     '["twitter","linkedin","instagram","facebook","reddit","email","tiktok"]',
@@ -23,6 +22,14 @@ const SETTINGS_DEFAULTS: Record<string, string | null> = {
   research_youtube_region: "US",
   research_news_categories: "business,technology",
   blog_author_name: null,
+  elevenlabs_api_key: null,
+  elevenlabs_voice_id: "21m00Tcm4TlvDq8ikWAM",
+  replicate_api_key: null,
+  amazon_affiliate_tag: "",
+  amazon_paapi_key: "",
+  amazon_paapi_secret: "",
+  clickbank_api_key: "",
+  clickbank_account: "",
 };
 
 export const GET = auth(async (req) => {
