@@ -20,6 +20,7 @@ interface OwnProduct {
   price: number;
   checkoutUrl: string | null;
   promotionId: string | null;
+  imageUrl: string | null;
   createdAt: string;
 }
 
@@ -490,6 +491,11 @@ function ProductsPageInner() {
             })}
           </div>
 
+          {/* Rotation explanation subtitle */}
+          <p style={{ margin: "0 0 4px", fontSize: "12px", color: "#52525b" }}>
+            Promotions rotate into your generated content. Pausing removes them temporarily.
+          </p>
+
           <div
             style={{
               display: "grid",
@@ -627,12 +633,43 @@ function ProductsPageInner() {
                   padding: "20px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   gap: "16px",
-                  flexWrap: "wrap",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}>
+                {/* Image thumbnail */}
+                <div style={{ width: "60px", height: "60px", flexShrink: 0 }}>
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        borderRadius: "8px",
+                        background: "#1a1a1a",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Package size={20} style={{ color: "#3f3f46" }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Content area */}
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1, minWidth: 0 }}
+                >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <span style={{ fontSize: "15px", fontWeight: 600, color: "#e4e4e7" }}>
                       {product.title}
@@ -649,6 +686,8 @@ function ProductsPageInner() {
                     {new Date(product.createdAt).toLocaleDateString()}
                   </span>
                 </div>
+
+                {/* Actions */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                   {product.status === "published" && product.checkoutUrl && (
                     <a
