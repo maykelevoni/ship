@@ -1,30 +1,23 @@
-# Feature Tasks: Systeme.io Integration + Core Cleanup
-Generated: 2026-04-10
-Total: 17 tasks
+# Feature Tasks: Dashboard UX Improvements + Autopilot
+Generated: 2026-04-11
+Total: 12 tasks
 
-## Phase A — Remove (do these first, no new dependencies)
-- [x] 001: Delete dead files (stripe/polar/clickbank webhooks + geo-audit + brevo)
-- [x] 002: Comment out worker/media/video.ts (stub export, preserve code)
-- [x] 003: Update worker/index.ts — remove plan tier filter
-- [x] 004: Update worker/engine/run.ts — rename video setting key
-- [x] 005: Prisma schema — remove deprecated columns + migrate
-- [x] 006: Settings UI — remove Brevo + Polar sections
-- [x] 007: Remove geo score badges from UI
-- [ ] 008: Remove email draft Send button
-- [ ] 009: Clean up .env.example + CLAUDE.md
+## Checklist
 
-## Phase B — Add Systeme.io (after Phase A is clean)
-- [ ] 010: Create lib/utm.ts (UTM builder utility)
-- [ ] 011: Prisma schema — add Systeme.io columns + migrate
-- [ ] 012: Add Systeme.io settings section (types + UI + API)
-- [ ] 013: Add Systeme.io fields to Promotion (form + API)
-- [ ] 014: Add Systeme.io fields to OwnProduct (form + API)
-- [ ] 015: Create email draft export endpoint (POST /api/email-drafts/[id]/export)
-- [ ] 016: Add "Copy for Systeme.io" button to email draft page
-- [ ] 017: Update worker/engine/generate.ts — gate video + inject UTM
+### Phase A — Database & Backend
+- [x] 001: DB migrations — imageUrl on OwnProduct + AutopilotRule table
+- [x] 002: API — own-products imageUrl + PATCH + generate-image endpoints
+- [x] 003: API — Autopilot CRUD routes (GET, POST, PATCH, DELETE)
+- [ ] 004: Worker — dynamic cron scheduling from AutopilotRule DB
 
-## Key Dependencies
-- 005 must run before 006, 007, 008, 011, 013, 014
-- 010 must run before 017
-- 011 must run before 012, 013, 014, 015, 016
-- 015 must run before 016
+### Phase B — UX Fixes
+- [x] 005: Today page — Command Center redesign (Option A)
+- [x] 006: Sidebar — rename Posts → Blog Posts + add Autopilot nav item
+- [x] 007: PromotionCard — rename Weight → Priority, Pause → Pause rotation
+- [x] 008: Products page — Affiliates subtitle + Own Products image card
+- [x] 009: Settings — remove QuickAccess + add section icons
+- [x] 010: Product Studio — Cover Image field + Generate with AI button
+
+### Phase C — Autopilot UI
+- [x] 011: Autopilot page — shell + Full Autopilot tab
+- [x] 012: Autopilot page — Custom Schedule tab + step modal + next runs

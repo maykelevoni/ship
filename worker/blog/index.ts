@@ -15,7 +15,6 @@ import path from "path";
 import { db } from "../../lib/db";
 import { generateImage } from "../../lib/image-gen";
 import { getSetting } from "../../lib/settings";
-import { runGeoAudit } from "../engine/geo-audit";
 import { generateBlogPost } from "./generate";
 import { publishToGhost } from "./ghost";
 
@@ -187,11 +186,6 @@ export async function runBlogGeneration(userId: string): Promise<void> {
     `BlogPost saved to DB (id: ${blogPost.id}, status: ${blogPost.status})`,
   );
 
-  // 8. Run GEO audit on the generated content (fire-and-forget)
-  runGeoAudit(blogPost.id, postContent.title, postContent.content).catch(
-    (err) => logger.error("GEO audit failed", err),
-  );
-
   // 9. Mark topic as selected
   await db.researchTopic.update({
     where: { id: topic.id },
@@ -287,11 +281,6 @@ export async function runBlogGenerationForTopic(
   });
 
   logger.info(`BlogPost saved to DB (id: ${blogPost.id})`);
-
-  // 4b. Run GEO audit on the generated content (fire-and-forget)
-  runGeoAudit(blogPost.id, postContent.title, postContent.content).catch(
-    (err) => logger.error("GEO audit failed", err),
-  );
 
   // 5. Mark only the target topic as selected (other topics untouched)
   await db.researchTopic.update({

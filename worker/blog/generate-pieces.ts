@@ -68,9 +68,9 @@ export async function generatePiecesForBlogPost(
     type: "content",
     status: "active",
     weight: 5,
-    geoScore: null,
-    geoIssues: null,
-    geoAuditedAt: null,
+    systemeFunnelUrl: null,
+    systemeProductId: null,
+    systemeCheckoutUrl: null,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
   };

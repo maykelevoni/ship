@@ -1,11 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * Config for running tests against an already-running dev server.
+ * Use this when `pnpm dev` is already running on localhost:3000.
+ *
+ * Usage: npx playwright test --config=playwright.nows.config.ts
+ */
 export default defineConfig({
   testDir: "./tests",
   timeout: 30_000,
   retries: 1,
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
   reporter: "list",
 
   use: {
@@ -14,26 +19,14 @@ export default defineConfig({
   },
 
   projects: [
-    // Runs once before all other projects — logs in and saves session to .auth/user.json
-    {
-      name: "setup",
-      testMatch: /auth\.setup\.ts/,
-    },
     {
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        // Reuse the saved session so all tests start authenticated
+        // Reuse existing saved session — run auth.setup.ts separately if needed
         storageState: ".auth/user.json",
       },
-      dependencies: ["setup"],
     },
   ],
-
-  webServer: {
-    command: "pnpm next dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 300_000,
-  },
+  // No webServer block — assumes dev server is already running
 });

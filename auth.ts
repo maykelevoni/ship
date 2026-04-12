@@ -92,7 +92,6 @@ export const {
       token.email = dbUser.email;
       token.picture = dbUser.image;
       token.role = dbUser.role;
-      token.plan = dbUser.plan;
       token.onboardingDone = dbUser.onboardingDone;
 
       return token;

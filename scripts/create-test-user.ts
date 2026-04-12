@@ -21,16 +21,12 @@ async function createTestUser() {
     where: { email },
     update: {
       password: hashedPassword,
-      plan: "pro",
-      planExpiresAt: new Date("2030-12-31"),
       onboardingDone: true,
     },
     create: {
       email,
       name: "Test User",
       password: hashedPassword,
-      plan: "pro",
-      planExpiresAt: new Date("2030-12-31"),
       onboardingDone: true,
     },
   });
@@ -38,8 +34,6 @@ async function createTestUser() {
   console.log("Test user created/updated:");
   console.log("Email:", email);
   console.log("Password:", password);
-  console.log("Plan:", user.plan);
-  console.log("Expires:", user.planExpiresAt);
   console.log("Onboarding done:", user.onboardingDone);
 
   await db.$disconnect();

@@ -54,6 +54,10 @@ next-env.d.ts
 test-results/
 playwright-report/
 .playwright-mcp/
+.auth/
+
+# claude code worktrees (temporary agent sandboxes)
+.claude/worktrees/
 
 # generated assets
 /public/blog-images/

@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { sendEmail } from "@/worker/posting/brevo";
+import { sendCampaign } from "@/lib/brevo";
 import { postToPlatform } from "@/worker/posting/post-bridge";
 
 import { db } from "@/lib/db";
@@ -116,7 +116,7 @@ export const POST = auth(async (req, { params }) => {
           subjectLine.replace(/^SUBJECT:\s*/, "").trim() || "Newsletter";
         const bodyStart = content.indexOf("BODY:");
         const body = bodyStart !== -1 ? content.slice(bodyStart) : content;
-        const result = await sendEmail({ subject, body }, userId);
+        const result = await sendCampaign({ subject, body }, userId);
         postBridgeId = result.id;
         break;
       }

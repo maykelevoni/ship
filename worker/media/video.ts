@@ -176,7 +176,17 @@
 //   return outputPath;
 // }
 
-// Stub export to prevent breaking existing imports
+// Stub exports — video generation is disabled.
+// To re-enable: set video_generation_enabled = "true" in Settings and uncomment above.
+
 export async function renderVideoForPromotion(_: unknown): Promise<string> {
+  throw new Error("Video generation is disabled. Enable via Settings.");
+}
+
+export async function renderVideo(_: unknown): Promise<string> {
+  throw new Error("Video generation is disabled. Enable via Settings.");
+}
+
+export async function renderCaptionedVideo(_: unknown): Promise<string> {
   throw new Error("Video generation is disabled. Enable via Settings.");
 }
