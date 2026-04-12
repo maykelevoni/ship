@@ -23,6 +23,7 @@ interface OwnProduct {
   systemeProductId: string | null;
   systemeCheckoutUrl: string | null;
   promotionId: string | null;
+  imageUrl: string | null;
   createdAt: string;
 }
 
@@ -77,10 +78,12 @@ export default function ProductStudioPage() {
   const [editPrice, setEditPrice] = useState("");
   const [editSystemeProductId, setEditSystemeProductId] = useState("");
   const [editSystemeCheckoutUrl, setEditSystemeCheckoutUrl] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
 
   // Outline actions
   const [generatingOutline, setGeneratingOutline] = useState(false);
   const [writingChapter, setWritingChapter] = useState<number | null>(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   // Publish
   const [publishing, setPublishing] = useState(false);
@@ -104,6 +107,7 @@ export default function ProductStudioPage() {
       setEditPrice(String(p.price));
       setEditSystemeProductId(p.systemeProductId ?? "");
       setEditSystemeCheckoutUrl(p.systemeCheckoutUrl ?? "");
+      setEditImageUrl(p.imageUrl ?? "");
       try {
         setChapters(JSON.parse(p.outline || "[]"));
       } catch {
@@ -179,6 +183,12 @@ export default function ProductStudioPage() {
     setProduct((p) => p ? { ...p, systemeCheckoutUrl: editSystemeCheckoutUrl || null } : p);
   }
 
+  async function saveImageUrl() {
+    if (editImageUrl === product?.imageUrl) return;
+    await patch({ imageUrl: editImageUrl || null });
+    setProduct((p) => p ? { ...p, imageUrl: editImageUrl || null } : p);
+  }
+
   async function saveChapters(updated: Chapter[]) {
     setChapters(updated);
     await patch({ outline: JSON.stringify(updated) });
@@ -225,6 +235,23 @@ export default function ProductStudioPage() {
       alert("Failed to write chapter. Please try again.");
     } finally {
       setWritingChapter(null);
+    }
+  }
+
+  async function handleGenerateImage() {
+    setGeneratingImage(true);
+    try {
+      const res = await fetch(`/api/own-products/${id}/generate-image`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setEditImageUrl(data.imageUrl);
+        await patch({ imageUrl: data.imageUrl });
+        setProduct((p) => p ? { ...p, imageUrl: data.imageUrl } : p);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setGeneratingImage(false);
     }
   }
 
@@ -419,6 +446,59 @@ export default function ProductStudioPage() {
             }}
           />
           <div style={{ fontSize: "12px", color: "#52525b" }}>Systeme.io Checkout URL</div>
+        </div>
+
+        {/* Cover Image */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "12px", fontWeight: 500, color: "#a1a1aa" }}>Cover Image</label>
+
+          {/* Preview */}
+          {editImageUrl && (
+            <img
+              src={editImageUrl}
+              alt="cover"
+              style={{ width: "80px", height: "80px", borderRadius: "8px", objectFit: "cover", border: "1px solid #2a2a2a" }}
+            />
+          )}
+
+          {/* URL input */}
+          <input
+            type="text"
+            value={editImageUrl}
+            onChange={(e) => setEditImageUrl(e.target.value)}
+            onBlur={saveImageUrl}
+            placeholder="https://example.com/image.png"
+            style={{
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #1a1a1a",
+              background: "#0a0a0a",
+              color: "#a1a1aa",
+              fontSize: "14px",
+              outline: "none",
+            }}
+          />
+
+          {/* Generate button */}
+          <button
+            onClick={handleGenerateImage}
+            disabled={generatingImage}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #6366f1",
+              background: "transparent",
+              color: generatingImage ? "#52525b" : "#6366f1",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: generatingImage ? "not-allowed" : "pointer",
+            }}
+          >
+            {generatingImage ? "Generating…" : "✨ Generate with AI"}
+          </button>
         </div>
       </div>
 
