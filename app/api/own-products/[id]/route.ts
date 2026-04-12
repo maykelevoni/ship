@@ -51,6 +51,7 @@ export const PATCH = auth(async (req, { params }) => {
       systemeProductId,
       systemeCheckoutUrl,
       promotionId,
+      imageUrl,
     } = body as {
       title?: string;
       description?: string;
@@ -60,6 +61,7 @@ export const PATCH = auth(async (req, { params }) => {
       systemeProductId?: string;
       systemeCheckoutUrl?: string;
       promotionId?: string;
+      imageUrl?: string;
     };
 
     const updated = await db.ownProduct.update({
@@ -73,6 +75,7 @@ export const PATCH = auth(async (req, { params }) => {
         ...(systemeProductId !== undefined && { systemeProductId }),
         ...(systemeCheckoutUrl !== undefined && { systemeCheckoutUrl }),
         ...(promotionId !== undefined && { promotionId }),
+        ...(imageUrl !== undefined && { imageUrl }),
       },
     });
 
