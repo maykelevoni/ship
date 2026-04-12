@@ -80,7 +80,7 @@ function WeightDots({ weight }: { weight: number }) {
         alignItems: "center",
         gap: "3px",
       }}
-      title={`Weight: ${weight}/10`}
+      title={`Priority: ${weight}/10 — selected more often at higher values`}
     >
       {Array.from({ length: 10 }, (_, i) => (
         <div
@@ -370,18 +370,30 @@ export function PromotionCard({
             gap: "10px",
           }}
         >
-          <span
-            style={{
-              fontSize: "10px",
-              fontWeight: 600,
-              color: "#52525b",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              flexShrink: 0,
-            }}
-          >
-            Weight
-          </span>
+          <div style={{ flexShrink: 0 }}>
+            <span
+              style={{
+                fontSize: "10px",
+                fontWeight: 600,
+                color: "#52525b",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                display: "block",
+              }}
+            >
+              Priority
+            </span>
+            <span
+              style={{
+                fontSize: "10px",
+                color: "#3f3f46",
+                display: "block",
+                marginTop: "2px",
+              }}
+            >
+              Content rotation frequency
+            </span>
+          </div>
           <input
             type="range"
             min={1}
@@ -441,12 +453,12 @@ export function PromotionCard({
               {promotion.status === "active" ? (
                 <>
                   <Pause size={12} />
-                  Pause
+                  Pause rotation
                 </>
               ) : (
                 <>
                   <Play size={12} />
-                  Activate
+                  Resume rotation
                 </>
               )}
             </button>
