@@ -42,7 +42,7 @@ interface EmailDraft {
 type TabKey = "blog" | "twitter" | "linkedin" | "video" | "instagram" | "reddit" | "email";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "blog", label: "Blog" },
+  { key: "blog", label: "Blog Posts" },
   { key: "twitter", label: "X" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "video", label: "TikTok" },

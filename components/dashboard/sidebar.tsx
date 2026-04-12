@@ -12,6 +12,7 @@ import {
   Search,
   Camera,
   FileStack,
+  Bot,
 } from "lucide-react";
 
 interface NavItem {
@@ -32,13 +33,18 @@ const mainNavItems: NavItem[] = [
     icon: <Search size={18} />,
   },
   {
+    href: "/autopilot",
+    label: "Autopilot",
+    icon: <Bot size={18} />,
+  },
+  {
     href: "/content",
     label: "Content",
     icon: <BookOpen size={18} />,
   },
   {
     href: "/posts",
-    label: "Posts",
+    label: "Blog Posts",
     icon: <FileStack size={18} />,
   },
   {
