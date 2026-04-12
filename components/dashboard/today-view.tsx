@@ -7,8 +7,8 @@ import { useStream, type StreamEvent } from "@/hooks/use-stream";
 import { ContentPreview } from "./content-preview";
 import { type ContentPieceData } from "./platform-status-card";
 import { TodayActions } from "./today-actions";
-import { TodayHeader } from "./today-header";
-import { TodayPipeline } from "./today-pipeline";
+import { TodayHeader, AlertBanner, StreamFeed } from "./today-header";
+import { ContentList } from "./today-pipeline";
 
 // Shared types (exported for sub-components)
 
@@ -222,41 +222,243 @@ export function TodayView({
 
   const failCount = pieces.filter((p) => p.status === "failed").length;
   const postedCount = pieces.filter((p) => p.status === "posted").length;
-  const generatedCount = pieces.filter((p) => p.status !== "queued").length;
-  const mediaCount = pieces.filter((p) => p.mediaPath != null).length;
   const alertCount = pendingApprovals.length + failCount;
+
+  // Type badge colors for ActivePromotionCard
+  const TYPE_BADGE: Record<
+    PromotionType,
+    { label: string; color: string; bg: string }
+  > = {
+    product: {
+      label: "Product",
+      color: "#60a5fa",
+      bg: "rgba(96,165,250,0.12)",
+    },
+    service: {
+      label: "Service",
+      color: "#60a5fa",
+      bg: "rgba(96,165,250,0.12)",
+    },
+    affiliate: {
+      label: "Affiliate",
+      color: "#4ade80",
+      bg: "rgba(74,222,128,0.12)",
+    },
+    lead_magnet: {
+      label: "Lead Magnet",
+      color: "#c084fc",
+      bg: "rgba(192,132,252,0.12)",
+    },
+    content: {
+      label: "Content",
+      color: "#a1a1aa",
+      bg: "rgba(161,161,170,0.12)",
+    },
+  };
+
+  // MetricCard component
+  function MetricCard({
+    label,
+    value,
+  }: {
+    label: string;
+    value: number;
+  }) {
+    return (
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: "10px",
+          padding: "16px 20px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "11px",
+            color: "#52525b",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            fontWeight: 500,
+          }}
+        >
+          {label}
+        </p>
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: "28px",
+            fontWeight: 700,
+            color: "#e4e4e7",
+          }}
+        >
+          {value}
+        </p>
+      </div>
+    );
+  }
+
+  // ActivePromotionCard component
+  function ActivePromotionCard({
+    promotion,
+  }: {
+    promotion: ActivePromotion;
+  }) {
+    const typeBadge =
+      TYPE_BADGE[promotion.type as PromotionType] ?? TYPE_BADGE.content;
+
+    return (
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: "12px",
+          padding: "20px 24px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "16px",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <p
+              style={{
+                margin: "0 0 8px",
+                fontSize: "11px",
+                color: "#52525b",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                fontWeight: 500,
+              }}
+            >
+              ACTIVE PROMOTION
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "3px 10px",
+                  borderRadius: "5px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  color: typeBadge.color,
+                  background: typeBadge.bg,
+                }}
+              >
+                {typeBadge.label.toUpperCase()}
+              </span>
+            </div>
+            <h2
+              style={{
+                margin: "0 0 6px",
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#ffffff",
+              }}
+            >
+              {promotion.name}
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "13px",
+                color: "#71717a",
+                lineHeight: "1.5",
+              }}
+            >
+              {promotion.description}
+            </p>
+          </div>
+          <a
+            href="/products"
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#a1a1aa",
+              background: "#1e1e1e",
+              textDecoration: "none",
+              transition: "background 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#27272a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#1e1e1e";
+            }}
+          >
+            Change promotion →
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* 1. Slim header */}
       <TodayHeader
         todayDate={todayDate}
-        activePromotion={promotion}
-        stats={stats}
         lastEngineRun={lastEngineRun}
         onRunEngine={handleRunEngine}
         engineRunning={runStatus === "running"}
-        streamEvents={streamEvents}
-        generatedCount={generatedCount}
-        mediaCount={mediaCount}
         postedCount={postedCount}
         totalPieces={pieces.length}
-        todayBlogPostStatus={todayBlogPost?.status ?? null}
-        emailDraftExists={initialEmailDraft !== null}
-        newOpportunitiesCount={newOpportunitiesCount}
-        contentPiecesToday={stats.contentPiecesToday}
-        alertCount={alertCount}
+        failCount={failCount}
       />
 
-      <TodayPipeline
+      {/* 2. Alert banner */}
+      {alertCount > 0 && <AlertBanner alertCount={alertCount} />}
+
+      {/* 3. Metric cards row */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "12px",
+        }}
+      >
+        <MetricCard label="Content Today" value={stats.contentPiecesToday} />
+        <MetricCard label="Posted This Week" value={stats.postsThisWeek} />
+        <MetricCard
+          label="Active Promotions"
+          value={stats.activePromotionsCount}
+        />
+      </div>
+
+      {/* 4. Active Promotion card */}
+      {promotion && <ActivePromotionCard promotion={promotion} />}
+
+      {/* 5. Today's Content compact list */}
+      <ContentList
         pieces={pieces}
-        blogPost={todayBlogPost}
-        promotion={promotion}
         gateModeEnabled={gateModeEnabled}
         onPreview={setPreviewPiece}
         onApprove={handleApprove}
         onReject={handleReject}
       />
 
+      {/* 6. Stream feed (when events exist) */}
+      {streamEvents.length > 0 && <StreamFeed events={streamEvents} />}
+
+      {/* 7. Today Actions */}
       <TodayActions
         pendingApprovals={pendingApprovals}
         todayBlogPost={todayBlogPost}
@@ -266,7 +468,7 @@ export function TodayView({
         onSendEmail={handleSendEmail}
       />
 
-      {/* Content Preview Modal */}
+      {/* 8. Content Preview Modal */}
       <ContentPreview
         piece={previewPiece}
         open={previewPiece !== null}

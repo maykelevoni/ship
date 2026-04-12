@@ -65,6 +65,41 @@ export function StreamFeed({ events }: { events: string[] }) {
   );
 }
 
+export function AlertBanner({ alertCount }: { alertCount: number }) {
+  if (alertCount === 0) return null;
+
+  return (
+    <div
+      style={{
+        background: "rgba(245,158,11,0.1)",
+        border: "1px solid rgba(245,158,11,0.25)",
+        borderRadius: "6px",
+        padding: "10px 16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+      }}
+    >
+      <span style={{ fontSize: "13px", color: "#fbbf24", fontWeight: 500 }}>
+        ⚠ {alertCount} item{alertCount !== 1 ? "s" : ""} need attention
+      </span>
+      <a
+        href="/promote"
+        style={{
+          fontSize: "12px",
+          color: "#f59e0b",
+          fontWeight: 600,
+          textDecoration: "none",
+          flexShrink: 0,
+        }}
+      >
+        Review queue →
+      </a>
+    </div>
+  );
+}
+
 /** Single pipeline stage box */
 function PipelineStage({
   label,
@@ -189,55 +224,31 @@ const TYPE_BADGE: Record<
 
 interface TodayHeaderProps {
   todayDate: string;
-  activePromotion: ActivePromotion | null;
-  stats: TodayStats;
   lastEngineRun: { status: string; createdAt: string } | null;
   onRunEngine: () => void;
   engineRunning: boolean;
-  streamEvents: string[];
-  // pipeline counts (derived in parent to avoid re-deriving)
-  generatedCount: number;
-  mediaCount: number;
+  // status counts
   postedCount: number;
   totalPieces: number;
-  // research pipeline data
-  todayBlogPostStatus: string | null;
-  emailDraftExists: boolean;
-  newOpportunitiesCount: number;
-  contentPiecesToday: number;
-  // alert
-  alertCount: number;
+  failCount: number;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function TodayHeader({
   todayDate,
-  activePromotion,
   lastEngineRun,
   onRunEngine,
   engineRunning,
-  streamEvents,
-  generatedCount,
-  mediaCount,
   postedCount,
   totalPieces,
-  todayBlogPostStatus,
-  emailDraftExists,
-  newOpportunitiesCount,
-  contentPiecesToday,
-  alertCount,
+  failCount,
 }: TodayHeaderProps) {
-  const typeBadge = activePromotion
-    ? (TYPE_BADGE[activePromotion.type as PromotionType] ?? TYPE_BADGE.content)
-    : null;
-
   const lastRunLabel = lastEngineRun
     ? `Last run: ${relativeTime(lastEngineRun.createdAt)}`
     : "Never run";
 
   // ── Status chip ─────────────────────────────────────────────────────────────
-  const failCount = totalPieces > 0 ? totalPieces - generatedCount : 0;
   const systemStatus: { label: string; color: string; bg: string } =
     totalPieces === 0
       ? {
@@ -263,35 +274,40 @@ export function TodayHeader({
               bg: "rgba(96,165,250,0.12)",
             };
 
-  const showAlert = alertCount > 0;
-
   return (
-    <>
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        flexWrap: "wrap",
+      }}
+    >
+      <div>
+        <p style={{ margin: 0, fontSize: "12px", color: "#52525b" }}>
+          {todayDate}
+        </p>
+        <h1
+          style={{
+            margin: "4px 0 0",
+            fontSize: "22px",
+            fontWeight: 700,
+            color: "#ffffff",
+          }}
+        >
+          Today
+        </h1>
+      </div>
+
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: "12px",
+          alignItems: "center",
+          gap: "10px",
           flexWrap: "wrap",
         }}
       >
-        <div>
-          <p style={{ margin: 0, fontSize: "12px", color: "#52525b" }}>
-            {todayDate}
-          </p>
-          <h1
-            style={{
-              margin: "4px 0 0",
-              fontSize: "22px",
-              fontWeight: 700,
-              color: "#e4e4e7",
-            }}
-          >
-            Today
-          </h1>
-        </div>
         <span
           style={{
             display: "inline-flex",
@@ -303,320 +319,40 @@ export function TodayHeader({
             color: systemStatus.color,
             background: systemStatus.bg,
             border: `1px solid ${systemStatus.color}22`,
-            marginTop: "4px",
             flexShrink: 0,
           }}
         >
           {systemStatus.label}
         </span>
-      </div>
 
-      {/* ── Alert banner ───────────────────────────────────────────────────── */}
-      {showAlert && (
-        <div
+        <button
+          onClick={onRunEngine}
+          disabled={engineRunning}
           style={{
-            background: "rgba(245,158,11,0.1)",
-            border: "1px solid rgba(245,158,11,0.25)",
-            borderRadius: "6px",
-            padding: "10px 16px",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-          }}
-        >
-          <span style={{ fontSize: "13px", color: "#fbbf24", fontWeight: 500 }}>
-            ⚠ {alertCount} item{alertCount !== 1 ? "s" : ""} need attention
-          </span>
-          <a
-            href="/promote"
-            style={{
-              fontSize: "12px",
-              color: "#f59e0b",
-              fontWeight: 600,
-              textDecoration: "none",
-              flexShrink: 0,
-            }}
-          >
-            Review queue →
-          </a>
-        </div>
-      )}
-
-      {/* ── Engine control card ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#111111",
-          border: "1px solid #1e1e1e",
-          borderRadius: "12px",
-          padding: "20px 24px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "20px",
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Left: promotion info */}
-          <div style={{ flex: 1, minWidth: "220px" }}>
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: "11px",
-                color: "#52525b",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                fontWeight: 500,
-              }}
-            >
-              Active Promotion
-            </p>
-            {activePromotion && typeBadge ? (
-              <>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    marginBottom: "6px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "2px 8px",
-                      borderRadius: "4px",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      letterSpacing: "0.04em",
-                      color: typeBadge.color,
-                      background: typeBadge.bg,
-                    }}
-                  >
-                    {typeBadge.label.toUpperCase()}
-                  </span>
-                </div>
-                <h2
-                  style={{
-                    margin: "0 0 6px",
-                    fontSize: "18px",
-                    fontWeight: 700,
-                    color: "#ffffff",
-                  }}
-                >
-                  {activePromotion.name}
-                </h2>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "13px",
-                    color: "#71717a",
-                    lineHeight: "1.5",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {activePromotion.description}
-                </p>
-              </>
-            ) : (
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 4px",
-                    fontSize: "15px",
-                    color: "#52525b",
-                    fontWeight: 500,
-                  }}
-                >
-                  No active promotion
-                </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#3f3f46" }}>
-                  Add a promotion and run the engine to get started.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Right: run button + last run */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-end",
-              gap: "8px",
-              flexShrink: 0,
-            }}
-          >
-            <button
-              onClick={onRunEngine}
-              disabled={engineRunning}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "11px 20px",
-                borderRadius: "8px",
-                border: "none",
-                background: engineRunning ? "rgba(99,102,241,0.4)" : "#6366f1",
-                color: "#ffffff",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: engineRunning ? "not-allowed" : "pointer",
-                flexShrink: 0,
-                transition: "background 0.15s ease",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {engineRunning ? (
-                <Loader2
-                  size={14}
-                  style={{ animation: "spin 1s linear infinite" }}
-                />
-              ) : (
-                <Zap size={14} />
-              )}
-              {engineRunning ? "Running…" : "Run Engine Now"}
-            </button>
-            <span style={{ fontSize: "11px", color: "#52525b" }}>
-              {lastRunLabel}
-            </span>
-          </div>
-        </div>
-
-        {/* Stream feed inside engine card */}
-        {streamEvents.length > 0 && (
-          <div style={{ marginTop: "16px" }}>
-            <StreamFeed events={streamEvents} />
-          </div>
-        )}
-      </div>
-
-      {/* ── Promotion pipeline strip ────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#111111",
-          border: "1px solid #1e1e1e",
-          borderRadius: "10px",
-          padding: "14px 16px",
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 10px",
-            fontSize: "11px",
-            color: "#52525b",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontWeight: 500,
-          }}
-        >
-          Promotion Pipeline
-        </p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
             gap: "6px",
+            padding: "9px 16px",
+            borderRadius: "8px",
+            border: "none",
+            background: engineRunning ? "rgba(99,102,241,0.4)" : "#6366f1",
+            color: "#ffffff",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: engineRunning ? "not-allowed" : "pointer",
+            flexShrink: 0,
+            transition: "background 0.15s ease",
+            whiteSpace: "nowrap",
           }}
         >
-          <PipelineStage
-            label="Promotion"
-            value={
-              activePromotion
-                ? activePromotion.name.length > 18
-                  ? activePromotion.name.slice(0, 18) + "…"
-                  : activePromotion.name
-                : "None"
-            }
-            color={activePromotion ? "#818cf8" : "#3f3f46"}
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Generated"
-            value={`${generatedCount}/6`}
-            color={generatedCount > 0 ? "#60a5fa" : "#3f3f46"}
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Media"
-            value={String(mediaCount)}
-            color={mediaCount > 0 ? "#c084fc" : "#3f3f46"}
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Posted"
-            value={`${postedCount}/6`}
-            color={postedCount > 0 ? "#4ade80" : "#3f3f46"}
-          />
-        </div>
+          {engineRunning ? (
+            <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+          ) : (
+            <Zap size={13} />
+          )}
+          {engineRunning ? "Running…" : "Run Engine Now"}
+        </button>
       </div>
-
-      {/* ── Research pipeline strip ─────────────────────────────────────────── */}
-      <div
-        style={{
-          background: "#111111",
-          border: "1px solid #1e1e1e",
-          borderRadius: "10px",
-          padding: "14px 16px",
-        }}
-      >
-        <p
-          style={{
-            margin: "0 0 10px",
-            fontSize: "11px",
-            color: "#52525b",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            fontWeight: 500,
-          }}
-        >
-          Research Pipeline
-        </p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "stretch",
-            gap: "6px",
-          }}
-        >
-          <PipelineStage
-            label="Topics"
-            value={contentPiecesToday > 0 ? String(contentPiecesToday) : "—"}
-            color={contentPiecesToday > 0 ? "#60a5fa" : "#3f3f46"}
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Blog"
-            value={todayBlogPostStatus ?? "None"}
-            color={todayBlogPostStatus ? "#818cf8" : "#3f3f46"}
-            href="/content"
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Email"
-            value={emailDraftExists ? "Draft" : "None"}
-            color={emailDraftExists ? "#60a5fa" : "#3f3f46"}
-            href="/content"
-          />
-          <PipelineArrow />
-          <PipelineStage
-            label="Opps"
-            value={
-              newOpportunitiesCount > 0 ? `${newOpportunitiesCount} new` : "0"
-            }
-            color={newOpportunitiesCount > 0 ? "#fbbf24" : "#3f3f46"}
-            href="/content"
-          />
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

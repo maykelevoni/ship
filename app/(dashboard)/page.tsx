@@ -18,7 +18,6 @@ async function getTodayPieces(): Promise<ContentPieceData[]> {
   const DISPLAY_PLATFORMS = [
     "twitter",
     "linkedin",
-    "video",
     "reddit",
     "instagram",
     "email",
@@ -222,39 +221,77 @@ async function getLastEngineRun() {
 
 function TodayViewSkeleton() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Header skeleton */}
-      <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              width: "120px",
+              height: "12px",
+              background: "#1e1e1e",
+              borderRadius: "4px",
+              marginBottom: "8px",
+            }}
+          />
+          <div
+            style={{
+              width: "80px",
+              height: "22px",
+              background: "#1e1e1e",
+              borderRadius: "4px",
+            }}
+          />
+        </div>
         <div
           style={{
-            width: "120px",
-            height: "12px",
-            background: "#1e1e1e",
-            borderRadius: "4px",
-            marginBottom: "8px",
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
           }}
-        />
-        <div
-          style={{
-            width: "80px",
-            height: "22px",
-            background: "#1e1e1e",
-            borderRadius: "4px",
-          }}
-        />
+        >
+          <div
+            style={{
+              width: "100px",
+              height: "28px",
+              background: "#1e1e1e",
+              borderRadius: "20px",
+            }}
+          />
+          <div
+            style={{
+              width: "120px",
+              height: "36px",
+              background: "#1e1e1e",
+              borderRadius: "8px",
+            }}
+          />
+        </div>
       </div>
 
-      {/* Stats skeleton */}
-      <div style={{ display: "flex", gap: "12px" }}>
+      {/* Metric cards skeleton */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "12px",
+        }}
+      >
         {[1, 2, 3].map((i) => (
           <div
             key={i}
             style={{
-              flex: 1,
               height: "76px",
               background: "#111111",
               border: "1px solid #1e1e1e",
-              borderRadius: "8px",
+              borderRadius: "10px",
             }}
           />
         ))}
@@ -270,24 +307,52 @@ function TodayViewSkeleton() {
         }}
       />
 
-      {/* Platform grid skeleton */}
+      {/* Content list skeleton */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "12px",
+          background: "#111111",
+          border: "1px solid #1e1e1e",
+          borderRadius: "12px",
+          padding: "20px",
         }}
       >
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
             style={{
-              height: "140px",
-              background: "#111111",
-              border: "1px solid #1e1e1e",
-              borderRadius: "10px",
+              display: "flex",
+              gap: "12px",
+              marginBottom: i < 5 ? "14px" : "0",
             }}
-          />
+          >
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "#1e1e1e",
+                marginTop: "18px",
+              }}
+            />
+            <div
+              style={{
+                width: "100px",
+                height: "14px",
+                background: "#1e1e1e",
+                borderRadius: "4px",
+                marginTop: "15px",
+              }}
+            />
+            <div
+              style={{
+                flex: 1,
+                height: "14px",
+                background: "#1e1e1e",
+                borderRadius: "4px",
+                marginTop: "15px",
+              }}
+            />
+          </div>
         ))}
       </div>
     </div>
