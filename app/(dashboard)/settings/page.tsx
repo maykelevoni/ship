@@ -8,7 +8,6 @@ import { IntegrationsSection } from "./_components/integrations-section";
 import { PlatformsSection } from "./_components/platforms-section";
 import { ResearchSection } from "./_components/research-section";
 import type { SettingsData } from "./_components/types";
-import { QuickAccess } from "./_components/ui";
 
 export interface SectionProps {
   settings: SettingsData;
@@ -215,8 +214,6 @@ export default function SettingsPage() {
           <IntegrationsSection {...sectionProps} />
         </>
       )}
-
-      <QuickAccess />
     </div>
   );
 }

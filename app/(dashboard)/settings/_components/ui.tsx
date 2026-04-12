@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import {
-  ArrowRight,
-  Clock,
-  Eye,
-  EyeOff,
-  LayoutTemplate,
-  Save,
-  ScrollText,
-} from "lucide-react";
+import { Eye, EyeOff, Save } from "lucide-react";
 
 export function SectionCard({
   children,
@@ -296,114 +287,6 @@ export function SaveButton({
           Save failed. Please try again.
         </span>
       )}
-    </div>
-  );
-}
-
-const QUICK_LINKS = [
-  {
-    href: "/templates",
-    label: "Templates",
-    Icon: LayoutTemplate,
-    description: "Manage post templates",
-  },
-  {
-    href: "/schedule",
-    label: "Schedule",
-    Icon: Clock,
-    description: "Configure posting schedule",
-  },
-  {
-    href: "/logs",
-    label: "Logs",
-    Icon: ScrollText,
-    description: "View activity logs",
-  },
-] as const;
-
-export function QuickAccess() {
-  return (
-    <div>
-      <p
-        style={{
-          margin: "0 0 12px",
-          fontSize: "12px",
-          fontWeight: 600,
-          color: "#52525b",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
-      >
-        Quick Access
-      </p>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "12px",
-        }}
-      >
-        {QUICK_LINKS.map(({ href, label, Icon, description }) => (
-          <Link key={href} href={href} style={{ textDecoration: "none" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 20px",
-                background: "#0f0f0f",
-                border: "1px solid #1a1a1a",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "border-color 0.15s ease, background 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "#2a2a2a";
-                (e.currentTarget as HTMLDivElement).style.background =
-                  "#141414";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor =
-                  "#1a1a1a";
-                (e.currentTarget as HTMLDivElement).style.background =
-                  "#0f0f0f";
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
-                <Icon size={16} style={{ color: "#6366f1", flexShrink: 0 }} />
-                <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#e4e4e7",
-                    }}
-                  >
-                    {label}
-                  </p>
-                  <p
-                    style={{
-                      margin: "2px 0 0",
-                      fontSize: "11px",
-                      color: "#52525b",
-                    }}
-                  >
-                    {description}
-                  </p>
-                </div>
-              </div>
-              <ArrowRight
-                size={14}
-                style={{ color: "#3f3f46", flexShrink: 0 }}
-              />
-            </div>
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }

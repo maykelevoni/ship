@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Search } from "lucide-react";
 
 import type { SectionProps } from "./types";
 import { FieldRow, SaveButton, SectionCard, TextInput } from "./ui";
@@ -45,6 +46,7 @@ export function ResearchSection({ settings, saving, onSave }: SectionProps) {
     <SectionCard
       title="Research & Blog"
       description="Configure research sources and Ghost CMS for blog publishing."
+      icon={<Search size={15} style={{ color: "#6366f1" }} />}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
         <FieldRow label="Subreddits">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Globe, KeyRound, Send } from "lucide-react";
 
 import type { SectionProps } from "./types";
 import { FieldRow, PasswordInput, SaveButton, SectionCard } from "./ui";
@@ -89,6 +90,7 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
       <SectionCard
         title="AI Providers"
         description="Gemini is primary. OpenRouter and Replicate are the fallbacks."
+        icon={<KeyRound size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Gemini API Key">
@@ -142,6 +144,7 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
       <SectionCard
         title="Social Posting"
         description="Configure post-bridge for social media publishing."
+        icon={<Send size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="post-bridge API Key">
@@ -163,6 +166,7 @@ export function ApiKeysSection({ settings, saving, onSave }: SectionProps) {
       <SectionCard
         title="Research API Keys"
         description="Keys used by the research engine to gather content."
+        icon={<Globe size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="YouTube API Key">

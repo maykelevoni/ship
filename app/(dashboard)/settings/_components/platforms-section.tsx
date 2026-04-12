@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Share2 } from "lucide-react";
 
 import type { SectionProps } from "./types";
 import { FieldRow, SaveButton, SectionCard, Toggle } from "./ui";
@@ -116,6 +117,7 @@ export function PlatformsSection({ settings, saving, onSave }: SectionProps) {
       <SectionCard
         title="General"
         description="Timezone, gate mode, and engine schedule."
+        icon={<Share2 size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Timezone">
@@ -189,6 +191,7 @@ export function PlatformsSection({ settings, saving, onSave }: SectionProps) {
       <SectionCard
         title="Platforms"
         description="Choose which platforms receive generated content."
+        icon={<Share2 size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div

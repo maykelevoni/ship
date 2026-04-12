@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plug } from "lucide-react";
 
 import type { SectionProps } from "./types";
 import {
@@ -138,6 +139,7 @@ export function IntegrationsSection({
       <SectionCard
         title="Systeme.io"
         description="Connect Systeme.io to auto-track funnel links in all generated content."
+        icon={<Plug size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Domain">
@@ -173,6 +175,7 @@ export function IntegrationsSection({
       <SectionCard
         title="Ghost CMS"
         description="Publish blog posts directly to your Ghost site."
+        icon={<Plug size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Ghost URL">
@@ -201,6 +204,7 @@ export function IntegrationsSection({
       <SectionCard
         title="Audio (ElevenLabs)"
         description="AI voiceover for captioned video generation."
+        icon={<Plug size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="ElevenLabs API Key">
@@ -245,6 +249,7 @@ export function IntegrationsSection({
       <SectionCard
         title="Amazon Associates"
         description="Find and promote physical products via Amazon affiliate links."
+        icon={<Plug size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Associate Tag">
@@ -280,6 +285,7 @@ export function IntegrationsSection({
       <SectionCard
         title="ClickBank"
         description="Find and promote digital products (courses, ebooks, software)."
+        icon={<Plug size={15} style={{ color: "#6366f1" }} />}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
           <FieldRow label="Account Nickname">
