@@ -77,6 +77,7 @@ model User {
   ownProducts            OwnProduct[]
   mediaAssets            MediaAsset[]
   settings               Setting[]
+  autopilotRules         AutopilotRule[]
 
   @@map(name: "users")
 }
@@ -298,8 +299,28 @@ model OwnProduct {
   promotionId       String?
   systemeProductId  String?   // Systeme.io product ID
   systemeCheckoutUrl String?  // Systeme.io checkout URL
+  imageUrl          String?   // Cover image URL
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model AutopilotRule {
+  id          String   @id @default(cuid())
+  userId      String   @default("")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   // "full" | "research" | "generate" | "post"
+  days        String   // JSON array as string: ["mon","wed","fri"]
+  hour        Int      // 0–23
+  sources     String?  // JSON: ["youtube","reddit","hn","news"]
+  platforms   String?  // JSON: ["twitter","linkedin","reddit","instagram"]
+  promotionId String?
+  gate        Boolean  @default(false)
+  keyword     String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([userId])
 }
