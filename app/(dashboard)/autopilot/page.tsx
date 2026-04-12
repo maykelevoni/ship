@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Bot } from "lucide-react";
 import { FullAutopilotTab } from "./_components/full-autopilot-tab";
+import { CustomScheduleTab } from "./_components/custom-schedule-tab";
 
 interface AutopilotRule {
   id: string;
@@ -125,21 +126,7 @@ function AutopilotPageInner() {
       {/* Tab content */}
       {tab === "full" && <FullAutopilotTab rules={rules} onRuleUpdated={loadRules} />}
 
-      {tab === "custom" && (
-        <div
-          style={{
-            background: "#0f0f0f",
-            border: "1px solid #1a1a1a",
-            borderRadius: "12px",
-            padding: "48px 24px",
-            textAlign: "center",
-          }}
-        >
-          <p style={{ margin: 0, fontSize: "13px", color: "#52525b" }}>
-            Custom schedule coming soon…
-          </p>
-        </div>
-      )}
+      {tab === "custom" && <CustomScheduleTab rules={rules} onRuleUpdated={loadRules} />}
     </div>
   );
 }
